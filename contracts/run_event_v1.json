@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/run_event_v1.json",
+  "title": "SesRAG Run Event v1",
+  "type": "object",
+  "required": ["schema_version", "event_id", "run_id", "seq", "type", "occurred_at", "data"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "event_id": {"type": "string", "format": "uuid"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "seq": {"type": "integer", "minimum": 1},
+    "type": {
+      "type": "string",
+      "enum": [
+        "run.created",
+        "task.queued",
+        "task.leased",
+        "run.started",
+        "retrieval.completed",
+        "answer.delta",
+        "task.retry_scheduled",
+        "message.completed",
+        "run.succeeded",
+        "run.failed",
+        "run.cancelled"
+      ]
+    },
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "data": {"type": "object"}
+  },
+  "additionalProperties": false
+}
+

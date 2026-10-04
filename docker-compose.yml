@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: sesrag
+      POSTGRES_USER: sesrag
+      POSTGRES_PASSWORD: sesrag
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sesrag -d sesrag"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://sesrag:sesrag@postgres:5432/sesrag
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://sesrag:sesrag@postgres:5432/sesrag
+      REDIS_URL: redis://redis:6379/0
+      REDIS_ENABLED: "true"
+      UPLOAD_DIR: /data/uploads
+      MOCK_PROVIDER: "true"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://sesrag:sesrag@postgres:5432/sesrag
+      REDIS_URL: redis://redis:6379/0
+      REDIS_ENABLED: "true"
+      UPLOAD_DIR: /data/uploads
+      MOCK_PROVIDER: "true"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: ["python", "-m", "backend.workers.main"]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
+  uploads:
+
