@@ -10,6 +10,7 @@ frontend/      Vue 3 + TypeScript 工作台
 migrations/    Alembic 数据库迁移
 contracts/     Run Event JSON Schema
 tests/         单元、API 和集成测试
+tests/demo-smoke/ 本机隔离临时测试环境、总入口、报告/清理和测试点（分类待接入）
 docker/        API/Worker 与前端镜像定义
 docs/prd/      Demo 与完整项目 PRD
 docs/adr/      实施方案和架构决策
@@ -24,7 +25,8 @@ AGENTS.md      仓库级 AI 开发约束
 
 - 产品目标：[`docs/prd/`](docs/prd/)，当前 Demo 为 [`001-SesRAG-项目Demo-PRD.md`](docs/prd/001-SesRAG-项目Demo-PRD.md)，完整目标为 [`002-SesRAG-完整项目-PRD.md`](docs/prd/002-SesRAG-完整项目-PRD.md)。
 - 实施方案与架构决策：[`docs/adr/`](docs/adr/)。
-- 开发结果与测试验收：[`docs/pr/`](docs/pr/)、[`docs/test/`](docs/test/)。
+- 开发结果与测试验收：[`docs/pr/`](docs/pr/)、[`docs/test/`](docs/test/)。Demo 正式测试实施方案见 [`docs/test/001-SesRAG-项目Demo-test-plan.md`](docs/test/001-SesRAG-项目Demo-test-plan.md)，历史验收结果见 [`docs/test/001-SesRAG-项目Demo-test.md`](docs/test/001-SesRAG-项目Demo-test.md)。
+- Demo 测试点与需求覆盖：[`tests/demo-smoke/测试点设计与需求覆盖矩阵.md`](tests/demo-smoke/测试点设计与需求覆盖矩阵.md)；本机隔离环境、总入口、报告及资源清理见 [`tests/demo-smoke/README.md`](tests/demo-smoke/README.md)。环境闭环已实施，7类产品脚本仍待接入；环境验证不代表产品验收通过。
 - 部署、故障和验收流程：[`docs/runbooks/`](docs/runbooks/)；代码修改规范见 [`docs/项目开发和修改的通用执行规范.md`](docs/项目开发和修改的通用执行规范.md)。
 - 接口唯一说明：[`docs/接口文档.md`](docs/接口文档.md)；稳定术语见 [`CONTEXT.md`](CONTEXT.md)；仓库级 AI 规则见 [`AGENTS.md`](AGENTS.md)。
 
@@ -90,7 +92,17 @@ npm run typecheck
 npm run build
 ```
 
-Compose 验收：
+本机隔离环境（推荐用于后续正式测试，不复用开发容器/卷）：
+
+```powershell
+pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1
+# 如需手工检查，就绪后等待Enter，结束仍自动清理：
+pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1 -Interactive
+```
+
+要求PowerShell 7.4+、Docker Desktop Linux Engine、Compose 2.24.4+；日志/报告保存在`tests/demo-smoke/artifacts/<run_id>/`。当前分类脚本未接入，环境正常也返回`not_ready/3`。本目录独立准备了Playwright 1.63.0/Chromium；后续接入计划、工具安装、配置/端口及异常恢复详见[测试环境README](tests/demo-smoke/README.md)与[Runbook](docs/runbooks/demo-smoke-environment.md)。本次临时容器、网络、数据卷、镜像tag和runtime/tmp自动清理；共享镜像/构建缓存及脱敏历史报告有意保留。
+
+开发Compose的基础检查（不等于完整隔离测试验收）：
 
 ```powershell
 docker compose up -d --build

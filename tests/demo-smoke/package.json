@@ -1,0 +1,8 @@
+{
+  "name": "sesrag-demo-smoke-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "本机隔离测试的浏览器工具依赖；不包含产品分类用例",
+  "devDependencies": { "playwright": "1.63.0" }
+}

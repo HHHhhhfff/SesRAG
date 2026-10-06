@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "source": "contracts/run_event_v1.json",
+  "event_types": [
+    "run.created", "task.queued", "task.leased", "run.started",
+    "retrieval.completed", "answer.delta", "task.retry_scheduled",
+    "message.completed", "run.succeeded", "run.failed", "run.cancelled"
+  ],
+  "known_implementation_gap": "task.leased在当前Demo没有生产者；正式用例不得因此删除契约期望"
+}

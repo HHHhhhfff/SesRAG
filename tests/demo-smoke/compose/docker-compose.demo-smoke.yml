@@ -1,0 +1,51 @@
+# 必须与根docker-compose.yml叠加；总入口生成变量和随机密码，不复用开发.env。
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${SMOKE_DB_PASSWORD:?由总入口生成临时密码}
+    ports: !reset []
+    logging: &bounded_logs
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
+  redis:
+    ports: !reset []
+    logging: *bounded_logs
+  migrate:
+    image: ${SMOKE_PROJECT:?}-backend:local
+    # 产品migrations/env.py未读取DATABASE_URL，用测试启动适配器注入同一迁移配置。
+    command: ["python", "/smoke/run-migrations.py"]
+    volumes:
+      - ./tests/demo-smoke/compose/run-migrations.py:/smoke/run-migrations.py:ro
+    environment:
+      DATABASE_URL: postgresql+psycopg://sesrag:${SMOKE_DB_PASSWORD:?}@postgres:5432/sesrag
+    logging: *bounded_logs
+  api:
+    image: ${SMOKE_PROJECT:?}-backend:local
+    ports: !override
+      - "127.0.0.1:${SMOKE_API_PORT:?}:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://sesrag:${SMOKE_DB_PASSWORD:?}@postgres:5432/sesrag
+      OWNER_ID: ${SMOKE_OWNER_ID:?}
+      MOCK_PROVIDER: "true"
+      AUTO_CREATE_SCHEMA: "false"
+    logging: *bounded_logs
+  worker:
+    image: ${SMOKE_PROJECT:?}-backend:local
+    environment:
+      DATABASE_URL: postgresql+psycopg://sesrag:${SMOKE_DB_PASSWORD:?}@postgres:5432/sesrag
+      OWNER_ID: ${SMOKE_OWNER_ID:?}
+      WORKER_ID: ${SMOKE_PROJECT:?}-worker
+      MOCK_PROVIDER: "true"
+      AUTO_CREATE_SCHEMA: "false"
+    stop_grace_period: 25s
+    logging: *bounded_logs
+  frontend:
+    image: ${SMOKE_PROJECT:?}-frontend:local
+    ports: !override
+      - "127.0.0.1:${SMOKE_FRONTEND_PORT:?}:5173"
+    environment:
+      # 空base URL使用已有Vite /api代理，同HTTP/SSE来源；不关闭浏览器CORS。
+      VITE_API_BASE_URL: ""
+    logging: *bounded_logs

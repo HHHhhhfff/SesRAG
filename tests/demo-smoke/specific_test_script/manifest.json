@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "categories": [
+    { "name": "service-health", "script": "00-service-health.ps1", "status": "not_implemented", "timeout_seconds": 120 },
+    { "name": "thread-run-api", "script": "10-thread-run-api.ps1", "status": "not_implemented", "timeout_seconds": 180 },
+    { "name": "worker-lease-recovery", "script": "20-worker-lease-recovery.ps1", "status": "not_implemented", "timeout_seconds": 600 },
+    { "name": "document-rag", "script": "30-document-rag.ps1", "status": "not_implemented", "timeout_seconds": 300 },
+    { "name": "event-sse-recovery", "script": "40-event-sse-recovery.ps1", "status": "not_implemented", "timeout_seconds": 180 },
+    { "name": "frontend-workspace", "script": "50-frontend-workspace.mjs", "status": "not_implemented", "timeout_seconds": 300 },
+    { "name": "fault-safety", "script": "60-fault-safety.ps1", "status": "not_implemented", "timeout_seconds": 600 }
+  ]
+}
