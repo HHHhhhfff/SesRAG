@@ -7,3 +7,5 @@
 `expected/event-types.json`对应正式Event v1契约，保留task.leased作为应有期望及当前缺口说明；不能删除未实现事件来让测试通过。契约变更时同时维护此文件。
 
 数据只证明格式、流程和证据身份，不证明Mock检索语义质量。禁止放真实知识库、Secret、宿主敏感路径或无用途的大文件。
+
+任务1核查后确认当前无需统一业务SQL/数据库导入脚本：owner是配置，Schema由迁移准备，各用例的可变事实独立经API创建。[data-strategy.md](data-strategy.md)给出逐场景的数据边界与未来确需固定SQL时的接入条件；不要预置成功Task/Run或全局Chunk污染空库/调度测试。

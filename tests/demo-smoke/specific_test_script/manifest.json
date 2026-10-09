@@ -1,12 +1,26 @@
 {
   "schema_version": 1,
   "categories": [
-    { "name": "service-health", "script": "00-service-health.ps1", "status": "not_implemented", "timeout_seconds": 120 },
-    { "name": "thread-run-api", "script": "10-thread-run-api.ps1", "status": "not_implemented", "timeout_seconds": 180 },
-    { "name": "worker-lease-recovery", "script": "20-worker-lease-recovery.ps1", "status": "not_implemented", "timeout_seconds": 600 },
-    { "name": "document-rag", "script": "30-document-rag.ps1", "status": "not_implemented", "timeout_seconds": 300 },
-    { "name": "event-sse-recovery", "script": "40-event-sse-recovery.ps1", "status": "not_implemented", "timeout_seconds": 180 },
-    { "name": "frontend-workspace", "script": "50-frontend-workspace.mjs", "status": "not_implemented", "timeout_seconds": 300 },
-    { "name": "fault-safety", "script": "60-fault-safety.ps1", "status": "not_implemented", "timeout_seconds": 600 }
+    {"name":"dep","script":"dep-tests.mjs","status":"enabled","timeout_seconds":300},
+    {"name":"hlt","script":"hlt-tests.mjs","status":"enabled","timeout_seconds":300},
+    {"name":"th","script":"th-tests.mjs","status":"enabled","timeout_seconds":180},
+    {"name":"msg","script":"msg-tests.mjs","status":"enabled","timeout_seconds":900},
+    {"name":"run","script":"run-tests.mjs","status":"enabled","timeout_seconds":240},
+    {"name":"wk","script":"wk-tests.mjs","status":"enabled","timeout_seconds":300},
+    {"name":"can","script":"can-tests.mjs","status":"enabled","timeout_seconds":180},
+    {"name":"doc","script":"doc-tests.mjs","status":"enabled","timeout_seconds":900},
+    {"name":"par","script":"par-tests.mjs","status":"enabled","timeout_seconds":240},
+    {"name":"chk","script":"chk-tests.mjs","status":"enabled","timeout_seconds":120},
+    {"name":"idx","script":"idx-tests.mjs","status":"enabled","timeout_seconds":180},
+    {"name":"rag","script":"rag-tests.mjs","status":"enabled","timeout_seconds":600},
+    {"name":"evt","script":"evt-tests.mjs","status":"enabled","timeout_seconds":240},
+    {"name":"sse","script":"sse-tests.mjs","status":"enabled","timeout_seconds":240},
+    {"name":"fe","script":"fe-tests.mjs","status":"enabled","timeout_seconds":420},
+    {"name":"own","script":"own-tests.mjs","status":"enabled","timeout_seconds":30},
+    {"name":"sec","script":"sec-tests.mjs","status":"enabled","timeout_seconds":180},
+    {"name":"perf","script":"perf-tests.mjs","status":"enabled","timeout_seconds":180},
+    {"name":"arc","script":"arc-tests.mjs","status":"enabled","timeout_seconds":120},
+    {"name":"qlt","script":"qlt-tests.mjs","status":"enabled","timeout_seconds":900},
+    {"name":"life","script":"life-tests.mjs","status":"enabled","timeout_seconds":1800}
   ]
 }

@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "categories": [
+    { "name": "life-disabled-only", "script": "life-no-product.mjs", "status": "disabled", "timeout_seconds": 10 }
+  ]
+}

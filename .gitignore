@@ -1,5 +1,7 @@
 .env
 .venv/
+# 项目内editable安装生成的元数据，不是源码或测试数据。
+*.egg-info/
 __pycache__/
 *.py[cod]
 .pytest_cache/

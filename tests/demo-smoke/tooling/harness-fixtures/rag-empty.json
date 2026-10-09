@@ -1,0 +1,4 @@
+{
+  "schema_version":1,
+  "categories":[{"name":"rag-empty","script":"rag-empty-probe.mjs","status":"enabled","timeout_seconds":90}]
+}

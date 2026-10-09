@@ -8,6 +8,8 @@ param(
     [string]$BackendImage,
     [string]$FrontendImage,
     [string]$Category = 'all',
+    # LIFE专项只允许固定自检场景；普通产品分类仍使用正式manifest，不接收任意路径。
+    [ValidateSet('not-ready','disabled','protocol','missing-script','rag-empty','doc-limit','nested-recovery')][string]$HarnessScenario,
     [bool]$KeepArtifacts = $true,
     [switch]$KeepContainers,
     [ValidateRange(10,3600)][int]$WaitTimeoutSeconds = 180,
@@ -18,6 +20,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+# 总入口及后续PowerShell分类都遵循UTF-8输出约定，保留中文可读证据。
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$OutputEncoding = [Console]::OutputEncoding
 . "$PSScriptRoot/lib/smoke-common.ps1"
 
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -140,6 +145,33 @@ function Collect-Evidence {
 
 function Cleanup-Environment {
     if ($KeepContainers -and $deploymentAttempted) { $cleanup.status = 'deferred'; return }
+    # 分类超时/树被终止时Node finally不保证执行，父runtime登记作为最后精确兜底。
+    try {
+    $nestedPath = Join-Path $runtimeDir 'nested-runs.json'
+    if (Test-Path -LiteralPath $nestedPath) {
+        $registry = Get-Content -LiteralPath $nestedPath -Raw | ConvertFrom-Json
+        if ($registry.schema_version -ne 1 -or $registry.parent_run_id -ne $runId) { throw '嵌套资源登记身份不匹配，拒绝任意清理' }
+        foreach ($nested in @($registry.nested)) {
+            $nestedDir = Get-SmokeChildPath $runtimeRoot $nested.run_id
+            if ($nested.run_id -eq $runId -or $nested.compose_project -eq $project -or $nested.compose_project -notmatch '^sesrag-demo-smoke-[a-z0-9-]+$') { throw '嵌套清理目标不合法' }
+            if (Test-Path -LiteralPath $nestedDir) {
+                $nestedState = Get-Content -LiteralPath (Join-Path $nestedDir 'context.json') -Raw | ConvertFrom-Json
+                if ($nestedState.run_id -ne $nested.run_id -or $nestedState.compose_project -ne $nested.compose_project -or $nestedState.marker -ne 'sesrag-demo-smoke-v1') { throw '嵌套清理凭据不匹配' }
+                $recovery = Invoke-SmokeProcess (Get-Process -Id $PID).Path @('-NoProfile','-File',$PSCommandPath,'-CleanupRunId',$nested.run_id) 240 $repoRoot
+                Write-Evidence "logs/nested-recovery-$($nested.run_id).log" $recovery.output
+                $nestedCleanupPath = Join-Path (Get-SmokeChildPath $artifactRoot $nested.run_id) 'cleanup.json'
+                $nestedCleaned = -not (Test-Path -LiteralPath $nestedDir)
+                if (Test-Path -LiteralPath $nestedCleanupPath) { $nestedCleaned = $nestedCleaned -and ((Get-Content -LiteralPath $nestedCleanupPath -Raw | ConvertFrom-Json).status -eq 'passed') } else { $nestedCleaned = $false }
+                $cleanup.steps += @{ name='nested_recovery'; run_id=$nested.run_id; project=$nested.compose_project; exit_code=$recovery.exit_code; cleaned=$nestedCleaned }
+                if (-not $nestedCleaned) { $cleanup.status='failed' }
+            }
+        }
+    }
+    } catch {
+        # 拒绝异常嵌套目标仍要继续释放已校验的主project，保留父runtime供恢复。
+        $cleanup.status='failed'
+        $cleanup.steps += @{ name='nested_recovery_exception'; message=(Protect-SmokeText $_.Exception.Message @($password)) }
+    }
     if ($dockerReady -and $deploymentAttempted) {
         # 所有删除命令绑定本次安全project及同一份运行配置，无global prune。
         $down = Compose-Call @('down','--volumes','--remove-orphans','--timeout','30') 120
@@ -302,7 +334,14 @@ try {
         Wait-Environment
         $report.stages.startup = 'passed'
         Write-Host '隔离环境就绪。'
-        $manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'specific_test_script/manifest.json') -Raw | ConvertFrom-Json
+        $categoryRoot = Join-Path $PSScriptRoot 'specific_test_script'
+        $manifestPath = Join-Path $categoryRoot 'manifest.json'
+        if ($HarnessScenario) {
+            $categoryRoot = Join-Path $PSScriptRoot 'tooling/harness-fixtures'
+            $manifestPath = Join-Path $categoryRoot "$HarnessScenario.json"
+            $report.harness_scenario = $HarnessScenario
+        }
+        $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
         if ($manifest.schema_version -ne 1) { throw '未知manifest版本' }
         if (@($manifest.categories | Group-Object name | Where-Object Count -gt 1).Count) { throw 'manifest分类名称重复' }
         Write-SmokeJson (Join-Path $artifactDir 'manifest.json') $manifest
@@ -326,12 +365,13 @@ try {
             # 分类路径只能是当前目录下一个.ps1/.mjs文件，不接受目录逃逸。
             if ($categoryItem.script -notmatch '^[a-z0-9-]+\.(ps1|mjs)$') { throw '非法分类脚本路径' }
             if ([int]$categoryItem.timeout_seconds -lt 1 -or [int]$categoryItem.timeout_seconds -gt 7200) { throw '分类超时必须1～7200秒' }
-            $categoryPath = Join-Path $PSScriptRoot "specific_test_script/$($categoryItem.script)"
+            $categoryPath = Join-Path $categoryRoot $categoryItem.script
             if (-not (Test-Path -LiteralPath $categoryPath)) { throw 'enabled分类缺少脚本' }
             $argsList = @('-BaseUrl',$baseUrl,'-FrontendUrl',$frontendUrl,'-RunId',$runId,'-ArtifactDir',$artifactDir,'-RuntimeDir',$runtimeDir,'-FixtureDir',$fixtureDir)
             $scriptHash = (Get-FileHash -LiteralPath $categoryPath -Algorithm SHA256).Hash
             if ($categoryPath.EndsWith('.ps1')) { $exe = (Get-Process -Id $PID).Path; $argsList = @('-NoProfile','-File',$categoryPath) + $argsList } else { $exe='node'; $argsList=@($categoryPath) + $argsList }
             $result = Invoke-SmokeProcess $exe $argsList ([int]$categoryItem.timeout_seconds) $PSScriptRoot @{ PLAYWRIGHT_BROWSERS_PATH=(Join-Path $PSScriptRoot '.cache/ms-playwright') }
+            Write-Host "分类 $($categoryItem.name) 完成（退出码 $($result.exit_code)），中文过程证据：logs/category-$($categoryItem.name).log"
             Write-Evidence "logs/category-$($categoryItem.name).log" $result.output
             $jsonPath = Join-Path $artifactDir "categories/$($categoryItem.name).json"
             $validReport = $false
@@ -373,7 +413,18 @@ try {
         $report.finished_at = [DateTime]::UtcNow.ToString('o')
         $report.stages.cleanup = $cleanup.status
         Write-SmokeJson (Join-Path $artifactDir 'summary.json') $report
-        @("# Demo Smoke $runId","","- 总体状态：$($report.status)","- 执行状态：$($report.test_status)","- 清理状态：$($cleanup.status)","- 退出码：$($report.exit_code)","- 启动：$($report.stages.startup)","- 分类尚未接入不代表产品通过；环境与业务验收分开。","- 详见summary.json、cleanup.json及logs/。") | Set-Content -LiteralPath (Join-Path $artifactDir 'summary.md') -Encoding utf8
+        # 产品/运行器分类均提供人读逐项投影；汇总失败不能伪装成报告收集通过。
+        $rendered = Invoke-SmokeProcess 'node' @((Join-Path $PSScriptRoot 'tooling/render-summary.mjs'),$artifactDir) 30 $repoRoot
+        if ($rendered.exit_code -ne 0) {
+            $report.errors += '中文详细摘要生成失败，见renderer.log'
+            Write-Evidence 'logs/renderer.log' $rendered.output
+            $report.stages.report_collection='failed'
+            if ($report.test_status -in @('passed','not_ready')) { $report.test_status='failed' }
+            $outcome=Get-SmokeOutcome $report.test_status $cleanup.status
+            $report.status=$outcome.status; $report.exit_code=$outcome.exit_code
+            Write-SmokeJson (Join-Path $artifactDir 'summary.json') $report
+        }
+        @("# Demo Smoke $runId","","- 总体状态：$($report.status)","- 执行状态：$($report.test_status)","- 清理状态：$($cleanup.status)","- 退出码：$($report.exit_code)","- 启动：$($report.stages.startup)","- 子项failed/blocked/未执行不得报通过；环境与业务验收分开。","- 详见summary-详细.md、summary.json、cleanup.json及logs/。") | Set-Content -LiteralPath (Join-Path $artifactDir 'summary.md') -Encoding utf8
         Write-Host "结果：$($report.status)；清理：$($cleanup.status)；报告：$artifactDir"
         if (-not $KeepArtifacts -and $cleanup.status -eq 'passed') { Remove-SmokeChild $artifactRoot $runId; Write-Host '本次报告已按KeepArtifacts=false删除，无法再从磁盘复查。' }
     } else { $report.exit_code = 2 }

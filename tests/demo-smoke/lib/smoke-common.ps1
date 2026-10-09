@@ -72,6 +72,10 @@ function Invoke-SmokeProcess(
     $startInfo.CreateNoWindow = $true
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
+    # 后续所有分类的中文证据统一UTF-8，避免Windows父进程按本地代码页解码。
+    $startInfo.StandardOutputEncoding = [Text.UTF8Encoding]::new($false)
+    $startInfo.StandardErrorEncoding = [Text.UTF8Encoding]::new($false)
+    $startInfo.Environment['PYTHONIOENCODING'] = 'utf-8'
     if ($WorkingDirectory) { $startInfo.WorkingDirectory = $WorkingDirectory }
     foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
     foreach ($key in $Environment.Keys) { $startInfo.Environment[$key] = [string]$Environment[$key] }

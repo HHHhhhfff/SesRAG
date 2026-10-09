@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "categories": [
+    { "name": "life-unimplemented-a", "script": "life-no-product.mjs", "status": "not_implemented", "timeout_seconds": 10 },
+    { "name": "life-unimplemented-b", "script": "life-no-product.mjs", "status": "not_implemented", "timeout_seconds": 10 }
+  ]
+}

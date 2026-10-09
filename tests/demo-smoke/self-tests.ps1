@@ -1,6 +1,8 @@
 #Requires -Version 7.4
 # 仅验证运行器的安全/生命周期基础设施，不是产品分类测试。
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$OutputEncoding = [Console]::OutputEncoding
 . "$PSScriptRoot/lib/smoke-common.ps1"
 
 function Assert-Check([bool]$Condition, [string]$Message) {
@@ -53,6 +55,28 @@ try {
     $process = Invoke-SmokeProcess (Get-Process -Id $PID).Path @('-NoProfile','-Command','Start-Sleep -Seconds 30') 1
     Assert-Check ($process.timed_out -and $process.exit_code -ne 0) '超时必须终止进程并返回失败'
 
+    # 任务2：按总入口同一进程适配器验证PowerShell/Node六参数与中文输出。
+    # 只调用tooling哨兵，不启用假产品分类或修改正式manifest。
+    $expectedArgs = [ordered]@{
+        BaseUrl='http://127.0.0.1:18000'; FrontendUrl='http://127.0.0.1:15173'
+        RunId='protocol-probe'; ArtifactDir=(Join-Path $sandbox 'report with spaces')
+        RuntimeDir=(Join-Path $sandbox 'runtime'); FixtureDir=(Join-Path $sandbox 'fixtures-one')
+    }
+    $sixArgs = @()
+    foreach ($key in $expectedArgs.Keys) { $sixArgs += @("-$key",$expectedArgs[$key]) }
+    foreach ($extension in @('ps1','mjs')) {
+        $probePath = Join-Path $PSScriptRoot "tooling/dispatch-probe.$extension"
+        if ($extension -eq 'ps1') {
+            $executable=(Get-Process -Id $PID).Path
+            $probeArgs=@('-NoProfile','-File',$probePath)+$sixArgs
+        } else { $executable='node'; $probeArgs=@($probePath)+$sixArgs }
+        $process=Invoke-SmokeProcess $executable $probeArgs 10 $PSScriptRoot
+        Assert-Check ($process.exit_code -eq 0) "${extension}调用协议应成功"
+        $received=$process.output | ConvertFrom-Json
+        foreach ($key in $expectedArgs.Keys) { Assert-Check ($received.$key -eq $expectedArgs[$key]) "${extension}参数不可丢失/被空格拆分：$key" }
+        Assert-Check ($received.message -eq '六参数中文调用成功') "${extension}中文输出不可乱码"
+    }
+
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
     $listener.Start()
     try {
@@ -60,7 +84,7 @@ try {
         $free = Get-SmokePort $occupied @()
         Assert-Check ($free -ne $occupied) '被占用端口必须被安全替换'
     } finally { $listener.Stop() }
-    Write-Output 'Harness self-tests passed: path safety, redaction, outcome, fixtures, report schema, child process, port conflict.'
+    Write-Output '运行器自检通过：路径安全、脱敏、状态、fixture、报告Schema、子进程/超时、PowerShell与Node六参数中文协议、端口冲突；未执行产品分类。'
 } finally {
     # 临时目录为本脚本刚创建的随机目录，删除前确认绝对父目录。
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar)
