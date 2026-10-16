@@ -10,13 +10,13 @@
 
 **适用范围**：`D:\Agentic_RAG\SesRAG` 的第一阶段可运行产品
 
-**关联文档**：[`002-SesRAG-完整项目-PRD.md`](002-SesRAG-完整项目-PRD.md)
+**关联文档**：[`SesRAG-完整项目-PRD.md`](SesRAG-完整项目-PRD.md)；[ADR-002 缺陷修复方案](../adr/002-SesRAG-Demo-缺陷修复-plan.md)
 
 ## 1. 文档目的
 
 本 PRD 定义 SesRAG 的第一阶段 Demo。Demo 不是一次性的技术样例，而是一个可运行、可重启、可继续扩展的纵向切片：用户能够创建持久化会话，提交问题，由 Worker 执行一次简单文本 RAG，看到回答和引用，并在服务重启后恢复历史和任务状态。
 
-本文件只约束 Demo 的交付范围。完整产品的长期目标、PRD1～PRD4 和暂不落地的能力见 `002-SesRAG-完整项目-PRD.md`，两者不可混用。
+本文件只约束 Demo 的交付范围。完整产品的长期目标、PRD1～PRD4 和暂不落地的能力见 `SesRAG-完整项目-PRD.md`，两者不可混用。
 
 ## 2. 产品目标
 
@@ -136,11 +136,13 @@ Task: queued -> leased/running -> succeeded
                          ├-> cancelled
                          └-> failed
 
-Run: queued -> running -> retry_waiting -> queued
+Run: queued -> running -> retry_waiting -> running
                          └-> succeeded|failed|cancelled
 ```
 
 所有状态变更由后端事务执行并追加事件。终态不可逆；重试只改变 Task attempt，不创建新的 Run。
+
+这里的 Run 重试箭头按 ADR-001/ADR-002 的已确认细化语义统一：Task 退避到期回 `queued` 等待领取，Run 保持 `retry_waiting`，重新开始执行时回 `running`。queued、running、retry_waiting 均可能因硬截止或尝试耗尽转为 `failed`，非终态可被明确取消；简图不表示只能从 running 失败。旧 Worker 的拒绝写回须留下安全审计记录，不能以向已终态 Run 追加迟到执行事件破坏 Journal。
 
 ## 6. 技术路线与部署
 
@@ -153,7 +155,7 @@ Run: queued -> running -> retry_waiting -> queued
 | 向量 | pgvector | 减少 Demo 基础设施；通过 VectorStorePort 预留 Milvus/其他向量库。 |
 | 通知 | Redis | 只做低延迟事件通知和短期缓存，不能成为事实来源。 |
 | 模型 | OpenAI-compatible ModelProvider、EmbeddingProvider | 统一外部模型边界；提供 mock provider 便于离线验收。 |
-| 前端 | Vue 3、TypeScript、Vite、Pinia、Vue Router、Naive UI、marked、DOMPurify、Lucide Vue | 组件化、类型化、Markdown 安全渲染和可替换 UI。 |
+| 前端 | Vue 3、TypeScript、Vite、Pinia、单页原生组件、marked、DOMPurify、Lucide Vue | ADR-002 确认 Demo 不机械安装 Vue Router/Naive UI；保持组件化、类型化和 Markdown 安全渲染，完整项目另行选择 UI/路由。 |
 | 测试 | pytest、pytest-asyncio、Ruff、mypy；Vitest、vue-tsc、ESLint；Playwright smoke | 覆盖领域不变量、契约和主流程。 |
 
 ### 6.2 Compose 服务

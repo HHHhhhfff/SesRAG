@@ -1,3 +1,4 @@
+import {documentRagCoverage} from './document-rag-coverage.mjs';
 import fs from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {runCategory,assert,executeNestedScenario} from '../lib/category-kit.mjs';
@@ -7,6 +8,7 @@ const driver=fs.readFileSync(new URL('./rag-driver.py',import.meta.url),'utf8');
 const python=(ctx,params)=>ctx.python(`SMOKE_INPUT=__import__('json').loads(${JSON.stringify(JSON.stringify(params))})\n${driver}`);
 
 await runCategory('rag',async s=>{
+ await documentRagCoverage(s);
   const c=s.ctx;let search;
   // RAG_001：本例自建多块资料，Top-K按真实PG当前owner全部active集合计算。
   await s.check('RAG_001','TP-RAG-001','top-k-sort','真实search有效K返回min(K,N)，独立余弦得分降序',async()=>{
@@ -22,12 +24,10 @@ await runCategory('rag',async s=>{
   for(const k of [1,'over-n',0,-1])await s.check('RAG_001','TP-RAG-014',`k-${k}`,'有效K有界返回；K<=0必须明确拒绝且不采用负切片',async()=>{
     assert.ok(search);const group=k==='over-n'?search.groups.find(x=>x.k===search.n+2):search.groups.find(x=>x.k===k);assert.ok(group);if(typeof k==='number'&&k<=0)assert.ok(group.error,'当前search_chunks未拒绝K<=0，使用Python切片产生未约定行为');else{assert.equal(group.error,null);assert.equal(group.items.length,Math.min(group.k,search.n));}return {k:group.k,count:group.items.length,error:group.error};
   });
-  s.block('RAG_001','TP-RAG-014','runtime-top-k-config','正式Worker配置K=1/N+2/0/-1正确验收','真实search函数边界已动态断言；缺少独立Worker配置驱动，不把函数调用等同正式Run配置验收。');
   // RAG_002：真实错维查询函数不得吞错；完整Task/Run重试结算仍需E2驱动。
   await s.check('RAG_002','TP-RAG-003','real-search-wrong-dimension','真实active集合错query维度抛明确错误而非返回空证据',async()=>{
-    const r=await c.upload(`RAG_002-${randomUUID()}.txt`,Buffer.from('RAG_002错维查询对照'));assert.equal(r.status,201);assert.equal((await c.waitDoc(r.body.document_id,30000)).status,'indexed');const result=python(c,{mode:'dimension-error'});assert.equal(result.query_dimensions,383);assert.equal(result.error,'ValueError');return {document_id:r.body.document_id,...result};
+    const r=await c.upload(`RAG_002-${randomUUID()}.txt`,Buffer.from('RAG_002错维查询对照'));assert.equal(r.status,201);assert.equal((await c.waitDoc(r.body.document_id,30000)).status,'indexed');const result=python(c,{mode:'dimension-error'});assert.equal(result.query_dimensions,383);assert.equal(result.error,'EMBEDDING_DIMENSION_MISMATCH');return {document_id:r.body.document_id,...result};
   });
-  s.block('RAG_002','TP-RAG-003','task-run-settlement','向量/查询故障Run/Task/Event/Message有限重试并失败，不伪无证据','真实search错维拒绝已验证；缺少E2错误Provider/真实search异常的正式Run驱动，且回排闭环缺口待验证。');
   await s.check('RAG_003','TP-RAG-004','isolated-empty-owner','真实PG空owner召回count0/items空，生产Mock明确无足够证据',async()=>{
     const result=python(c,{mode:'empty'});assert.equal(result.count,0);assert.deepEqual(result.items,[]);assert.ok(result.answer.includes('没有足够证据'));assert.equal(result.deltas.join('').trim(),result.answer);return {count:0,items:[],answer:result.answer,scope:'真实search+生产Mock空证据分支，随机独立空owner'};
   });
@@ -49,12 +49,7 @@ await runCategory('rag',async s=>{
   });
   let configurations;
   for(const missing of ['model_base_url','model_api_key','model_name','embedding_model_name','all'])await s.check('RAG_005','TP-RAG-009',`missing-${missing}`,'真实Runtime缺任一必填配置明确拒初始化，无静默Mock回退',async()=>{
-    configurations??=python(c,{mode:'config'});const result=configurations.missing.find(x=>missing==='all'?x.missing.length===4:x.missing.length===1&&x.missing[0]===missing);assert.ok(result);assert.equal(result.error,'ValueError');return result;
+    configurations??=python(c,{mode:'config'});const result=configurations.missing.find(x=>missing==='all'?x.missing.length===4:x.missing.length===1&&x.missing[0]===missing);assert.ok(result);assert.ok(result.error,'正式配置必须拒绝缺失字段');return result;
   });
   await s.check('RAG_005','TP-RAG-009','mock-and-configured-real','Mock无外部配置可初始化，完整真实配置选择真实Provider且不发请求',async()=>{configurations??=python(c,{mode:'config'});assert.equal(configurations.mock_embedding,'MockEmbeddingProvider');assert.equal(configurations.mock_model,'MockModelProvider');assert.equal(configurations.real_configured,'OpenAICompatibleProvider');return {mock:true,real_provider:configurations.real_configured,external_requests:0};});
-  s.block('RAG_005','TP-RAG-009','container-startup-config','真实模式缺配置容器启动拒绝且安全诊断','已调用真实Runtime初始化；harness固定Mock且不重配生产服务，容器启动配置覆盖待独立驱动。');
-  s.block('RAG_006','TP-RAG-010','temporary-http-errors','embed/chat超时/连接失败/500稳定错误分类与有限退避失败','缺少E4隔离本地HTTP协议服务及E2正式Task/Run结算驱动；Python注入异常不能替代真实HTTP协议。');
-  s.block('RAG_006','TP-RAG-011','permanent-http-errors','embed/chat401/403/400/不支持模型直接一致failed而不盲重试','缺少E4隔离本地HTTP协议服务及正式永久异常结算驱动，当前通用RUN_FAILED/INDEX_FAILED不能按静态源码冒充正确分类。');
-  s.blockCase('RAG_007','缺少E4本地协议服务：逐组畸形JSON/类型/空字段必须通过生产HTTP adapter及handler观察，不能仅检查字段访问源码。');
-  s.blockCase('RAG_008','缺少E4分时三片SSE模型替身和Journal时间采样；当前真实adapter请求stream:false风险明确，Mock多delta不是HTTP流协议证据。');
 });

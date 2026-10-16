@@ -1,144 +1,150 @@
-import inspect
-from uuid import uuid4
+import asyncio
+from dataclasses import asdict
+from functools import partial
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
-from backend.application.errors import ApplicationError
-from backend.config import Settings
-from backend.db.models import MessageModel, RunModel, TaskModel, ThreadModel
-from backend.domain.enums import MessageRole, MessageStatus, RunState, TaskState
+from backend.application.errors import PermanentTaskError
+from backend.application.task_execution import (
+    append_execution_event,
+    check_execution,
+    check_locked_times,
+    complete_run,
+    guarded_call,
+    lock_execution,
+)
+from backend.application.vector_validation import validate_vector
+from backend.db.models import MessageModel, ThreadModel
+from backend.domain.ports import EmbeddingPort, ModelProvider
 from backend.infrastructure.events.journal import append_event
-from backend.infrastructure.queue.postgres_queue import schedule_retry
-from backend.infrastructure.rag.pgvector_store import search_chunks
 
 
-async def _maybe_await(value):
-    if inspect.isawaitable(value):
-        return await value
-    return value
+def decode_snapshot(snapshot, owner_id):
+    """旧版仅支持 mock，恢复时按旧协议固定值解释，不读取当前可变 Settings。"""
+    snapshot = dict(snapshot)
+    if "mock_provider" not in snapshot and snapshot.get("model") == "mock":
+        snapshot.update(mock_provider=True, vector_dimension=384, owner_id=owner_id)
+    try:
+        valid = (
+            type(snapshot["mock_provider"]) is bool
+            and snapshot["vector_dimension"] == 384
+            and snapshot["owner_id"] == owner_id
+            and type(snapshot["retrieval"]["top_k"]) is int
+            and snapshot["retrieval"]["top_k"] > 0
+            and snapshot["prompt_version"] == 1
+            and (
+                snapshot["mock_provider"]
+                or all(snapshot.get(key) for key in ("base_url", "model", "embedding_model"))
+            )
+        )
+    except (KeyError, TypeError):
+        valid = False
+    if not valid:
+        raise PermanentTaskError("INVALID_RUN_SNAPSHOT", "Run 快照无法恢复执行")
+    return snapshot
 
 
 async def process_run_task(
-    session_factory: async_sessionmaker[AsyncSession],
-    settings: Settings,
-    task_id: str,
-    worker_id: str,
-    generation: int,
-    embedding_provider,
-    model_provider,
-) -> None:
+    session_factory,
+    settings,
+    task_id,
+    worker_id,
+    generation,
+    embedding_provider: EmbeddingPort | None = None,
+    model_provider: ModelProvider | None = None,
+    *,
+    provider_factory,
+    vector_store_factory,
+):
     async with session_factory() as session:
-        task = await session.get(TaskModel, task_id)
-        if task is None or task.worker_id != worker_id or task.generation != generation:
-            return
-        run = await session.get(RunModel, task.run_id)
-        if run is None:
-            raise ApplicationError("RUN_NOT_FOUND", "Task 引用的 Run 不存在")
+        task, run = await lock_execution(session, task_id, worker_id, generation)
+        assert run is not None
         message = await session.get(MessageModel, run.user_message_id)
-        if message is None:
-            raise ApplicationError("MESSAGE_NOT_FOUND", "Run 引用的用户消息不存在")
-        if run.status == RunState.CANCELLED.value:
-            return
-        run.status = RunState.RUNNING.value
-        task.state = TaskState.RUNNING.value
+        assert message is not None
+        question = message.content
+        thread = await session.get(ThreadModel, run.thread_id)
+        assert thread is not None
+        snapshot = decode_snapshot(run.snapshot_json, thread.owner_id)
+        lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
+        run.status = "running"
+        task.state = "running"
         await append_event(session, run.run_id, "run.started", {"task_id": task_id})
+        await session.flush()
+        check_locked_times(lease_expires_at, deadline_at)
         await session.commit()
 
-    try:
-        query_embedding = await _maybe_await(embedding_provider.embed(message.content))
-        async with session_factory() as session:
-            evidence = await search_chunks(
-                session, settings.owner_id, query_embedding, settings.rag_top_k
-            )
-            await append_event(
-                session,
-                run.run_id,
-                "retrieval.completed",
-                {
-                    "count": len(evidence),
-                    "items": [
-                        {
-                            "document_id": item.document_id,
-                            "chunk_id": item.chunk_id,
-                            "start_offset": item.start_offset,
-                            "end_offset": item.end_offset,
-                            "score": item.score,
-                        }
-                        for item in evidence
-                    ],
-                },
-            )
-            await session.commit()
+    # 测试可注入 Provider；正常执行只从冻结快照构造，Secret 运行时注入。
+    if embedding_provider is None or model_provider is None:
+        default_embedding, default_model = provider_factory(snapshot)
+        embedding_provider = embedding_provider or default_embedding
+        model_provider = model_provider or default_model
 
-        evidence_payload = [{"text": item.text, "chunk_id": item.chunk_id} for item in evidence]
-        answer_parts: list[str] = []
-        async for delta in model_provider.stream_answer(message.content, evidence_payload):
-            answer_parts.append(delta)
-            async with session_factory() as session:
-                current = await session.get(RunModel, run.run_id)
-                if current is None or current.status == RunState.CANCELLED.value:
-                    return
-                await append_event(session, run.run_id, "answer.delta", {"text": delta})
-                await session.commit()
-
-        answer = "".join(answer_parts).strip()
-        citations = [
+    guarded = partial(guarded_call, session_factory, task_id, worker_id, generation)
+    query_embedding = validate_vector(await guarded(partial(embedding_provider.embed, question)))
+    await check_execution(session_factory, task_id, worker_id, generation)
+    async with session_factory() as session:
+        evidence = await vector_store_factory(session).search(
+            snapshot["owner_id"], query_embedding, snapshot["retrieval"]["top_k"]
+        )
+        await append_execution_event(
+            session,
+            task_id,
+            worker_id,
+            generation,
+            "retrieval.completed",
             {
-                "document_id": item.document_id,
-                "chunk_id": item.chunk_id,
-                "filename": item.filename,
-                "start_offset": item.start_offset,
-                "end_offset": item.end_offset,
-                "score": item.score,
-            }
-            for item in evidence
-        ]
-        async with session_factory() as session:
-            current_task = await session.get(TaskModel, task_id)
-            current_run = await session.get(RunModel, run.run_id)
-            if (
-                current_task is None
-                or current_run is None
-                or current_task.worker_id != worker_id
-                or current_task.generation != generation
-                or current_run.status == RunState.CANCELLED.value
-            ):
-                return
-            thread = await session.get(ThreadModel, current_run.thread_id)
-            if thread is None:
-                raise ApplicationError("THREAD_NOT_FOUND", "Run 引用的 Thread 不存在")
-            thread.next_message_seq += 1
-            assistant = MessageModel(
-                message_id=str(uuid4()),
-                thread_id=thread.thread_id,
-                seq=thread.next_message_seq,
-                role=MessageRole.ASSISTANT.value,
-                content=answer,
-                status=MessageStatus.COMPLETED.value,
-                run_id=current_run.run_id,
-                citations_json=citations,
-            )
-            session.add(assistant)
-            current_run.assistant_message_id = assistant.message_id
-            current_run.status = RunState.SUCCEEDED.value
-            current_task.state = TaskState.SUCCEEDED.value
-            current_task.lease_expires_at = None
-            await session.flush()
-            await append_event(
-                session,
-                current_run.run_id,
-                "message.completed",
-                {"message_id": assistant.message_id, "citations": citations},
-            )
-            await append_event(
-                session, current_run.run_id, "run.succeeded", {"message_id": assistant.message_id}
-            )
-            await session.commit()
-    except ApplicationError:
-        raise
-    except Exception as exc:
-        async with session_factory() as session:
-            await schedule_retry(
-                session, task_id, worker_id, generation, settings, "RUN_FAILED", str(exc)
-            )
-        raise
+                "count": len(evidence),
+                "items": [
+                    {
+                        "document_id": item.document_id,
+                        "chunk_id": item.chunk_id,
+                        "index_batch_id": item.index_batch_id,
+                        "locations": [asdict(p) for p in item.locations],
+                        "start_offset": item.start_offset,
+                        "end_offset": item.end_offset,
+                        "score": item.score,
+                    }
+                    for item in evidence
+                ],
+            },
+        )
+        await session.commit()
+
+    evidence_payload = [{"text": item.text, "chunk_id": item.chunk_id} for item in evidence]
+    answer_parts: list[str] = []
+    stream = model_provider.stream_answer(question, evidence_payload)
+    # 总流时间和 delta 数量双重有界，不因持续小块输出无限执行。
+    try:
+        async with asyncio.timeout(120):
+            for _ in range(4096):
+                try:
+                    delta = await guarded(partial(anext, stream))
+                except StopAsyncIteration:
+                    break
+                if sum(map(len, answer_parts)) + len(delta) > 1_000_000:
+                    raise ValueError("ANSWER_LIMIT_EXCEEDED")
+                answer_parts.append(delta)
+                async with session_factory() as session:
+                    await append_execution_event(
+                        session, task_id, worker_id, generation, "answer.delta", {"text": delta}
+                    )
+                    await session.commit()
+            else:
+                raise ValueError("ANSWER_LIMIT_EXCEEDED")
+    finally:
+        await stream.aclose()
+    citations = [
+        {
+            "document_id": item.document_id,
+            "chunk_id": item.chunk_id,
+            "index_batch_id": item.index_batch_id,
+            "locations": [asdict(p) for p in item.locations],
+            "filename": item.filename,
+            "start_offset": item.start_offset,
+            "end_offset": item.end_offset,
+            "score": item.score,
+        }
+        for item in evidence
+    ]
+    async with session_factory() as session:
+        await complete_run(
+            session, task_id, worker_id, generation, "".join(answer_parts).strip(), citations
+        )

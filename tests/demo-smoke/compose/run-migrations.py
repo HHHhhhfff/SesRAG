@@ -1,4 +1,4 @@
-"""将隔离环境连接串注入既有Alembic配置；不替换迁移，也不修改产品入口。"""
+"""隔离测试运行正式upgrade head；产品env.py已支持DATABASE_URL。"""
 
 import os
 

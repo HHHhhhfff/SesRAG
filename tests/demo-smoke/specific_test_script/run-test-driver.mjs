@@ -14,6 +14,15 @@ export function isUuid(value) {
 export function isTime(value) {
   return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
+export function assertMessageSource(projected, persisted, role) {
+  const expected = role === 'user' ? 'user_input' : 'assistant_generation';
+  assert.equal(projected.role, role); assert.equal(persisted.role, role);
+  assert.equal(projected.source, expected, '公开来源必须表达事实来源，不能复制role');
+  assert.equal(persisted.source, expected, 'PG来源必须表达事实来源，不能复制role');
+  assert.ok(isTime(projected.created_at) && isTime(persisted.created_at));
+  assert.equal(Date.parse(projected.created_at), Date.parse(persisted.created_at), '公开时间必须对应同一持久Message');
+  assert.equal(projected.message_id, persisted.message_id);
+}
 export function increasing(values) {
   return values.every((value, index) => Number.isInteger(value) && value > 0 && (index === 0 || value > values[index - 1]));
 }

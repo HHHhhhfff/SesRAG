@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,6 +35,8 @@ class MessageResponse(BaseModel):
     thread_id: str
     seq: int
     role: str
+    source: Literal["user_input", "assistant_generation"]
+    created_at: datetime
     content: str
     status: str
     run_id: str | None

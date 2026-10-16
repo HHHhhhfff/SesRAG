@@ -14,3 +14,8 @@
 | `rag-empty.json`、`rag-empty-probe.mjs` | 薄入口调用RAG_003真实空库正式Run，独立PG/owner；不删除主环境文档伪造空库。 |
 
 disabled的不存在脚本不会执行。子环境复用本轮源码镜像但不复用数据库/上传卷；所有nested身份登记父runtime，分类finally及父清理精确恢复。主入口硬杀仍需按保存run_id手动恢复，不承诺自动finally。真实过程、原报告和清理记录都按新run_id保留。
+# Task5d新增固定故障
+
+`deployment.json`是故障后仍可就绪场景的not_ready薄manifest，不是产品通过；`hard-kill-recovery.json`/`life-hard-kill.mjs`真实启动浏览器/SSE/Worker到首片持久屏障后等待父runner树被硬杀。其他部署故障由`../harness-overrides.mjs`固定枚举产生，不接受任意外部manifest/脚本。总入口独占创建与CleanupRunId销毁，复用源镜像只加本次唯一tag。
+
+固定`cleanup-share-read`使用同deployment薄manifest，只在本次runtime持FileShare.Read锁，验证可读但不可删除时恢复胶囊仍完整；原`cleanup-failure`保留FileShare.None。两者都经正式入口4→CleanupRunId3，不修改生产数据状态。

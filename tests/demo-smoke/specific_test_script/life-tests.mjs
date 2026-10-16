@@ -3,7 +3,9 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { runCategory, assert, execute, smokeRoot, repoRoot } from '../lib/category-kit.mjs';
 import { lazy, isTime } from './run-test-driver.mjs';
-import { readJson, artifactFor, runHarness, cleanupNested, baselineResources, assertClean, reportFingerprint, resourceIds, isProcessPresent, inheritedImagesIntact, rejectedRecovery } from './life-runner-driver.mjs';
+import { readJson, artifactFor, runHarness, cleanupNested, baselineResources, assertClean, reportFingerprint, resourceIds, isProcessPresent, inheritedImagesIntact, rejectedRecovery, lifecycleBudget } from './life-runner-driver.mjs';
+import { deploymentFaultChecks } from '../tooling/lifecycle-focused.mjs';
+import { registeredFrontendProcess } from '../tooling/frontend-resources.mjs';
 
 export const coveredCases = ['LIFE_001', 'LIFE_002', 'LIFE_003', 'LIFE_004', 'LIFE_005', 'LIFE_006', 'LIFE_007', 'LIFE_008', 'LIFE_009'];
 await runCategory('life', async s => {
@@ -13,7 +15,7 @@ await runCategory('life', async s => {
   const runB = lazy(async () => { await baseline(); return runHarness(s, 'not-ready', { category: 'life-unimplemented-a', registry }); });
   const protocol = lazy(() => runHarness(s, 'protocol', { registry }));
   const diagnostic = lazy(() => runHarness(s, 'disabled', { keep: true, registry }));
-  const daemonFailure = lazy(() => runHarness(s, 'not-ready', { daemonUnavailable: true, timeoutMs: 90000, registry }));
+  const daemonFailure = lazy(() => runHarness(s, 'not-ready', { daemonUnavailable: true, timeoutMs: lifecycleBudget.daemon_seconds*1000, registry }));
   const artifactPath = (record, relative) => path.join(record.artifact, relative);
   const categoryReport = (record, category) => readJson(artifactPath(record, `categories/${category}.json`));
   const categoryState = (record, category) => record.summary.categories.find(item => item.name === category);
@@ -43,7 +45,7 @@ await runCategory('life', async s => {
     // LIFE_002：门禁正常路径必须看到真实DB探测，daemon故障在新的独立run中检查有界退出。
     await s.check('LIFE_002', 'TP-LIFE-002', 'normal_real_dependency_gates', '真实DB迁移/vector探测、live/ready/Worker/frontend门禁全部满足后才记录分类not_ready', async () => {
       const data = await runA(); assert.equal(data.summary.stages.preflight, 'passed'); assert.equal(data.summary.stages.startup, 'passed');
-      const database = fs.readFileSync(artifactPath(data, 'environment/database-probe.txt'), 'utf8'); assert.match(database, /0001_initial_demo/); assert.match(database, /vector/);
+      const database = fs.readFileSync(artifactPath(data, 'environment/database-probe.txt'), 'utf8').trim().split(/\r?\n/); const head=readJson(artifactPath(data,'environment/database-probe-process.json')).expected_head; assert.deepEqual(database,[head,'vector']);
       const live = readJson(artifactPath(data, 'environment/health-live.json')); const ready = readJson(artifactPath(data, 'environment/health-ready.json'));
       assert.equal(live.status, 'ok'); assert.equal(ready.database, 'ready'); assert.equal(ready.redis, 'ready'); assert.ok(ready.worker_count >= 1);
       assert.ok(data.resources.containers.some(item => item.service === 'frontend')); assert.equal(data.summary.categories.length, 2);
@@ -59,7 +61,7 @@ await runCategory('life', async s => {
       assert.deepEqual(baselineResources(), before);
       return { run_id: data.state.run_id, status: data.summary.status, exit_code: data.process.code, duration_ms: data.process.duration_ms, classification_started: false, trace: data.trace };
     });
-    for (const sub of ['compose_config_failure', 'migration_failure', 'real_db_probe_failure', 'redis_gate_failure', 'worker_readiness_timeout', 'frontend_timeout']) s.block('LIFE_002', 'TP-LIFE-002', sub, '指定启动门禁真实故障在配置限时内阻断分类，并保留阶段/清理证据', `${sub}的独立Compose/依赖故障harness尚未准备；正常门禁和daemon故障不能替代`);
+    await deploymentFaultChecks(s,['compose-config-failure','migration-failure','real-db-probe-failure','redis-cold','redis-strict','worker-readiness-timeout','frontend-readiness-timeout']);
 
     // LIFE_003：测试自己的not-ready fixture，正式manifest不会被换成伪产品分类。
     for (const selection of ['all', 'subset']) {
@@ -138,7 +140,7 @@ await runCategory('life', async s => {
     }
     await s.check('LIFE_006', 'TP-LIFE-005', 'killed_category_parent_registry_fallback', '分类真实超时kill后没有执行自身恢复，父runner按登记恢复deferred子环境；nested_recovery cleaned=true且两级项目精确零残留', async () => {
       const before = baselineResources();
-      const data = await runHarness(s, 'nested-recovery', { registry, timeoutMs: 420000 });
+      const data = await runHarness(s, 'nested-recovery', { registry, timeoutMs: lifecycleBudget.nested_recovery_seconds*1000 });
       assert.equal(data.process.code, 1); assert.equal(data.summary.test_status, 'failed'); assert.equal(data.cleanup.status, 'passed');
       const category = categoryState(data, 'life-nested-deferred'); assert.ok(category); assert.equal(category.status, 'failed'); assert.equal(category.exit_code, 124);
       const marker = readJson(artifactPath(data, 'environment/life-nested-deferred.json'));
@@ -155,7 +157,13 @@ await runCategory('life', async s => {
       assert.deepEqual(baselineResources(), before); inheritedImagesIntact(s);
       return { harness_parent_run_id: data.state.run_id, registered_child_run_id: marker.child_state.run_id, category_timeout_exit: category.exit_code, child_deferred_exit: marker.child_exit_code, parent_fallback: step, child_clean: childClean, parent_clean: parentClean, trace: data.trace, limitation: '证明分类超时后父运行器兜底；仍未模拟父运行器本身硬杀' };
     });
-    for (const sub of ['capturable_interrupt', 'hard_kill_recovery', 'browser_sse_client_closure']) s.block('LIFE_006', 'TP-LIFE-005', sub, '中断/硬杀按边界处理，自有客户端关闭，硬杀后用CleanupRunId精确恢复而非声称自动finally', `${sub}独立受控故障或运行器客户端生命周期观测驱动尚未准备；正常/失败路径及超时树终止是已有局部证据`);
+    s.block('LIFE_006','TP-LIFE-005','capturable_interrupt','真实Ctrl+C可捕获中断执行finally','Windows无可用控制台Ctrl+C注入API；Node kill在Windows为终止，不冒充可捕获中断。真实硬杀恢复独立验证。');
+    await deploymentFaultChecks(s,['hard-kill-recovery'],'LIFE_006','TP-LIFE-005');
+    await s.check('LIFE_006','TP-LIFE-005','browser_sse_client_closure','真实running首片故意异常后所有客户端/服务器/PID观察关闭',async()=>{
+      const args=Object.entries(s.ctx.args).flatMap(([k,v])=>['-'+k,v]);
+      const result=await registeredFrontendProcess(s.ctx,process.execPath,[path.join(smokeRoot,'tooling/frontend-lifecycle-probe.mjs'),...args],{timeoutMs:lifecycleBudget.client_seconds*1000,env:{PLAYWRIGHT_BROWSERS_PATH:path.join(smokeRoot,'.cache/ms-playwright')}});
+      s.ctx.evidence('life/frontend-close-process.json',result);assert.equal(result.code,0);return {exit_code:result.code};
+    });
 
     // LIFE_007：nested项目已经退出且清理完成，主项目仍存活不影响其精确残留核对。
     await s.check('LIFE_007', 'TP-LIFE-006', 'zero_exact_residuals_and_preserved_cache', '两个完成nested run的容器/网络/卷/匿名卷/tag/runtime/tmp精确归零；报告、主源镜像和共享缓存有意保留', async () => {
@@ -182,7 +190,7 @@ await runCategory('life', async s => {
       const result = execute('pwsh', ['-NoProfile', '-Command', script], { timeoutMs: 15000 }); assert.equal(result.code, 0); assert.match(result.stdout, /状态函数通过/);
       return { function: 'Get-SmokeOutcome', tested_product_statuses: ['passed', 'failed', 'not_ready'], expected_cleanup_status: 'cleanup_failed', exit_code: 4, limitation: '未制造真实down或文件删除失败' };
     });
-    s.block('LIFE_008', 'TP-LIFE-006', 'real_down_or_file_cleanup_failure', '真实清理失败返回cleanup_failed/4，最小runtime留作恢复、尽可能删除tmp，恢复后仅清本次', '仅本次down/文件删除失败的独立故障驱动尚未准备；状态函数通过不能替代真实删除失败');
+    await deploymentFaultChecks(s,['cleanup-failure','cleanup-share-read'],'LIFE_008','TP-LIFE-006');
 
     // LIFE_009：调用生产路径函数动态拒绝危险/链接目录；忽略边界用真实git检查。
     await s.check('LIFE_009', 'TP-LIFE-007', 'production_path_rejections', '合法精确子目录可删除，根/绝对/逃逸/链接根及链接子项拒绝且链接目标保留', async () => {
@@ -215,7 +223,7 @@ await runCategory('life', async s => {
   } finally {
     // LIFE_006/008：无论断言失败，记录过且非主run的nested runtime都交正式入口精确恢复。
     for (const record of registry) {
-      if (record.state && fs.existsSync(path.join(smokeRoot, 'runtime', record.state.run_id))) {
+      if (record.state && [record.state.run_id,record.state.run_id+'-recovery.json'].some(name=>fs.existsSync(path.join(smokeRoot, 'runtime', name)))) {
         await s.check('LIFE_006', 'TP-LIFE-005', `finally_recovery_${record.state.run_id}`, '分类finally恢复尚存的自有nested run，仅CleanupRunId且残留精确归零', async () => { await cleanupNested(s, record); assertClean(record, record.recovery?.cleanup ?? record.cleanup); return { run_id: record.state.run_id, recovered_in_finally: true }; });
       }
     }

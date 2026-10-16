@@ -14,7 +14,7 @@ services:
     logging: *bounded_logs
   migrate:
     image: ${SMOKE_PROJECT:?}-backend:local
-    # 产品migrations/env.py未读取DATABASE_URL，用测试启动适配器注入同一迁移配置。
+    # 产品env.py已读取DATABASE_URL；此适配器保留测试入口，仍运行正式upgrade head。
     command: ["python", "/smoke/run-migrations.py"]
     volumes:
       - ./tests/demo-smoke/compose/run-migrations.py:/smoke/run-migrations.py:ro

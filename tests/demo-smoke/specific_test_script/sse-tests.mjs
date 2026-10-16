@@ -1,3 +1,4 @@
+import { executionCoverage } from './execution-coverage.mjs';
 import { runCategory, assert } from '../lib/category-kit.mjs';
 import { uuid, lazy, sqlValue, runFacts, stoppedWorker, successful, readSSE, sseSummary } from './run-test-driver.mjs';
 
@@ -72,7 +73,6 @@ await runCategory('sse', async s => {
     assert.ok(stream.frames.some(frame => frame.data.seq > 2));
     return { run_id: submitted.run_id, stream: sseSummary(stream), trace, limitation: 'Worker在历史已交付后启动；没有历史读取瞬间的竞争屏障' };
   }));
-  s.block('SSE_002', 'TP-SSE-002', 'read_append_boundary', '连接建立中真实追加与历史读取交界无缺口，三时段事件全部交付', 'E2 历史SELECT/新append/交付边界的确定性屏障尚未准备；历史后再启动Worker不替代该竞态');
 
   // SSE_003：queued仍未完成时真实关闭连接，恢复后同Run完成；首delta执行中屏障另记录。
   await s.check('SSE_003', 'TP-SSE-004', 'disconnect_while_queued', 'Run尚queued时断开SSE不写取消，恢复Worker后原身份成功且从最后seq完整补放', async () => {
@@ -92,7 +92,6 @@ await runCategory('sse', async s => {
     assert.equal((await ctx.detail(prepared.thread.thread_id)).messages.filter(message => message.role === 'assistant').length, 1);
     return { run_id: done.run_id, task_id: done.task.task_id, last_seq: prepared.lastSeq, disconnected: prepared.disconnected, reconnect: sseSummary(reconnect), limitation: '断开时queued，未覆盖首delta后running屏障' };
   });
-  s.block('SSE_003', 'TP-SSE-004', 'disconnect_after_first_delta_running', '首delta后仍running时断开不取消，放行Provider后原Run成功并完整补放', 'E2 首delta后可控未完成Run及慢Provider屏障尚未准备；queued断流证据不替代生成中断开');
 
   // SSE_004：成功、取消各真实终态发送后EOF；空后缀无限轮询风险按正确预期失败。
   for (const state of ['succeeded', 'cancelled']) {
@@ -110,7 +109,6 @@ await runCategory('sse', async s => {
       return { run_id: runId, terminal: state, stream: sseSummary(stream) };
     });
   }
-  s.block('SSE_004', 'TP-SSE-006', 'failed', '真实failed Run发送run.failed后流正常EOF且只有一个terminal', 'E2 真实Run永久失败驱动尚未准备；Index失败无RunEvent');
   const complete = lazy(() => successful(ctx, 'SSE_004 空后缀资源边界'));
   for (const sub of ['at_terminal', 'beyond_terminal']) {
     await s.check('SSE_004', 'TP-SSE-007', sub, '已终态且游标在终态或超过终态时无新事件，连接应有界EOF而非无限空轮询（补充资源风险）', async () => {
@@ -134,4 +132,5 @@ await runCategory('sse', async s => {
     assert.deepEqual(facts, { runs: 0, events: 0 });
     return { missing_run_id: missing, http_status: stream.status, error_code: stream.error_body.code, facts, trace };
   });
+  await executionCoverage(s);
 });

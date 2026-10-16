@@ -1,156 +1,23 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
-import { chromium } from 'playwright'
 import { JSDOM } from 'jsdom'
 import { marked } from '../../../frontend/node_modules/marked/lib/marked.esm.js'
-import { runCategory, assert, poll, redact } from '../lib/category-kit.mjs'
-import { componentChecks, componentTitle } from './fe-component-checks.mjs'
-import { createSseRelay } from './fe-sse-transport.mjs'
+import { runCategory, assert, poll } from '../lib/category-kit.mjs'
+
+import { registeredBrowser } from '../tooling/frontend-resources.mjs'
+import { runFrontendComponents } from '../tooling/frontend-components.mjs'
+import { runPersistentFrontend, runLegacyDisconnectChecks } from '../tooling/frontend-persistent.mjs'
 
 export const coveredCases = ['FE_001', 'FE_002', 'FE_003', 'FE_004', 'FE_005', 'FE_006', 'FE_007', 'FE_008', 'FE_009', 'FE_010', 'FE_011', 'FE_012', 'FE_013', 'FE_014', 'FE_015']
-const smokeRoot = fileURLToPath(new URL('../', import.meta.url))
 
 // FE全部用例：正式业务经六参数隔离环境；FE_009受控本地SSE透传只允许本例Run和Origin，不禁用CORS。
 await runCategory('fe', async (s) => {
   const ctx = s.ctx
   const invocation = randomUUID().slice(0, 8)
-  let browser
-  let browserProblem
-  try { browser = await chromium.launch({ headless: true }) } catch { browserProblem = '浏览器工具未安装或启动失败；请核对项目Chromium缓存' }
-  const withPage = async (fn) => {
-    assert.ok(browser, `Chromium无法启动：${browserProblem}`)
-    const context = await browser.newContext()
-    try {
-      const page = await context.newPage()
-      page.setDefaultTimeout(7000)
-      return await fn(page, context)
-    } finally { await context.close() }
-  }
+  const browser = await registeredBrowser(ctx)
+  const withPage = fn => browser.withPage(fn)
   const unique = (id, part) => `${id}-${part}-${ctx.args.RunId}-${invocation}`
   const renderedText = (content) => JSDOM.fragment(marked.parse(content)).textContent.trim()
   const hash = (text) => createHash('sha256').update(text).digest('hex')
-  const blockedPrecondition = (reason) => Object.assign(new Error(`FE_009前置受阻：${reason}`), { blocked: true })
-  const withPausedWorker = async (fn) => {
-    // FE_009：停止本次Worker形成真实queued屏障；正常/失败路径都恢复，不修改数据库事实。
-    try {
-      const stopped = ctx.compose(['stop', 'worker'], 45000)
-      if (stopped.code !== 0) throw blockedPrecondition('本次Worker暂停失败，活动queued断网条件未满足')
-      return await fn()
-    } finally {
-      const started = ctx.compose(['start', 'worker'], 30000)
-      assert.equal(started.code, 0, 'FE_009结束后本次Worker恢复失败')
-      await ctx.ready(20000)
-    }
-  }
-  const instrumentNativeStream = async (page) => {
-    // FE_009：包装真正的浏览器EventSource，仅记录open/error/close，不合成事件或改变URL/重试行为。
-    await page.addInitScript(() => {
-      const NativeEventSource = window.EventSource
-      window.__feNativeStreams = []
-      window.EventSource = class extends NativeEventSource {
-        constructor(url, options) {
-          super(url, options)
-          this.__feEntry = { url: String(url), opened: 0, errors: 0, closed: false, last_seq: 0 }
-          window.__feNativeStreams.push(this.__feEntry)
-          this.addEventListener('open', () => { this.__feEntry.opened++ })
-          this.addEventListener('error', () => { this.__feEntry.errors++ })
-          for (const type of ['run.created', 'task.queued', 'run.started', 'answer.delta', 'run.succeeded', 'run.failed', 'run.cancelled']) this.addEventListener(type, (event) => {
-            this.__feEntry.last_seq = Math.max(this.__feEntry.last_seq, Number(event.lastEventId || 0))
-          })
-        }
-        close() { if (this.__feEntry) this.__feEntry.closed = true; super.close() }
-      }
-    })
-  }
-  const withRunRelay = async (page, item, fn) => {
-    let relay
-    const relays = new Set()
-    const submissionPath = `/api/v1/threads/${item.thread_id}/messages`
-    const streamRoute = async (route) => {
-      const input = new URL(route.request().url())
-      if (!relay || input.origin !== new URL(ctx.args.FrontendUrl).origin || input.pathname !== relay.officialPath || route.request().method() !== 'GET') { await route.continue(); return }
-      // FE_009：生产client仍发正式URL，仅以HTTP302进入本例限定CORS透传；重连同样经过本边界。
-      await route.fulfill({ status: 302, headers: { Location: relay.origin + input.pathname + input.search, 'Cache-Control': 'no-store' } })
-    }
-    const submissionRoute = async (route) => {
-      if (route.request().method() !== 'POST') { await route.continue(); return }
-      const response = await route.fetch()
-      if ([200, 201].includes(response.status())) {
-        const body = await response.json()
-        // 先启动透传再交付真实POST响应，避免Workspace立即打开SSE抢在helper建立前。
-        relay = await createSseRelay({ baseUrl: ctx.args.BaseUrl, frontendUrl: ctx.args.FrontendUrl, runId: body.run_id, lifetimeMs: 60000 })
-        relays.add(relay)
-      }
-      await route.fulfill({ response })
-    }
-    const streamPredicate = (url) => /\/api\/v1\/runs\/[^/]+\/events\/stream$/.test(url.pathname)
-    const submissionPredicate = (url) => url.pathname === submissionPath
-    await page.route(streamPredicate, streamRoute)
-    await page.route(submissionPredicate, submissionRoute)
-    try { return await fn(() => relay) } finally {
-      try {
-        await page.unroute(submissionPredicate, submissionRoute)
-        await page.unroute(streamPredicate, streamRoute)
-      } finally {
-        // 即使页面已经关闭或解除route失败，全部实际relay仍须回收。
-        const closed = await Promise.allSettled([...relays].map((item) => item.close()))
-        const failed = closed.find((item) => item.status === 'rejected')
-        if (failed) throw failed.reason
-      }
-    }
-  }
-  const delayFirstHistoryDelivery = async (page) => {
-    const control = { used: false, run_id: null, upstream_status: null, upstream_events: [], delivered_events: [], error: null }
-    // FE_009受控传输子项：仅第一次observe HTTP历史交付为空，记录真实响应安全摘要。
-    // 正式API没有返回空；后续HTTP全部透传；EventSource及SSE帧来自真实API/PG。
-    await page.route((url) => /\/api\/v1\/runs\/[^/]+\/events$/.test(url.pathname) && url.searchParams.get('after_seq') === '0', async (route) => {
-      if (control.used || route.request().method() !== 'GET') { await route.continue(); return }
-      control.used = true
-      control.run_id = new URL(route.request().url()).pathname.split('/').at(-2)
-      try {
-        const real = await route.fetch()
-        control.upstream_status = real.status()
-        const payload = await real.json()
-        control.upstream_events = (payload.events ?? []).map((event) => ({ seq: event.seq, type: event.type, run_id: event.run_id }))
-        if (real.status() === 200 && Array.isArray(payload.events)) await route.fulfill({ response: real, json: { ...payload, events: [] } })
-        else await route.fulfill({ response: real })
-      } catch {
-        control.error = '首次真实HTTP历史响应未获取成功，传输前置未成立'
-        await route.abort().catch(() => {})
-      }
-    })
-    return control
-  }
-  const activeStreamReady = async (page, runId, control, sub) => {
-    try {
-      await poll(async () => page.evaluate((id) => window.__feNativeStreams.some((stream) => stream.url.includes(`/runs/${id}/`) && stream.opened > 0 && !stream.closed && stream.last_seq > 0), runId), 7000, '原生SSE未收到真实首帧/open；不能判断重连行为')
-      const sequences = (await page.locator('.event-seq').allTextContents()).map((text) => Number(text.trim()))
-      if (!control.used || control.upstream_status !== 200 || control.error || control.run_id !== runId || !control.upstream_events.length) throw new Error('首次HTTP历史传输控制或真实历史前置未成立')
-      if (!sequences.length || !sequences.every((seq) => seq > 0)) throw new Error('页面未处理初始持久历史事件，缺少可恢复游标')
-      if ((await ctx.run(runId)).status !== 'queued') throw new Error('断网前不是活跃queued Run，不能使用terminal流')
-      return Math.max(...sequences)
-    } catch (error) {
-      const native = await page.evaluate((id) => window.__feNativeStreams.filter((stream) => stream.url.includes(`/runs/${id}/`)), runId).catch(() => [])
-      const evidence = ctx.evidence(`fe/FE_009-${sub}-native-precondition.json`, { transport_control: control, native_streams: native, reason: error.message })
-      throw blockedPrecondition(`${error.message}；前置证据：${evidence}`)
-    } finally {
-      control.evidence_path = ctx.evidence(`fe/FE_009-${sub}-history-delivery.json`, { scope: '首次HTTP历史交付为空的受控传输子项，SSE仍真实PG；正式API真实响应安全摘要如下', transport_control: control })
-    }
-  }
-  const disconnectNativeStream = async (page, relay, runId, sub) => {
-    if (!relay || !relay.connections.some((connection) => connection.forwarded_bytes > 0 && !connection.closed)) throw blockedPrecondition('本例真实PG透传连接未建立，不能进行受控socket断开')
-    const severed = relay.disconnect()
-    try {
-      await poll(async () => page.evaluate((id) => window.__feNativeStreams.some((stream) => stream.url.includes(`/runs/${id}/`) && stream.errors > 0), runId), 5000, '受控透传socket已销毁但未观察到原生SSE error，断线前提未成立')
-    } catch (error) {
-      const evidence = ctx.evidence(`fe/FE_009-${sub}-socket-precondition.json`, { transport_connections: relay.connections, severed_socket_count: severed, reason: error.message })
-      throw blockedPrecondition(`${error.message}；证据：${evidence}`)
-    }
-    return { severed_socket_count: severed, native_streams: await page.evaluate((id) => window.__feNativeStreams.filter((stream) => stream.url.includes(`/runs/${id}/`)), runId) }
-  }
   const watchResponse = (page, predicate) => {
     const pending = page.waitForResponse(predicate)
     // 某一步UI操作先失败时，context关闭也会拒绝等待；预先处理拒绝以免中断后续独立用例。
@@ -319,7 +186,7 @@ await runCategory('fe', async (s) => {
       const text = (await page.locator('.error-banner').textContent()).trim()
       const api = await ctx.request(`/api/v1/threads/${missing}/messages`, { method: 'POST', body: { content: 'FE_006安全失败问题' } })
       assert.equal(api.status, 404)
-      assert.equal(text, api.body.message ?? '请求失败：404')
+      assert.ok(text.includes(api.body.code), '错误提示未显示正式稳定错误码')
       assert.ok(!/Traceback|postgres(?:ql)?:|Bearer\s|[A-Z]:[\\/]/i.test(text), '提示包含敏感实现信息')
       assert.equal((await ctx.detail(item.thread_id)).runs.length, 0)
       return { thread_id: item.thread_id, status: api.status, safe_message: text, submitted_run_count: 0 }
@@ -338,59 +205,8 @@ await runCategory('fe', async (s) => {
       return { thread_id: item.thread_id, run_id: submitted.run_id, seq: visible }
     }))
 
-    // FE_009：首次HTTP历史交付为空使原生SSE读取真实PG首帧，避免Vite空body未flush导致前置假失败。
-    await s.check('FE_009', 'TP-FE-010', 'browser-disconnect-no-cancel', '受控透传服务socket断开、首次HTTP历史交付为空：真实PG queued活动SSE断线不取消', () => withPausedWorker(() => withPage(async (page) => {
-      await instrumentNativeStream(page)
-      const control = await delayFirstHistoryDelivery(page)
-      const item = await ctx.thread(unique('FE_009', 'network'))
-      await openThread(page, item)
-      return withRunRelay(page, item, async (getRelay) => {
-      const submitted = await send(page, item, 'FE_009安全断网问题')
-      const cursor = await activeStreamReady(page, submitted.run_id, control, 'no-cancel')
-      const requests = []
-      page.on('request', (request) => { if (new URL(request.url()).pathname.endsWith('/cancel')) requests.push(request.url()) })
-      const relay = getRelay()
-      const observations = await disconnectNativeStream(page, relay, submitted.run_id, 'no-cancel')
-      await page.waitForTimeout(300)
-      assert.equal(requests.length, 0)
-      assert.equal((await ctx.run(submitted.run_id)).status, 'queued')
-      return { run_id: submitted.run_id, before_status: 'queued', after_status: 'queued', cancel_requests: 0, last_processed_seq: cursor, native_disconnect: observations, transport_connections: relay.connections, transport_control: control, scope: '受控透传服务socket断开，非普通浏览器离线；首次HTTP历史交付为空，SSE真实PG字节原样透传；不代表running分片完整续流' }
-      })
-    })))
-
-    await s.check('FE_009', 'TP-FE-010', 'browser-reconnect-entry', '受控透传服务socket断开、首次HTTP历史交付为空：真实PG queued流原生error后恢复连接及已处理seq游标', () => withPausedWorker(() => withPage(async (page) => {
-      await instrumentNativeStream(page)
-      const control = await delayFirstHistoryDelivery(page)
-      const item = await ctx.thread(unique('FE_009', 'reconnect-entry'))
-      await openThread(page, item)
-      return withRunRelay(page, item, async (getRelay) => {
-      const streams = []
-      page.on('request', (request) => { const url = new URL(request.url()); if (url.origin === new URL(ctx.args.FrontendUrl).origin && /\/events\/stream$/.test(url.pathname)) streams.push({ path: url.pathname, after_seq: url.searchParams.get('after_seq'), last_event_id: request.headers()['last-event-id'] ?? null }) })
-      const submitted = await send(page, item, 'FE_009安全重连入口问题')
-      const cursor = await activeStreamReady(page, submitted.run_id, control, 'reconnect')
-      const relay = getRelay()
-      const count = relay.connections.length
-      const observations = await disconnectNativeStream(page, relay, submitted.run_id, 'reconnect')
-      assert.equal((await ctx.run(submitted.run_id)).status, 'queued', '断线后Run意外取消或终态，重连条件不成立')
-      const reconnect = page.getByRole('button', { name: /重新连接|重连/ })
-      if (await reconnect.count()) await reconnect.first().click()
-      const beforeReconnect = ctx.evidence('fe/FE_009-reconnect-native-disconnect.json', { native_disconnect: observations, transport_connections: relay.connections, official_requests: streams, transport_control: control, scope: '受控服务socket断开；非普通浏览器离线' })
-      await poll(async () => relay.connections.length > count, 7000, `真实活动SSE error后没有自动重连或可用的手动重连入口；真实断线证据：${beforeReconnect}`)
-      const resumed = relay.connections.at(-1)
-      assert.ok(Number(resumed.last_event_id ?? resumed.after_seq ?? 0) >= cursor, '重连未携带已处理seq游标')
-      // 正确游标后的queued流暂时无新帧；放行真实Worker产生后续PG事件。
-      // 确认原生重连接收后续帧；正常terminal关闭允许发生。
-      const released = ctx.compose(['start', 'worker'], 30000)
-      assert.equal(released.code, 0, 'FE_009重连后的Worker放行失败')
-      await ctx.ready(20000)
-      await ctx.waitRun(submitted.run_id)
-      await poll(async () => page.evaluate(({ id, cursor }) => window.__feNativeStreams.some((stream) => stream.url.includes(`/runs/${id}/`) && stream.opened > 0 && stream.last_seq > cursor), { id: submitted.run_id, cursor }), 7000, '重连请求携带游标但未收到放行Worker后的真实PG事件')
-      const finalEvents = await ctx.events(submitted.run_id)
-      await poll(async () => (await page.locator('.event-seq').count()) === finalEvents.length, 7000, '重连后页面未补齐真实事件')
-      assert.deepEqual((await page.locator('.event-seq').allTextContents()).map((text) => Number(text.trim())), finalEvents.map((event) => event.seq), '重连后的事件缺失、重复或乱序')
-      return { run_id: submitted.run_id, last_processed_seq: cursor, official_requests: streams, transport_connections: relay.connections, native_disconnect: observations, transport_control: control, final_seq: finalEvents.map((event) => event.seq), scope: '受控透传服务socket断开，非普通浏览器离线；首次HTTP历史交付为空，SSE仍为真实PG原始字节；queued恢复放行不代表running分片完整续流' }
-      })
-    })))
+    // FE_009：保留既有两个目标ID，以真实running断线场景各自重新执行。
+    await runLegacyDisconnectChecks(s)
 
     for (const [point, part] of [['TP-FE-011', 'fresh-context'], ['TP-FE-018', 'frontend-restart']]) await s.check('FE_010', point, part, '清浏览器内存/存储或重启本次frontend后，从API恢复同一消息、引用和文档且不重复提交', async () => {
       const history = await prepareHistory('FE_010', part, true)
@@ -474,44 +290,15 @@ await runCategory('fe', async (s) => {
       await page.goto(ctx.args.FrontendUrl, { waitUntil: 'domcontentloaded' })
       await page.locator('.topbar').waitFor()
       // 每个候选必须是实际状态控件，不能让回答或文档名里的Worker/DB文字冒充健康面板。
-      const states = await page.locator('.connection-dot, .health-panel, .health-item, .health-status, [data-health-component], [role=status]').allTextContents()
-      const missing = ['API', 'Worker', 'DB'].filter((label) => !states.some((text) => new RegExp(label === 'DB' ? 'DB|数据库|PostgreSQL' : label, 'i').test(text) && /ready|degraded|unknown/.test(text)))
+      const states = await page.locator('.health-panel > span').allTextContents()
+      const missing = ['API', 'Worker', 'DB'].filter((label) => !states.some((text) => new RegExp(label === 'DB' ? 'PG|DB|数据库|PostgreSQL' : label, 'i').test(text) && /ready|degraded|unknown/.test(text)))
       assert.deepEqual(missing, [], `健康面板缺少独立事实展示：${missing.join('/')}`)
       assert.ok(states.length >= 3, '页面未提供三个独立健康对象')
       return { api_status: ready.body.status, worker_status: ready.body.worker, database_status: ready.body.database, panels_present: true }
     }))
 
-    // FE组件真正失败仍逐项导出；收集不到任何一项时逐项失败，不把工具启动当产品通过。
-    s.note('FE组件阶段：挂载真实Workspace/stores/components，HTTP/SSE替身仅提供精确传输时序。')
-    const rawPath = path.join(ctx.args.RuntimeDir, `fe-vitest-result-${invocation}.json`)
-    const child = spawnSync(process.execPath, [path.join(smokeRoot, 'node_modules/vitest/vitest.mjs'), 'run', '--config', path.join(smokeRoot, 'vitest.config.mjs'), 'specific_test_script/fe-workspace.test.ts', '--reporter=json', `--outputFile=${rawPath}`], { cwd: smokeRoot, encoding: 'utf8', timeout: 45000, maxBuffer: 4 * 1024 * 1024, windowsHide: true })
-    let result
-    try { result = JSON.parse(fs.readFileSync(rawPath, 'utf8')) } catch { result = undefined }
-    const assertions = result?.testResults?.flatMap((item) => item.assertionResults ?? []) ?? []
-    for (const definition of componentChecks) {
-      const [id, point, sub, expected] = definition
-      await s.check(id, point, sub, expected, async () => {
-        const assertion = assertions.find((item) => item.title === componentTitle(definition))
-        assert.ok(assertion, `Vitest未产生本项结果；子进程退出=${child.status ?? '无'}，工具错误=${child.error?.code ?? '无'}；这不是产品通过`)
-        const failures = (assertion.failureMessages ?? []).map((message) => message.split(/\r?\n/)[0]).join('；')
-        assert.equal(assertion.status, 'passed', `真实生产组件断言${assertion.status}：${redact(failures, ctx.secrets)}`)
-        return { vitest_title: assertion.title, status: assertion.status, duration_ms: assertion.duration, scope: '真实前端组件，受控HTTP/SSE传输，不代替真实慢Provider/PG竞态验收' }
-      })
-    }
-
-    // 缺少完整慢Provider/PG屏障的子项保留独立限制，组件失败不会被blocked覆盖。
-    const pending = [
-      ['FE_003', 'TP-FE-004', 'persistent-slow-stream', '持久首片到达且第二片等待时显示增量', '未接入真实慢Provider/Worker持久化分片屏障；已有真实组件断言验证前端缺失'],
-      ['FE_005', 'TP-FE-006', 'persistent-state-stages', '真实queued/running/terminal各阶段与页面一致', '无真实运行中屏障，Mock运行过快无法可靠抓取所有阶段；受控真实组件阶段已逐项执行'],
-      ['FE_005', 'TP-FE-015', 'persistent-running-cancel-race', '运行中页面取消后无迟到成功', '无Worker模型/最终提交竞争屏障，组件取消请求不证明后端竞态'],
-      ['FE_006', 'TP-FE-007', 'persistent-permanent-failure', '真实永久失败Run的原因在页面展示', '未提供本次隔离Worker永久失败Provider驱动；真实组件异步failed投影已独立断言'],
-      ['FE_008', 'TP-FE-009', 'persistent-replay-overlap', '持久replay/SSE交界不重复最终正文', '未提供真实Worker分片与replay/SSE屏障；真实组件同seq重叠与历史最终Message已独立断言'],
-      ['FE_009', 'TP-FE-010', 'persistent-active-network-resume', '真实running分片期间断网追加事件并恢复补放', '缺真实慢Run分片屏障；queued受控传输服务断开与组件检查不能代替running分片完整续流'],
-      ['FE_009', 'TP-FE-010', 'ordinary-browser-offline', '普通浏览器离线真正断开已建立的SSE并恢复补放', 'Chromium setOffline对已建立空闲SSE未触发原生error，普通离线前置不足；受控透传socket断开子项不能代替此场景'],
-      ['FE_011', 'TP-FE-012', 'persistent-active-reload', '真实queued/running刷新后续订至终态', '无真实活动Run屏障；terminal恢复与真实组件活动恢复已独立断言'],
-      ['FE_014', 'TP-FE-016', 'health-fault-states', 'API/Worker/DB故障健康在页面分别展示', '页面健康组件缺失；完整故障态动态展示待产品补齐后准备对应服务故障条件'],
-      ['FE_015', 'TP-FE-017', 'persistent-delayed-thread-switch', '真实A首片暂停切B后放行A不串Thread且可切回', '无真实持久慢Run屏障；真实Workspace组件旧流关闭与B投影隔离已独立断言'],
-    ]
-    for (const [id, point, sub, expected, reason] of pending) s.block(id, point, sub, expected, reason)
+    await runFrontendComponents(s)
+    await runPersistentFrontend(s)
+    s.block('FE_009', 'TP-FE-010', 'ordinary-browser-offline', '普通浏览器离线真正断开已建立SSE并恢复补放', 'ADR002明确暂缓：Chromium setOffline不可靠断开已建立SSE；受控socket场景不替代普通离线')
   } finally { await browser?.close() }
 })

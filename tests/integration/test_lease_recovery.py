@@ -1,13 +1,11 @@
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
 
 import pytest
 
+from backend.application.threads import create_message_run, create_thread
 from backend.config import Settings
 from backend.db.base import Base
-from backend.db.models import TaskModel
 from backend.db.session import create_engine, create_session_factory
-from backend.domain.enums import TaskKind, TaskState
 from backend.infrastructure.queue.postgres_queue import (
     claim_next_task,
     renew_lease,
@@ -28,19 +26,12 @@ async def test_expired_lease_is_reclaimed_and_old_generation_cannot_renew(tmp_pa
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
 
-    task_id = str(uuid4())
     async with factory() as session:
-        session.add(
-            TaskModel(
-                task_id=task_id,
-                kind=TaskKind.RUN.value,
-                state=TaskState.QUEUED.value,
-                max_attempts=3,
-                available_at=datetime.now(timezone.utc),
-                deadline_at=datetime.now(timezone.utc) + timedelta(minutes=5),
-            )
+        thread = await create_thread(session, settings, "租约恢复")
+        _message, _run, task, _duplicate = await create_message_run(
+            session, settings, thread.thread_id, "测试有效 Run 的租约", "lease-test"
         )
-        await session.commit()
+        task_id = task.task_id
 
     async with factory() as session:
         first = await claim_next_task(session, "worker-a", settings)

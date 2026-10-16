@@ -24,6 +24,32 @@ try {
     Remove-SmokeChild $sandbox 'run-one'
     Assert-Check (-not (Test-Path -LiteralPath $child)) '精确子目录必须删除'
 
+    # I2：只测固定胶囊的保存/缺失文件恢复及越界拒绝；真正删除故障走独立主入口harness。
+    $capsuleRun = 'capsule-test-a1b2c3d4'
+    $capsuleRuntime = Get-SmokeChildPath $sandbox $capsuleRun
+    New-Item -ItemType Directory -Path $capsuleRuntime | Out-Null
+    Write-SmokeJson (Join-Path $capsuleRuntime 'context.json') @{marker='sesrag-demo-smoke-v1';run_id=$capsuleRun;compose_project='sesrag-demo-smoke-a1b2c3d4'}
+    [IO.File]::WriteAllText((Join-Path $capsuleRuntime 'compose.env'),'SMOKE_DB_PASSWORD=synthetic-only')
+    $capsule = Save-SmokeRecovery $sandbox $capsuleRun
+    $contextBytes = [IO.File]::ReadAllBytes((Join-Path $capsuleRuntime 'context.json'))
+    [IO.File]::Delete((Join-Path $capsuleRuntime 'context.json'))
+    $envLock = [IO.File]::Open((Join-Path $capsuleRuntime 'compose.env'),[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+    try { Restore-SmokeRecovery $sandbox $capsuleRun } finally { $envLock.Dispose() }
+    Assert-Check ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $capsuleRuntime 'context.json'))) -eq [Convert]::ToBase64String($contextBytes)) '胶囊必须恢复缺失context字节，已有只读共享文件不能重写'
+    $capsuleLock = [IO.File]::Open($capsule,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+    try {
+        $rejected = $false
+        try { [IO.File]::Delete($capsule) } catch { $rejected = $true }
+        Assert-Check $rejected '胶囊最后删除失败必须保留且可恢复，不能宣布清理完成'
+        Restore-SmokeRecovery $sandbox $capsuleRun
+    } finally { $capsuleLock.Dispose() }
+    $capsuleData = Get-Content -LiteralPath $capsule -Raw | ConvertFrom-Json -AsHashtable
+    $capsuleData.files['../outside'] = [Convert]::ToBase64String([byte[]]@(1))
+    Write-SmokeJson $capsule $capsuleData
+    $rejected = $false
+    try { Restore-SmokeRecovery $sandbox $capsuleRun } catch { $rejected = $true }
+    Assert-Check $rejected '非法胶囊路径必须在写入前拒绝'
+
     $secret = 'test-secret-not-a-real-password'
     $scrubbed = Protect-SmokeText "password=$secret postgresql+psycopg://user:pwd@postgres/db Bearer abc123" @($secret)
     Assert-Check (-not $scrubbed.Contains($secret)) '报告不能保留运行密码'
@@ -54,6 +80,40 @@ try {
     Assert-Check ($process.exit_code -eq 7 -and $process.output.Trim() -eq 'ok') '必须保留子进程真实退出码'
     $process = Invoke-SmokeProcess (Get-Process -Id $PID).Path @('-NoProfile','-Command','Start-Sleep -Seconds 30') 1
     Assert-Check ($process.timed_out -and $process.exit_code -ne 0) '超时必须终止进程并返回失败'
+
+    # LIFE_004：快速真实退出可早于MainModule采样，登记不能因此中断后续分类。
+    $registryPath = Join-Path $sandbox 'quick-processes.json'
+    foreach ($attempt in 1..30) {
+        $quick = Invoke-SmokeProcess 'cmd.exe' @('/d','/c','exit','7') 10 '' @{} $registryPath @{run_id='quick-exit-test';project='sesrag-demo-smoke-quick-test'}
+        Assert-Check ($quick.exit_code -eq 7) '快速子进程仍须保留真实退出7'
+    }
+    $registered = Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json
+    Assert-Check ($registered.resources.Count -eq 30) '每个快速子进程都必须登记'
+    foreach ($row in $registered.resources) {
+        Assert-Check ($row.status -eq 'closed' -and $row.observed_process_closed -and $row.process_exit_code -eq 7) '真实退出后登记必须closed且保留退出码'
+    }
+    function Invoke-OnlyFunctionSentinel { throw '不应被当可执行程序启动' }
+    $rejected = $false
+    try { Invoke-SmokeProcess 'Invoke-OnlyFunctionSentinel' @() 1 | Out-Null } catch { $rejected = $true }
+    Assert-Check $rejected '进程入口必须拒绝函数或不存在的可执行程序'
+
+    # 活跃进程登记失败不得泄漏：注入的只是登记写盘异常，真实Process句柄仍须kill/wait。
+    $originalWriter = ${function:Write-SmokeJson}
+    $script:registrationFailurePid = $null
+    function Write-SmokeJson($Path, $Value) {
+        if ($Path -eq (Join-Path $sandbox 'registration-failure.json') -and $Value.resources[-1].status -eq 'running') {
+            $script:registrationFailurePid = $Value.resources[-1].process_identity.pid
+            throw 'registration-write-sentinel'
+        }
+        & $originalWriter $Path $Value
+    }
+    try {
+        $rejected = $false
+        try { Invoke-SmokeProcess 'node' @('-e','setInterval(()=>{},1000)') 10 '' @{} (Join-Path $sandbox 'registration-failure.json') @{run_id='registration-failure';project='sesrag-demo-smoke-registration'} | Out-Null } catch { $rejected = $_.Exception.Message -eq 'registration-write-sentinel' }
+        Assert-Check $rejected '活跃登记写盘失败必须保留原错误'
+        Assert-Check ($null -ne $script:registrationFailurePid) '必须实际创建且取得活跃子进程身份'
+        Assert-Check ($null -eq (Get-Process -Id $script:registrationFailurePid -ErrorAction SilentlyContinue)) '异常后必须由自有Process句柄终止并等待退出'
+    } finally { ${function:Write-SmokeJson} = $originalWriter }
 
     # 任务2：按总入口同一进程适配器验证PowerShell/Node六参数与中文输出。
     # 只调用tooling哨兵，不启用假产品分类或修改正式manifest。

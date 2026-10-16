@@ -1,8 +1,8 @@
 import { apiFetch } from './http'
-import type { DocumentItem } from '../types/api'
+import type { DocumentItem, DocumentListResponse, IndexResponse } from '../types/api'
 
 export function listDocuments() {
-  return apiFetch<{ documents: DocumentItem[] }>('/api/v1/documents')
+  return apiFetch<DocumentListResponse>('/api/v1/documents')
 }
 
 export function uploadDocument(file: File) {
@@ -12,7 +12,7 @@ export function uploadDocument(file: File) {
 }
 
 export function reindexDocument(documentId: string) {
-  return apiFetch<{ task_id: string; document_id: string; state: string }>(`/api/v1/documents/${documentId}/index`, {
+  return apiFetch<IndexResponse>(`/api/v1/documents/${documentId}/index`, {
     method: 'POST',
   })
 }

@@ -1,6 +1,14 @@
 # Demo 本机隔离临时测试环境
 
-本目录实施[TEST-001](../../docs/test/001-SesRAG-项目Demo-test-plan.md)的环境基础设施及后续分类脚本。已接入21分类，涉及149用例，部分完整故障/并发条件仍逐项blocked。部署→分类执行→报告→销毁→残留检查由总入口负责。任务5两轮正式all已完成：产品验收failed、资源清理passed；见[测试报告](测试报告.md)、[缺陷报告](缺陷报告.md)、[执行与审批记录](任务5-6执行与审批记录.md)。历史试跑/脚本校审见[任务3～4记录](任务3-4实施与审批记录.md)。
+ADR002正式复验已在同一278文件冻结基线上完成两个稳定轮all（实际Round1与Round3；中间Round2睡眠扰动失败及恢复另见报告§9.1.1）：`20261012t212827-13fa1d31`、`20261013t014325-e2009999`。各纳入检查及具体blocked、真实child/summary、质量/性能与资源边界见[复测和验收报告](复测和验收报告.md)§9；149卡片和104原问题逐项追溯。20261007原failed与专项失败全部保留，严格all非零不能被写成整体命令通过。
+
+ADR002 Task5d入口新增固定部署故障、PID出生身份/容器登记恢复、真实文件锁删除失败、同run全契约/质量门禁和首执行事件20样本测量，详见[工具用途与预算](tooling/README.md#5d-生命周期契约与性能)。测试开发依赖httpx2只供Starlette TestClient，生产Provider仍使用httpx；实际结果以本run报告为准，新增脚本不代表正式两轮已通过。
+
+本目录实施[TEST-001](../../docs/test/001-SesRAG-项目Demo-test-plan.md)的环境基础设施及后续分类脚本。已接入21分类，涉及149用例，部分完整故障/并发条件仍逐项blocked。部署→分类执行→报告→销毁→残留检查由总入口负责。2026-10-07 的原任务5两轮正式all已完成：产品验收failed、资源清理passed；见[测试报告](测试报告.md)、[缺陷报告](缺陷报告.md)、[执行与审批记录](任务5-6执行与审批记录.md)。历史试跑/脚本校审见[任务3～4记录](任务3-4实施与审批记录.md)。
+
+ADR002 Task1～5d及全量I1/I2/M1/非空前提/N1修复已独立批准，当前冻结两轮事实与限制见[复验报告](复测和验收报告.md)§9；第2～8节为原阶段历史。E2/E4/C及真实持久浏览器已补，不继续以“驱动未准备”掩盖纳入目标。
+
+[ADR002正式验收关键证据](ADR002-正式验收关键证据.json)保存278输入哈希、源版本/index、实际三轮退出/分类计数/关键质量与性能、资源白名单审计及宿主睡眠事件摘要；原始artifacts仍独立保留。结果回填后仅5个冻结文档改变、其余273输入相同，不宣称交付文档与被测278文件全部同hash。
 
 ## 前提与运行
 
@@ -23,7 +31,7 @@ pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1 -Interactive
 | ApiPort / FrontendPort | 18000 / 15173 | 首选端口；占用或重复自动替换，只绑定127.0.0.1。 |
 | Build | true | 默认构建本次镜像；false必须显式传BackendImage和FrontendImage，均为已有本地镜像，不自动复用开发镜像。复用不保证代码最新，只用于诊断。 |
 | Category | all | 所有manifest项或一个名称；子集通过不等于完整PRD通过。 |
-| HarnessScenario | 无 | 仅限固定子场景not-ready、disabled、protocol、missing-script、nested-recovery、rag-empty、doc-limit。前五为LIFE运行器自检，后两为RAG空库/DOC大小边界，不是另一套正式all验收；不接受任意manifest路径。复用主run本次镜像、创建独立project并交总入口销毁。 |
+| HarnessScenario | 无 | 仅限17个固定子场景：not-ready、disabled、protocol、missing-script、nested-recovery、rag-empty、doc-limit、compose-config-failure、migration-failure、redis-cold、redis-strict、real-db-probe-failure、worker-readiness-timeout、frontend-readiness-timeout、cleanup-failure、cleanup-share-read、hard-kill-recovery。它们提供LIFE协议/部署/精确恢复及DOC/RAG边界，不是另一套正式all验收；不接受任意manifest路径。复用主run本次镜像、创建独立project并交总入口销毁。 |
 | WaitTimeoutSeconds | 180 | up和健康等待共享总限时，不含构建。 |
 | BuildTimeoutSeconds | 900 | 独立构建限时，首次网络安装可能较慢。 |
 | SessionSeconds | 0 | 就绪后有界暂停供外部检查，不执行产品断言。 |
@@ -42,10 +50,10 @@ pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1 -Interactive
 | SMOKE_PROJECT | 运行必需，入口生成 | 唯一project及本次镜像前缀，不指向开发project。 |
 | SMOKE_OWNER_ID | 运行必需，入口生成 | 本次独立owner，不是生产认证。 |
 | SMOKE_DB_PASSWORD | 运行必需，入口随机生成 | 临时DB密码，仅runtime/compose.env保存，不提交Git、不写默认报告。 |
-| VITE_API_BASE_URL | 覆盖固定为空 | 已有Vite代理统一HTTP/SSE来源；不关闭CORS、不修复根Compose跨域问题。 |
+| VITE_API_BASE_URL | 覆盖固定为空 | 根Compose与隔离覆盖均用合法同源Vite代理统一HTTP/SSE/健康，不关闭CORS。 |
 | WORKER_ID | 覆盖由project生成 | 单测试Worker唯一身份；多Worker分类需另准备不同ID。 |
 
-MOCK_PROVIDER=true、默认384维、AUTO_CREATE_SCHEMA=false固定；api/worker/migrate共用后端镜像。migrate只读挂载`run-migrations.py`，将DATABASE_URL注入既有Alembic配置；原迁移入口忽略环境变量的产品缺口仍保留。
+MOCK_PROVIDER=true、默认384维、AUTO_CREATE_SCHEMA=false固定；api/worker/migrate共用后端镜像。migrate仍只读挂载`run-migrations.py`作为测试启动适配。本轮 `migrations/env.py` 已读取 DATABASE_URL、入口校核动态 Alembic head；当前真实head/迁移已在ADR002正式两轮复验，历史入口缺口保留于旧报告。
 
 ## 文件与使用阶段
 
@@ -71,6 +79,7 @@ MOCK_PROVIDER=true、默认384维、AUTO_CREATE_SCHEMA=false固定；api/worker/
 | test-cases.md | 中文用例、前置条件、逐测试点覆盖和两轮实际结果；有记录不等于完整执行 | 分类脚本设计/结果追溯 |
 | 测试报告.md | 两轮正式all、分类/用例统计、PRD验收、质量/性能及清理结论 | 任务5～6结果交付 |
 | 缺陷报告.md | 失败并集及暂不可/局部受限逐用例定位、原因/影响/建议与真实复现入口 | 缺陷处理/补测依据 |
+| 复测和验收报告.md | ADR-002 阶段实现、已有专项证据、中期未解决问题、明确暂缓项与精确清理；当前正式两轮与范围限制报告 | 本轮中断交付；后续正式复测更新 |
 | 任务5-6执行与审批记录.md | 冻结基线、执行命令、证据及最终校审记录 | 执行审计 |
 | fixtures/ | 文本、docx XML源、事件期望；运行时生成docx | 数据准备 |
 | fixtures/data-strategy.md | 当前不需要统一SQL种子的依据、各用例独立API创建数据及后续边界 | 任务1/任务3数据设计 |
@@ -83,7 +92,7 @@ MOCK_PROVIDER=true、默认384维、AUTO_CREATE_SCHEMA=false固定；api/worker/
 
 运行目录、依赖、缓存和本地配置由.gitignore/.dockerignore排除；报告不发送到构建上下文。fixture和分类规范见子目录README；实际记录见[环境验证记录](../../docs/test/001-SesRAG-Demo-临时测试环境验证记录.md)。
 
-产品测试设计和真实结果见[测试用例](test-cases.md)，与[测试点矩阵](测试点设计与需求覆盖矩阵.md)逐项关联。旧文档的“尚无产品脚本”为历史设计状态；当前脚本不改变正确预期。任务5按两轮证据填写149实际结果、104复现/稳定性；45暂不可完整动态只填原因和局部证据，后两栏空。慢任务/事务屏障、双owner和本地Provider协议替身仍待补，其中39用例至少一轮实际失败，不能据记录齐全宣布全面通过。
+产品测试设计和真实结果见[测试用例](test-cases.md)，与[测试点矩阵](测试点设计与需求覆盖矩阵.md)逐项关联。旧文档的“尚无产品脚本”为历史设计状态；当前脚本不改变正确预期。任务5按两轮证据填写149实际结果、104复现/稳定性；45暂不可完整动态只填原因和局部证据，后两栏空。上述是20261007历史结果；ADR002慢任务/事务屏障/本地协议已补并两轮复验，双owner仍按非目标暂缓，当前149结果及104逐项追踪见复验报告。
 
 正式证据为`artifacts/20261007t072506-2fc5b075`和`artifacts/20261007t075158-2907bbdf`；第二轮另存`frozen-baseline.json`（164文件基线）、`two-round-comparison.json`（逐检查差异）、`final-resource-audit.json`（本轮主/子资源只读审计）、`document-result-validation.json`（149字段/191点/104问题条目/846检查Schema及证据链接的交付校核）。JSON/中文日志是原始依据，报告只给安全摘要；artifacts默认Git忽略，提交文档不会自动携带证据，需保留本机目录或另行脱敏归档。
 
@@ -98,19 +107,19 @@ MOCK_PROVIDER=true、默认384维、AUTO_CREATE_SCHEMA=false固定；api/worker/
 | th / th-tests.mjs | TH_001～004 | 会话创建/排序/详情/归档 |
 | msg / msg-tests.mjs | MSG_001～008 | Message字段/seq/幂等/普通并发及assistant事实 |
 | run / run-tests.mjs | RUN_001～007 | 创建原子事实/快照/状态/成功事务 |
-| wk / wk-tests.mjs | WK_001～025 | 实际PG正常claim/短deadline/退避/重启/DB故障/日志；完整E2子项保留blocked |
-| can / can-tests.mjs | CAN_001～006 | queued取消、终态幂等、取消错误；步骤/最终提交竞态待补 |
+| wk / wk-tests.mjs | WK_001～025 | 实际PG正常claim/短deadline/退避/重启/DB故障/日志；真实PG/租约/自然deadline/停机恢复E2驱动 |
+| can / can-tests.mjs | CAN_001～006 | queued取消、终态幂等、取消错误；真实步骤/最终提交双赢家及迟到写回 |
 | doc / doc-tests.mjs | DOC_001～011 | 文档元数据、格式/MIME/大小/hash/路径、索引请求和重建 |
 | par / par-tests.mjs | PAR_001～004 | 三格式真实解析、编码/损坏/空文/docx非段落区域 |
 | chk / chk-tests.mjs | CHK_001～002 | 字符/Unicode切分/offset/overlap及非法参数 |
-| idx / idx-tests.mjs | IDX_001～007 | 真实索引/向量/源丢失、配置边界、active/事务受限子项 |
-| rag / rag-tests.mjs | RAG_001～008 | PG Top-K/余弦、空库正式Run、非空回答/delta/引用、Provider配置；E4协议待补 |
+| idx / idx-tests.mjs | IDX_001～007 | 真实索引/向量/源丢失、配置边界、候选active/短事务/原子发布 |
+| rag / rag-tests.mjs | RAG_001～008 | PG Top-K/余弦、空库正式Run、非空回答/delta/引用、Provider配置；本地真实HTTP/SSE错误矩阵 |
 | evt / evt-tests.mjs | EVT_001～005 | envelope/seq/游标/重启/实际事件类型 |
 | sse / sse-tests.mjs | SSE_001～005 | 真实HTTP SSE/游标优先级/断线/EOF/缺对象语义 |
 | fe / fe-tests.mjs | FE_001～015 | Playwright页面及真实Workspace/store组件投影/恢复/重连/隔离 |
 | own / own-tests.mjs | OWN_001 | 双owner完整场景未准备，逐TP明确blocked，不模拟生产登录 |
 | sec / sec-tests.mjs | SEC_001～005 | 文件非公开/逃逸symlink/XSS双角色渲染/脱敏/内存风险 |
-| perf / perf-tests.mjs | PERF_001～002 | 3预热+20提交样本/分位值；执行首包时钟条件待补 |
+| perf / perf-tests.mjs | PERF_001～002 | 3预热+20提交样本/分位值；真实run.started首执行事件20样本/UTC误差 |
 | arc / arc-tests.mjs | ARC_001～004 | 人工数据流校审+AST边界/实际Port/技术栈/迁移历史 |
 | qlt / qlt-tests.mjs | QLT_001～007 | 全状态边、既有pytest、后前端质量命令和API/Event门禁 |
 | life / life-tests.mjs | LIFE_001～009 | 独立总入口运行的隔离/协议/报告/清理/诊断恢复和危险路径 |
@@ -119,7 +128,7 @@ MOCK_PROVIDER=true、默认384维、AUTO_CREATE_SCHEMA=false固定；api/worker/
 
 `doc-limit-tests.mjs`及`rag-empty-tests.mjs`不在正式manifest重复计数：由doc/rag分类通过固定HarnessScenario启动新库，验证真实HTTP恰10MiB（暂停Worker直到销毁，避免15420块索引）和真实空库Run；主报告关联nested证据。LIFE自检部署5个独立父run，其中nested-recovery再部署1个子run；另有daemon不可达及无效恢复凭据检查，不部署资源。验证空分类、非法报告、超时树、disabled、KeepContainers及分类超时后父登记兜底清理；自检哨兵只在tooling，不宣称产品passed。耗时会高于单纯主链路，可查看各类中文日志。
 
-FE_009的浏览器局部场景仅把第一次HTTP历史交付控制为空（保存正式API真实事件摘要），让真实原生SSE读取PG初始帧；后续HTTP透传。`fe-sse-transport.mjs`将生产client的本例正式SSE请求以HTTP302导向限定本例Run/前端Origin的本地透传服务，PG帧原字节传递，真实销毁socket触发error，不合成事件或关闭CORS。`fe-sse-transport-selftest.mjs`仅检查工具边界、真实断开/游标恢复及不重连负哨兵，不进入manifest。这是受控传输服务断开检查，不代表正式API自然返回空历史；普通浏览器offline与running分片完整续流仍独立blocked。
+FE_009当前持久场景保持真实HTTP历史与PG首片屏障，真实TCP socket销毁并按最后seq恢复，不改历史为合成空数组；旧局部驱动记录只作历史。`fe-sse-transport.mjs`将生产client的本例正式SSE请求以HTTP302导向限定本例Run/前端Origin的本地透传服务，PG帧原字节传递，真实销毁socket触发error，不合成事件或关闭CORS。`fe-sse-transport-selftest.mjs`仅检查工具边界、真实断开/游标恢复及不重连负哨兵，不进入manifest。这是受控传输服务断开检查，不代表正式API自然返回空历史；普通浏览器offline单独blocked；running三片完整续流、PG补放及不取消已纳入真实两轮。
 
 ```powershell
 node --test tests/demo-smoke/lib/category-kit.test.mjs
@@ -168,6 +177,8 @@ npm run tools:check --prefix tests/demo-smoke
 
 清理失败时尽可能删tmp、保留最小runtime凭据以便重试，不报告无残留。诊断保留或硬杀进程后：
 
+删除runtime前原子保存`runtime/<run_id>-recovery.json`单文件恢复胶囊（含凭据，仅ignored runtime，禁止归档到报告），其它删除失败仍可从胶囊恢复完整context/环境/资源身份。runtime成功删除后最后删除胶囊；胶囊删除失败同样清理失败。`CleanupRunId`可恢复仅剩胶囊的情况，严格校验run/project/marker/白名单/普通文件；不要手工删胶囊或覆盖冲突材料。
+
 ```powershell
 pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1 -CleanupRunId <输出的run_id>
 ```
@@ -178,4 +189,4 @@ artifact默认保留。容器日志上限10MiB×2且随容器删除，报告只�
 
 ## 已知边界
 
-基础健康和DB探测不证明PRD全通过。lease/retry/deadline/前端恢复等业务缺口未修复；完整慢Provider/事务屏障、双owner/E4协议等仍待准备，分类blocked不是passed。静态架构检查含人工判断及AST证据，不证明完整替换/并发；后续实现改变应重新校审。硬终止/关机无法finally，必须恢复清理；runtime也丢失时按记录project标签只读定位残留，再人工确认精确资源，禁止全局清理。
+基础健康和DB探测不证明PRD全通过。历史基线的lease/retry/deadline/前端恢复及慢Provider/事务屏障/E4协议驱动已由ADR002 Task1～5c补齐并有批准的限定验证；正式冻结源码两轮已实际运行，当前逐check限制见复验报告，专项passed仍不能代替all。OWN完整双owner、PAR全区域、ordinary-browser-offline、平台可捕获Ctrl+C及真实检索效果仍分别受限。静态架构检查含人工判断及AST证据，不单独证明完整替换/并发；后续实现改变应重新校审。硬终止/关机无法finally，必须恢复清理；runtime与恢复胶囊均丢失时按记录project标签只读定位残留，再人工确认精确资源，禁止全局清理。

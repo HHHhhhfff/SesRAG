@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process'
 import Ajv from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { ESLint } from 'eslint'
+import { contractValidator } from '../lib/api-contracts.mjs'
 
 // 任务1的依赖能力自检：仅用哨兵HTML/语法/组件，不计入产品manifest。
 const root = fileURLToPath(new URL('../', import.meta.url))
@@ -27,10 +28,10 @@ try {
 
 const ajv = new Ajv({ strict: false, allErrors: true })
 addFormats(ajv)
-for (const url of [new URL('../specific_test_script/category-result.schema.json', import.meta.url),
-  new URL('../../../contracts/run_event_v1.json', import.meta.url)]) {
+for (const url of [new URL('../specific_test_script/category-result.schema.json', import.meta.url)]) {
   ajv.compile(JSON.parse(await readFile(url, 'utf8')))
 }
+assert.ok(contractValidator().getSchema('https://sesrag.local/contracts/run_event_v1.json'))
 const validate = ajv.compile({ type: 'object', required: ['id'] })
 assert(validate({ id: '工具哨兵' }))
 assert(!validate({}))

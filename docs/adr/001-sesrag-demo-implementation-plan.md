@@ -110,7 +110,7 @@ Worker 使用 `worker_id` 对应的 Redis 临时键写入 readiness 心跳；API
 | 向量 | PostgreSQL + pgvector | Demo 减少基础设施；通过 `VectorStorePort` 预留 Milvus。 |
 | 文档解析 | `txt`、`md` 原生解析，`docx` 使用 `python-docx` | 统一 `DocumentParserPort`，不把格式判断散落在 Worker。 |
 | 模型 | `MockModelProvider` + 可选 OpenAI-compatible Provider | 无外部 Key 也能跑完整自动化验收；真实 Provider 失败必须显式报错。 |
-| 前端 | Vue 3、TypeScript、Vite、Pinia、Vue Router、Naive UI、marked、DOMPurify、Lucide Vue | 浏览器只投影服务端状态。 |
+| 前端 | Vue 3、TypeScript、Vite、Pinia、单页原生 Vue 组件、marked、DOMPurify、Lucide Vue | ADR-002 校正未实际消费的 Router/Naive UI 声明；浏览器只投影服务端状态。 |
 | 测试 | pytest、pytest-asyncio、Ruff、mypy、Vitest、vue-tsc、ESLint、Playwright | 单元、契约、集成和主流程验收分层执行。 |
 
 Demo 不在领域层引入 LangChain/LangGraph 的状态管理。若未来使用 LangChain/LangGraph，只能将其放在 Model/RAG Adapter 或执行编排内部，不能取代 PostgreSQL 中的 Run、Task 和 Event 契约。
@@ -148,7 +148,8 @@ Document 1 ── 0..* Task(kind=index_document; at most one nonterminal)
 - `Thread`、`Message`、`Run`、`Task`、`RunEvent`、`Document`、`Chunk` 使用服务端生成的 UUID4。
 - 一个 Run 只能绑定一个用户 Message 和至多一个最终 assistant Message；重试只能增加 Task attempt。
 - Message 的 `(thread_id, seq)`、RunEvent 的 `(run_id, seq)`、Chunk 的 `(document_id, index_batch_id, seq)` 都有唯一约束。
-- `Task.kind=run` 时必须有 `run_id`；`Task.kind=index_document` 时必须有 `document_id`，由应用层校验互斥关系。
+- `Task.kind=run` 时必须有 `run_id` 且无 `document_id`；`Task.kind=index_document` 时必须有 `document_id` 且无 `run_id`，由应用层校验并由数据库 CHECK 兜底（ADR-002 明确约束口径）。
+- Message 的 `(thread_id, idempotency_key)` 有唯一约束；assistant 按 `run_id` 部分唯一，user 不占该唯一索引。`source` 使用 `user_input`/`assistant_generation`，Document 使用 `local_upload`，公开 Message 同时返回 `created_at`，不公开宿主路径。
 - `Run.primary_task_id` 初始允许为空；事务先创建 Run，再创建引用该 Run 的 Task，最后在同一事务中回填 `primary_task_id`，避免循环外键无法插入。
 - Demo 使用固定 `owner_id=local-user` 的开发身份；字段保留用于后续认证接入，但不宣称生产级身份隔离。
 
@@ -210,9 +211,11 @@ queued -> leased -> running -> succeeded
 
 1. 在 `state=queued`、`available_at <= now()` 且未超过 `deadline_at` 的任务中使用 `FOR UPDATE SKIP LOCKED` 选择一条。
 2. 原子更新为 `leased`，写入 `worker_id`、`generation = generation + 1`、`lease_expires_at` 和 `attempt = attempt + 1`。
-3. 提交后，对于 `kind=run` 追加 `task.leased`；Worker 再进入 `running` 并追加 `run.started`。`kind=index_document` 不写入 RunEvent，而是通过 Document 状态和结构化日志记录索引生命周期。
+3. 对于 `kind=run`，在同一领取事务内追加 `task.leased` 并与租约事实一起提交；提交后 Worker 才进入执行并追加 `run.started`。`kind=index_document` 不写入 RunEvent，而是通过 Document 状态和结构化日志记录索引生命周期。此处由 ADR-002 RM-04 明确修订，不能先提交领取再独立写领取事件。
 
 所有续租、进度和终态写回都必须带 `task_id + worker_id + generation` 条件；条件更新影响行数为 0 时，Worker 视为已经失去 lease，停止后续写回。
+
+ADR-002 进一步要求提交阶段校验 lease 未过期和 deadline；过期任务即使尚无新 Worker 接管，也不能成功写回。queued、running、retry_waiting 的硬截止及尝试耗尽要同步结算 Task 与其 Run/Document。旧执行者拒绝以结构化安全日志审计，不向已终态 Journal 追加迟到的 delta 或冲突终态事件。
 
 ### 5.3 Demo 默认调度参数
 

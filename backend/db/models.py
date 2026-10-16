@@ -3,13 +3,16 @@ from typing import Any
 
 from sqlalchemy import (
     JSON,
+    CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     TypeDecorator,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -53,12 +56,24 @@ class ThreadModel(Base):
 
 class MessageModel(Base):
     __tablename__ = "messages"
-    __table_args__ = (UniqueConstraint("thread_id", "seq", name="uq_messages_thread_seq"),)
+    __table_args__ = (
+        UniqueConstraint("thread_id", "seq", name="uq_messages_thread_seq"),
+        UniqueConstraint("thread_id", "idempotency_key", name="uq_messages_thread_idempotency"),
+        # user 和 assistant 均关联 Run，只约束最终 assistant 的唯一性。
+        Index(
+            "uq_messages_assistant_run",
+            "run_id",
+            unique=True,
+            postgresql_where=text("role = 'assistant'"),
+            sqlite_where=text("role = 'assistant'"),
+        ),
+    )
 
     message_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     thread_id: Mapped[str] = mapped_column(ForeignKey("threads.thread_id"), index=True)
     seq: Mapped[int] = mapped_column(Integer)
     role: Mapped[str] = mapped_column(String(20))
+    source: Mapped[str] = mapped_column(String(40), default="user_input")
     content: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="completed")
     run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
@@ -90,6 +105,13 @@ class RunModel(Base):
 
 class TaskModel(Base):
     __tablename__ = "tasks"
+    __table_args__ = (
+        CheckConstraint(
+            "(kind = 'run' AND run_id IS NOT NULL AND document_id IS NULL) OR "
+            "(kind = 'index_document' AND document_id IS NOT NULL AND run_id IS NULL)",
+            name="ck_tasks_kind_target",
+        ),
+    )
 
     task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     kind: Mapped[str] = mapped_column(String(30), index=True)
@@ -135,6 +157,7 @@ class DocumentModel(Base):
     document_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     owner_id: Mapped[str] = mapped_column(String(120), index=True)
     filename: Mapped[str] = mapped_column(String(255))
+    source: Mapped[str] = mapped_column(String(40), default="local_upload")
     extension: Mapped[str] = mapped_column(String(20))
     size_bytes: Mapped[int] = mapped_column(Integer)
     content_hash: Mapped[str] = mapped_column(String(64), index=True)
@@ -162,4 +185,5 @@ class ChunkModel(Base):
     start_offset: Mapped[int] = mapped_column(Integer)
     end_offset: Mapped[int] = mapped_column(Integer)
     embedding: Mapped[list[float] | None] = mapped_column(EmbeddingType(), nullable=True)
+    locations_json: Mapped[list[dict]] = mapped_column(JSON, default=list, server_default="[]")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

@@ -93,6 +93,9 @@ export class Context {
       if (match) this.env[match[1]]=match[2];
     }
     assert.equal(this.env.SMOKE_PROJECT,this.context.compose_project);
+    // 根部署必填凭据必须与本次隔离随机密码一致，不能读取开发环境默认值。
+    this.env.POSTGRES_PASSWORD=this.env.SMOKE_DB_PASSWORD;
+    this.env.DATABASE_URL=`postgresql+psycopg://sesrag:${encodeURIComponent(this.env.SMOKE_DB_PASSWORD)}@postgres:5432/sesrag`;
     this.secrets=[this.env.SMOKE_DB_PASSWORD];
     this.evidencePaths=[];
   }

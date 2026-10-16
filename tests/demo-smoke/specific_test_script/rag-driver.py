@@ -15,6 +15,7 @@ from backend.config import Settings
 from backend.db.models import ChunkModel, DocumentModel
 from backend.db.session import create_engine, create_session_factory
 from backend.infrastructure.events.redis_notifier import RedisNotifier
+from backend.infrastructure.providers.factory import providers_for_snapshot
 from backend.infrastructure.providers.mock import MockEmbeddingProvider, MockModelProvider
 from backend.infrastructure.rag.pgvector_store import cosine_similarity, search_chunks
 from backend.workers.runtime import WorkerRuntime
@@ -49,29 +50,32 @@ async def main():
             ["embedding_model_name"],
             ["model_base_url", "model_api_key", "model_name", "embedding_model_name"],
         ):
-            local = settings.model_copy(update={**configured, **{key: None for key in missing}})
             error = None
             try:
+                local = Settings(
+                    _env_file=None,
+                    **{**settings.model_dump(), **configured, **{key: None for key in missing}},
+                )
                 WorkerRuntime(local, None, RedisNotifier(local))
             except Exception as exc:
                 error = type(exc).__name__
             checks.append({"missing": missing, "error": error})
-        mock = settings.model_copy(
-            update={
-                "mock_provider": True,
-                "model_base_url": None,
-                "model_api_key": None,
-                "model_name": None,
-                "embedding_model_name": None,
-            }
+        mock_embedding, mock_model = providers_for_snapshot({"mock_provider": True}, None)
+        real = Settings(_env_file=None, **{**settings.model_dump(), **configured})
+        ready, _ = providers_for_snapshot(
+            {
+                "mock_provider": False,
+                "base_url": real.model_base_url,
+                "model": real.model_name,
+                "embedding_model": real.embedding_model_name,
+            },
+            real.model_api_key,
         )
-        runtime = WorkerRuntime(mock, None, RedisNotifier(mock))
-        ready = WorkerRuntime(settings.model_copy(update=configured), None, RedisNotifier(settings))
         result = {
             "missing": checks,
-            "mock_embedding": type(runtime.embedding_provider).__name__,
-            "mock_model": type(runtime.model_provider).__name__,
-            "real_configured": type(ready.model_provider).__name__,
+            "mock_embedding": type(mock_embedding).__name__,
+            "mock_model": type(mock_model).__name__,
+            "real_configured": type(ready).__name__,
         }
     elif mode == "cosine":
         checks = []
@@ -122,7 +126,7 @@ async def main():
                         )
                         error = None
                     except Exception as exc:
-                        error = type(exc).__name__
+                        error = getattr(exc, "code", type(exc).__name__)
                     result = {"query_dimensions": len(query) - 1, "error": error}
                 else:
                     active = list(

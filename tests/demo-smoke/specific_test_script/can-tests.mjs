@@ -1,3 +1,4 @@
+import { executionCoverage } from './execution-coverage.mjs';
 import { runCategory, assert } from '../lib/category-kit.mjs';
 import { uuid, lazy, isTime, runFacts, stoppedWorker, successful, eventSummary } from './run-test-driver.mjs';
 
@@ -47,10 +48,5 @@ await runCategory('can', async s => {
     assert.ok(JSON.stringify((await ctx.detail(data.thread.thread_id)).messages) === JSON.stringify(data.detail.messages), '成功后的取消不得改变Message');
     return { run_id: data.run.run_id, terminal_status: 'succeeded', assistant_message_id: data.run.assistant_message_id, unchanged: true };
   });
-  s.block('CAN_001', 'TP-CAN-002', 'failed_repeat', '已failed Run取消保持失败、错误和事件不变', 'E2 真实Run永久失败驱动尚未准备；空文Index失败不是Run失败');
-  s.blockCase('CAN_002', 'E2 query embedding返回前屏障及search调用计数驱动尚未准备');
-  s.blockCase('CAN_003', 'E2 search完成后、model.stream_answer调用前屏障及调用计数驱动尚未准备');
-  s.blockCase('CAN_004', 'E2 首片已提交、后两片在取消后返回的慢Provider逐片屏障尚未准备');
-  for (const sub of ['cancel_commits_first', 'success_commits_first']) s.block('CAN_005', 'TP-CAN-006', sub, '控制取消/最终成功提交先后，每Run只有一个有效终态，无迟到覆盖', `E2 ${sub}最终SELECT/commit双事务屏障尚未准备`);
-  s.blockCase('CAN_006', 'E2 真实临时失败、到期回排与取消交错驱动尚未准备；不得SQL写retry_waiting伪造前提');
+  await executionCoverage(s);
 });

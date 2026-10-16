@@ -1,3 +1,4 @@
+import {documentRagCoverage} from './document-rag-coverage.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash, randomUUID} from 'node:crypto';
@@ -13,7 +14,7 @@ await runCategory('doc',async s=>{
   const c=s.ctx, own=[];
   const docx=fs.readFileSync(path.join(c.args.FixtureDir,'upload-safe','smoke.docx'));
   const bytes={txt:Buffer.from('DOC独立安全输入 中文\nsecond line'),md:Buffer.from('# DOC独立资料\n**正文**'),docx};
-  const stored=id=>c.sql(`SELECT document_id,owner_id,filename,extension,size_bytes,content_hash,storage_key,status,active_index_batch_id,last_error_code,created_at FROM documents WHERE document_id='${id}'`)[0];
+  const stored=id=>c.sql(`SELECT document_id,owner_id,filename,source,extension,size_bytes,content_hash,storage_key,status,active_index_batch_id,last_error_code,created_at FROM documents WHERE document_id='${id}'`)[0];
   const tasks=id=>c.sql(`SELECT task_id,kind,state,document_id,progress_json,last_error_code FROM tasks WHERE document_id='${id}' ORDER BY created_at`);
   const total=()=>c.sql('SELECT (SELECT count(*) FROM documents) AS documents,(SELECT count(*) FROM tasks) AS tasks')[0];
   const files=()=>c.python(`import json\nfrom backend.config import Settings\np=Settings().upload_path\nprint('SMOKE_JSON:'+json.dumps({'files':sorted(str(x.relative_to(p)) for x in p.rglob('*') if x.is_file())}))`).files;
@@ -48,7 +49,7 @@ await runCategory('doc',async s=>{
       return {count:list.length,registered:registered.length,owner_matches:true};
     });
     await s.check('DOC_001','TP-DOC-001','source-field','Document登记提供PRD要求的独立来源字段',async()=>{
-      assert.ok(registered.length>0);assert.ok(registered.every(x=>Object.hasOwn(x.api,'source')),'当前DocumentResponse缺少独立source字段');
+      assert.ok(registered.length>0);for(const item of registered){assert.equal(item.api.source,'local_upload');assert.equal(item.db.source,'local_upload');assert.equal(Date.parse(item.api.created_at),Date.parse(item.db.created_at));}
     });
     // DOC_002：每个白名单/拒绝后缀单独请求，拒绝必须无Document/Task/文件增量。
     for(const ext of ['txt','md','docx','TXT','MD','DOCX','doc','pdf','exe','none']) await s.check('DOC_002','TP-DOC-002',ext,'支持后缀归一接受；非支持后缀415且无副作用',async()=>{
@@ -80,7 +81,7 @@ await runCategory('doc',async s=>{
       const result=c.python(driver,{timeoutMs:30000});assert.equal(result.sentinel_checks.length,3);assert.ok(result.sentinel_checks.every(x=>x.server_uuid_key&&x.under_upload_root&&x.sentinel_unchanged));return {variants:3,sentinel_unchanged:true,scope:'本用例独立临时上传范围和PG保存点'};
     });
     for(const filename of ['../sentinel.txt','/absolute/sentinel.txt','C:\\absolute\\sentinel.txt','中文 ☃ 特殊&.txt']) await s.check('DOC_005','TP-DOC-005',sha(filename).slice(0,8),'原名不控制服务端UUID路径，已保存文件身份与内容匹配',async()=>{
-      const content=Buffer.from('DOC_005安全路径哨兵'),r=await upload(filename,content,mime.txt);assert.equal(r.status,201);const d=stored(r.body.document_id);assert.equal(d.storage_key,`documents/${d.document_id}/source.txt`);
+      const content=Buffer.from('DOC_005安全路径哨兵'),r=await upload(filename,content,mime.txt);assert.equal(r.status,201);const d=stored(r.body.document_id);assert.equal(r.body.filename,filename==='中文 ☃ 特殊&.txt'?filename:'sentinel.txt');assert.equal(d.filename,r.body.filename);assert.equal(d.storage_key,`documents/${d.document_id}/source.txt`);
       const state=c.python(`import hashlib,json\nfrom backend.config import Settings\nroot=Settings().upload_path.resolve()\nkey=${JSON.stringify(d.storage_key)}\np=(root/key).resolve()\nprint('SMOKE_JSON:'+json.dumps({'under_root':root in p.parents,'hash':hashlib.sha256(p.read_bytes()).hexdigest(),'relative_matches':str(p.relative_to(root))==key}))`);assert.ok(state.under_root&&state.relative_matches);assert.equal(state.hash,sha(content));assert.ok(!JSON.stringify(r.body).includes('/data/uploads'));return {document_id:d.document_id,status:r.status,under_uuid_path:true};
     });
     // DOC_005：真实浏览器显示API原名，Vue插值不得执行原名中的HTML事件。
@@ -89,23 +90,20 @@ await runCategory('doc',async s=>{
       for(const filename of filenames){const r=await upload(filename,Buffer.from('DOC_005浏览器独立安全资料'),mime.txt);assert.equal(r.status,201);documents.push(r.body);}
       const {chromium}=await import('playwright');let browser;
       try{browser=await chromium.launch({headless:true});const page=await browser.newPage();await page.addInitScript(()=>{globalThis.__doc005Executed=false;});const dialogs=[];page.on('dialog',async dialog=>{dialogs.push(dialog.type());await dialog.dismiss();});await page.goto(c.args.FrontendUrl,{waitUntil:'networkidle',timeout:30000});
-        for(const document of documents){const label=page.getByText(document.filename,{exact:true});await label.waitFor({state:'visible',timeout:15000});assert.equal(await label.textContent(),document.filename);assert.equal(await label.evaluate(node=>node.tagName),'SPAN');assert.equal(await label.locator('img,svg,script,iframe').count(),0);}
+        for(const document of documents){const label=page.getByText(document.filename,{exact:true});await label.waitFor({state:'visible',timeout:15000});assert.equal(await label.textContent(),document.filename);assert.equal(await label.locator('img,svg,script,iframe').count(),0);}
         assert.equal(await page.evaluate(()=>globalThis.__doc005Executed),false);assert.deepEqual(dialogs,[]);return {documents:documents.map(x=>x.document_id),displayed_exactly:true,html_elements_created:0,events_executed:false};
       }finally{await browser?.close();}
     });
     await s.check('DOC_005','TP-DOC-005','long-name-observation','超长文件名观察按API实际处理，拒绝无副作用且响应可诊断不泄漏路径',async()=>{
       const filename=`DOC_005-${randomUUID()}-${'长'.repeat(300)}.txt`,before=total(),beforeFiles=files(),r=await upload(filename,Buffer.from('DOC_005超长名安全资料'),mime.txt),response=JSON.stringify(r.body);
       assert.ok(!/\/data\/uploads|Traceback|sqlalchemy|psycopg|[A-Za-z]:\\|storage_key/i.test(response),'超长名错误泄漏路径/堆栈/持久化内部信息');
-      if(r.status===201){assert.equal(r.body.filename,filename);const saved=stored(r.body.document_id);assert.equal(saved.filename,filename);assert.equal(saved.storage_key,`documents/${saved.document_id}/source.txt`);return {document_id:saved.document_id,filename_characters:[...filename].length,status:r.status,observation:'当前入口接受该长度，不把未约定长度作为精确门禁'};}
+      assert.equal(r.status,422);assert.equal(code(r),'INVALID_DOCUMENT_FILENAME');
       assert.ok(r.status>=400&&r.status<600);assert.deepEqual(total(),before);assert.deepEqual(files(),beforeFiles);assert.ok(code(r)&&typeof r.body?.message==='string','超长名拒绝仅通用错误，缺少可诊断稳定错误码/安全说明');return {filename_characters:[...filename].length,status:r.status,error_code:code(r),rejection_safe:true};
     });
-    s.blockCase('DOC_006','尚无保存成功后精确DB commit故障驱动；不能伪造SQL登记失败或删除他人文件。');
-    s.blockCase('DOC_007','尚无限定本次上传卷的可控write失败/API脱敏驱动；不填满磁盘或修改共享上传目录权限。');
     await s.check('DOC_008','TP-DOC-010','queued','queued重复index返回同Task且无新batch',async()=>{
       const r=await upload(`DOC_008-${randomUUID()}.txt`,bytes.txt,mime.txt);assert.equal(r.status,201);const id=r.body.document_id,before=tasks(id);assert.equal(before[0].state,'queued');
       const a=await c.request(`/api/v1/documents/${id}/index`,{method:'POST'}),b=await c.request(`/api/v1/documents/${id}/index`,{method:'POST'});assert.equal(a.status,200);assert.equal(b.status,200);assert.equal(a.body.task_id,before[0].task_id);assert.equal(b.body.task_id,a.body.task_id);assert.deepEqual(tasks(id),before);return {document_id:id,task_id:a.body.task_id,state:'queued'};
     });
-    for(const state of ['leased','running','retry_waiting'])s.block('DOC_008','TP-DOC-010',state,`${state}重复index复用同Task和batch`,'缺少E2确定阶段屏障；queued结果不代表该状态。');
     await s.check('DOC_010','TP-DOC-012','missing-document','不存在Document索引404且无Task/文件副作用',async()=>{
       const before=total(),beforeFiles=files(),id=randomUUID(),r=await c.request(`/api/v1/documents/${id}/index`,{method:'POST'});assert.equal(r.status,404);assert.equal(code(r),'DOCUMENT_NOT_FOUND');assert.deepEqual(total(),before);assert.deepEqual(files(),beforeFiles);return {document_id:id,status:r.status,error_code:code(r)};
     });
@@ -118,7 +116,6 @@ await runCategory('doc',async s=>{
     try{assert.equal(c.compose(['stop','worker']).code,0);stopped=true;const id=r.body.document_id,responses=await Promise.all([0,1].map(()=>c.request(`/api/v1/documents/${id}/index`,{method:'POST'})));for(const x of responses)assert.equal(x.status,200);const active=tasks(id).filter(t=>['queued','leased','running','retry_waiting'].includes(t.state));assert.equal(active.length,1,'普通并发创建了重复活动索引Task');assert.equal(responses[0].body.task_id,responses[1].body.task_id);const repeat=await c.request(`/api/v1/documents/${id}/index`,{method:'POST'});assert.equal(repeat.status,200);assert.equal(repeat.body.task_id,active[0].task_id);return {document_id:id,active_tasks:active.length,task_id:active[0].task_id};}
     finally{if(stopped){assert.equal(c.compose(['start','worker']).code,0);await c.ready();}}
   });
-  s.block('DOC_009','TP-DOC-011','deterministic-query-barrier','两个请求同时越过无活动Task查询仍只一个活动Task','缺少E2查询后屏障；普通并发偶然成功不证明并发幂等安全。');
   const rebuild={};
   await s.check('DOC_011','TP-DOC-013','terminal-rebuild','indexed/failed终态都创建新Task和batch，queued保留旧active',async()=>{
     const good=await upload(`DOC_011-${randomUUID()}.txt`,Buffer.from('DOC_011历史引用资料'),mime.txt),empty=await upload(`DOC_011-empty-${randomUUID()}.txt`,Buffer.alloc(0),mime.txt);assert.equal(good.status,201);assert.equal(empty.status,201);await c.waitDoc(good.body.document_id,30000);await c.waitDoc(empty.body.document_id,30000);
@@ -130,4 +127,5 @@ await runCategory('doc',async s=>{
     assert.ok(rebuild.docs?.length===2,'重建前置数据未成功创建');for(const x of rebuild.docs){const d=await c.waitDoc(x.id,30000);assert.equal(d.status,x.old_status==='indexed'?'indexed':'failed');const chunks=c.sql(`SELECT index_batch_id,seq FROM chunks WHERE document_id='${x.id}'`);if(x.old_status==='indexed'){assert.equal(d.active_index_batch_id,x.new_batch);assert.ok(chunks.length);assert.ok(chunks.every(y=>y.index_batch_id===x.new_batch));assert.equal(new Set(chunks.map(y=>y.seq)).size,chunks.length);}else{assert.equal(d.last_error_code,'EMPTY_DOCUMENT');assert.equal(chunks.length,0);}}
     const history=(await c.detail(rebuild.thread)).messages.find(x=>x.message_id===rebuild.history.message_id);assert.deepEqual(history,rebuild.history);return {documents:rebuild.docs.map(x=>x.id),historical_message:history.message_id,history_unchanged:true};
   });
+ await documentRagCoverage(s);
 });

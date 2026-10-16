@@ -1,5 +1,6 @@
+import { executionCoverage } from './execution-coverage.mjs';
 import { runCategory, assert } from '../lib/category-kit.mjs';
-import { uuid, isTime, increasing, lazy, ids, chainCounts, sqlValue, runFacts, stoppedWorker } from './run-test-driver.mjs';
+import { uuid, isTime, increasing, lazy, ids, chainCounts, sqlValue, runFacts, stoppedWorker, assertMessageSource } from './run-test-driver.mjs';
 
 export const coveredCases = ['MSG_001', 'MSG_002', 'MSG_003', 'MSG_004', 'MSG_005', 'MSG_006', 'MSG_007', 'MSG_008'];
 await runCategory('msg', async s => {
@@ -29,7 +30,7 @@ await runCategory('msg', async s => {
     const key = uuid();
     const submitted = await ctx.submit(thread.thread_id, content, key);
     const detail = await ctx.detail(thread.thread_id);
-    const rows = ctx.sql(`SELECT message_id,thread_id,seq,role,content,status,run_id,idempotency_key,created_at FROM messages WHERE message_id=${sqlValue(submitted.message_id)}`);
+    const rows = ctx.sql(`SELECT message_id,thread_id,seq,role,source,content,status,run_id,idempotency_key,created_at FROM messages WHERE message_id=${sqlValue(submitted.message_id)}`);
     return { thread, content, key, submitted, detail, rows, run: runFacts(ctx, submitted.run_id) };
   }));
   await s.check('MSG_001', 'TP-MSG-001', 'persistent_fields', '用户正文、user/completed、Thread/Run关联、正seq、时间、幂等Key持久一致', async () => {
@@ -56,8 +57,8 @@ await runCategory('msg', async s => {
   await s.check('MSG_001', 'TP-MSG-001', 'public_source', '公开 Message 事实有独立来源字段/来源对象，不能只用role替代来源', async () => {
     const data = await first();
     const message = data.detail.messages.find(item => item.message_id === data.submitted.message_id);
-    assert.ok(Object.hasOwn(message, 'source') && message.source != null, 'Message 详情缺少独立来源 source 契约');
-    return { message_id: message.message_id, source_present: true };
+    assertMessageSource(message, data.rows[0], 'user');
+    return { message_id: message.message_id, source: message.source, created_at: message.created_at };
   });
 
   // MSG_002：一次停Worker保护全部边界，每项建立独立Thread并比较自己的完整执行链。
@@ -118,6 +119,18 @@ await runCategory('msg', async s => {
     return { run_ids: data.results.map(item => item.run.run_id), assistant_message_ids: data.results.map(item => item.run.assistant_message_id), markdown_preserved: true };
   });
 
+  await s.check('MSG_003', 'TP-MSG-008', 'assistant_source_and_time', '每个assistant公开/PG来源严格为assistant_generation，创建时间与同一持久事实一致', async () => {
+    const data = await sequence();
+    const sources = [];
+    for (const item of data.results) {
+      const message = data.detail.messages.find(value => value.message_id === item.run.assistant_message_id);
+      const persisted = ctx.sql(`SELECT message_id,role,source,created_at FROM messages WHERE message_id=${sqlValue(message.message_id)}`)[0];
+      assertMessageSource(message, persisted, 'assistant');
+      sources.push({message_id: message.message_id, source: message.source, created_at: message.created_at});
+    }
+    return sources;
+  });
+
   // MSG_004：同时发起HTTP，排除assistant竞争，核对Thread游标及唯一用户seq。
   await s.check('MSG_004', 'TP-MSG-004', 'different_keys_concurrent', '不同Key并发提交均201，恰有2条用户Message/Run/Task、唯一seq及4条初始Event', () => stoppedWorker(ctx, async () => {
     const thread = await ctx.thread('MSG_004 并发不同问题');
@@ -172,7 +185,5 @@ await runCategory('msg', async s => {
       const counts = chainCounts(ctx, thread.thread_id); assert.deepEqual(counts, { messages: 1, runs: 1, tasks: 1, events: 2 });
       return { trial: index + 1, thread_id: thread.thread_id, statuses: responses.map(response => response.status), counts, limitation: '普通交错，不证明首次幂等查询通过后竞争已覆盖' };
   });
-  s.block('MSG_006', 'TP-MSG-006', 'first_query_barrier', '两请求首次幂等查询通过后放行，仍只建一组事实', 'E2 首次查询后、取Thread锁前的确定性双请求屏障尚未准备；普通并发结果不能替代');
-  s.blockCase('MSG_007', 'E2 同task_id/worker_id/generation重复完成或最终提交重入驱动尚未准备');
-  s.blockCase('MSG_008', 'E2 assistant分配seq与新用户Message创建的Thread游标/最终提交屏障尚未准备');
+  await executionCoverage(s);
 });

@@ -1,3 +1,4 @@
+import { executionCoverage } from './execution-coverage.mjs';
 import { runCategory, assert } from '../lib/category-kit.mjs';
 import { uuid, lazy, isUuid, isTime, ids, chainCounts, sqlValue, runFacts, stoppedWorker, successful } from './run-test-driver.mjs';
 
@@ -32,7 +33,6 @@ await runCategory('run', async s => {
     const counts = chainCounts(ctx, data.thread.thread_id); assert.equal(counts.runs, 1); assert.equal(counts.tasks, 1); assert.equal(counts.messages, 2);
     return { run_id: done.run_id, task_id: done.task.task_id, generation: done.task.generation, attempt: done.task.attempt, persisted_identity_preserved: true };
   });
-  for (const sub of ['first_flush_failure', 'event_commit_failure']) s.block('RUN_002', 'TP-RUN-002', sub, '创建事务失败时Message/Run/Task/Event和Thread游标整组回滚，恢复后可创建', `E2 仅作用本用例连接的${sub}注入驱动尚未准备`);
 
   // RUN_003：默认快照有可验证字段；跨配置真实执行单独保留解锁条件。
   const snapshot = lazy(() => stoppedWorker(ctx, async () => {
@@ -66,8 +66,6 @@ await runCategory('run', async s => {
     assert.deepEqual(runFacts(ctx, data.submitted.run_id).snapshot_json, data.facts.snapshot_json);
     return { run_id: data.submitted.run_id, retrieval_count: retrieval.data.count, frozen_top_k: data.facts.snapshot_json.retrieval.top_k, limitation: 'API和Worker配置相同，未证明配置改变后的遵从性' };
   });
-  s.block('RUN_003', 'TP-RUN-003', 'non_mock_model_snapshot', '非Mock创建快照准确记录指定模型且不含Key', 'E2/E4/C 非Mock、不同模型名称的创建与执行配置驱动尚未准备；默认Mock不证明硬编码模型正确');
-  s.block('RUN_003', 'TP-RUN-004', 'changed_worker_configuration', 'API top_k=1/模型A创建Run，Worker top_k=3/模型B执行仍遵从原快照', 'E2/E4/C API/Worker不同配置及Provider调用参数证据驱动尚未准备');
 
   // RUN_004：各状态用独立Run；不存在的状态入口不能由成功状态替代。
   for (const state of ['queued', 'succeeded', 'cancelled']) {
@@ -92,7 +90,6 @@ await runCategory('run', async s => {
       return { ...ids(data.submitted), run_status: data.facts.status, task_state: data.facts.task_state, repeated_reads_consistent: true };
     });
   }
-  for (const state of ['running', 'retry_waiting', 'failed']) s.block('RUN_004', 'TP-RUN-005', state, `${state}状态的API与PG事实一致、对应Task状态正确`, `E2 可控${state}阶段的真实Run驱动尚未准备；不使用Index失败或SQL修改状态替代`);
 
   // RUN_005：单条只读SELECT看到成功全组，最终commit故障另报条件不足。
   await s.check('RUN_005', 'TP-RUN-006', 'normal_committed_group', '正常完成从独立PG连接同次读取可见assistant正文/引用、Run/Task succeeded及两个终态事件', async () => {
@@ -107,8 +104,6 @@ await runCategory('run', async s => {
     assert.deepEqual(row.terminal_group[0].data.citations, row.citations_json); assert.equal(row.terminal_group[1].seq, row.terminal_group[0].seq + 1);
     return { run_id: row.run_id, assistant_message_id: row.message_id, assistant_count: row.assistant_count, citation_count: row.citations_json.length, terminal_group: row.terminal_group.map(event => ({ seq: event.seq, type: event.type })), limitation: '正常提交全组可见；未覆盖commit失败' };
   });
-  s.block('RUN_005', 'TP-RUN-006', 'final_commit_failure', '新增assistant和两个终态Event后commit失败整组回滚，不出现成功残片', 'E2 本用例最终commit失败、另一连接前后读取屏障尚未准备');
-  s.blockCase('RUN_006', 'E2 成功/永久失败Run的handler终态重入及旧attempt迟到失败驱动尚未准备；纯状态机不替代生产路径');
 
   // RUN_007：缺失对象的普通读取、补放、取消分别核对，不借SSE结果。
   for (const operation of ['detail', 'events', 'cancel']) {
@@ -123,4 +118,5 @@ await runCategory('run', async s => {
       return { missing_run_id: missing, operation, http_status: response.status, code: response.body.code, counts };
     });
   }
+  await executionCoverage(s);
 });

@@ -1,3 +1,4 @@
+import {documentRagCoverage} from './document-rag-coverage.mjs';
 import fs from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {runCategory,assert} from '../lib/category-kit.mjs';
@@ -6,6 +7,7 @@ export const coveredCases=['CHK_001','CHK_002'];
 const driver=fs.readFileSync(new URL('./chk-driver.py',import.meta.url),'utf8');
 
 await runCategory('chk',async s=>{
+ await documentRagCoverage(s);
   const c=s.ctx;let result;
   await s.check('CHK_001','TP-CHK-001','pure-character-coverage','每块seq/offset/text精确，首尾覆盖、无空尾块',async()=>{
     result=c.python(driver);for(const sample of result.valid){const text=[...sample.text],rows=sample.chunks;assert.equal(rows[0].start_offset,0);assert.equal(rows.at(-1).end_offset,text.length);for(const [index,row]of rows.entries()){assert.equal(row.seq,index);assert.ok(row.text.length);assert.equal(row.text,text.slice(row.start_offset,row.end_offset).join(''));assert.equal(row.start_offset,index*(sample.size-sample.overlap));assert.equal(row.end_offset,Math.min(row.start_offset+sample.size,text.length));}const coverage=new Set(rows.flatMap(x=>Array.from({length:x.end_offset-x.start_offset},(_,i)=>x.start_offset+i)));assert.equal(coverage.size,text.length);}assert.deepEqual(result.empty,[]);return {parameter_groups:result.valid.length,empty_chunks:0};
@@ -23,5 +25,4 @@ await runCategory('chk',async s=>{
   for(const [size,overlap]of [[0,0],[-1,0],[4,-1],[4,4],[4,5]])await s.check('CHK_002','TP-CHK-003',`size-${size}-overlap-${overlap}`,'非法切分参数明确ValueError且有界结束',async()=>{
     const value=(result??c.python(driver)).invalid.find(x=>x.size===size&&x.overlap===overlap);assert.ok(value);assert.equal(value.error,'ValueError');return value;
   });
-  s.block('CHK_002','TP-CHK-003','worker-config-settlement','真实index Task非法配置安全有界failed','缺少E2独立Worker配置驱动；函数ValueError已动态验证，不能替代Worker失败/重试闭环。');
 });

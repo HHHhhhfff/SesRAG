@@ -1,3 +1,4 @@
+import { executionCoverage } from './execution-coverage.mjs';
 import {runCategory,assert,poll} from '../lib/category-kit.mjs';
 export const coveredCases=['HLT_001','HLT_002','HLT_003','HLT_004','HLT_005'];
 
@@ -24,11 +25,11 @@ await runCategory('hlt',async s=>{
   await s.check('HLT_003','TP-SSE-005','redis-down-replay','Redis中断仍按PG完整补放到终态',async()=>{assert.ok(runId,'新Run前置失败');const response=await fetch(`${c.args.BaseUrl}/api/v1/runs/${runId}/events/stream`,{signal:AbortSignal.timeout(7000)});assert.equal(response.status,200);const text=await response.text();const ids=[...text.matchAll(/^id: (\d+)$/gm)].map(x=>Number(x[1]));assert.deepEqual(ids,(await c.events(runId)).map(x=>x.seq));assert.match(text,/event: run.succeeded/);return {run_id:runId,event_seqs:ids};});
  }finally {c.compose(['start','redis']);await c.ready();}
  await s.check('HLT_003','TP-HLT-006','redis-restart-compare','Redis重启后Thread/Message/Run/Task/Event身份与状态全部保持',async()=>{assert.ok(redisFacts,'Redis故障前置创建未成功');const after={detail:await c.detail(redisFacts.detail.thread.thread_id),run:await c.run(redisRunId),events:await c.events(redisRunId),task:c.sql(`SELECT * FROM tasks WHERE task_id='${redisFacts.run.task.task_id}'`)};assert.deepEqual(after,redisFacts);return {run_id:redisRunId,task_id:redisFacts.run.task.task_id,events:after.events.length,persistent_facts_unchanged:true};});
- s.blockCase('HLT_004','长任务超过readiness TTL的Provider/lease屏障未准备；普通短Mock任务不能证明长任务readiness连续性。');
  // HLT_005：全部事实重启对比由本用例独立数据建立。
  await s.check('HLT_005','TP-HLT-005','restart','重启API不改变Thread/Message/Run/Task/Event/Document/Chunk',async()=>{
   const thread=await c.thread('HLT_005重启');const run=await c.submit(thread.thread_id,'重启恢复');await c.waitRun(run.run_id);const u=await c.upload('health-restart.md',Buffer.from('# 持久事实\n重启应保留'));assert.equal(u.status,201);await c.waitDoc(u.body.document_id);
   const snap=async()=>({detail:await c.detail(thread.thread_id),run:await c.run(run.run_id),tasks:c.sql(`SELECT * FROM tasks WHERE task_id='${run.task_id}' OR document_id='${u.body.document_id}' ORDER BY task_id`),events:await c.events(run.run_id),document:c.sql(`SELECT * FROM documents WHERE document_id='${u.body.document_id}'`),chunks:c.sql(`SELECT * FROM chunks WHERE document_id='${u.body.document_id}' ORDER BY seq`)});
   const before=await snap();assert.equal(c.compose(['restart','api']).code,0);await c.ready();assert.deepEqual(await snap(),before);return {thread_id:thread.thread_id,run_id:run.run_id,document_id:u.body.document_id,persistent:'全部不变'};
  });
+  await executionCoverage(s);
 });

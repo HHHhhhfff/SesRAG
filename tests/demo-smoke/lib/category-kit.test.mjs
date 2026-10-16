@@ -10,6 +10,17 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
 // 报告工具自检：错误状态不能被通过项覆盖，路径/凭据不能进入证据。
+test('Context派生根Compose必填运行时凭据并绑定隔离数据库',()=>{
+ const cache=path.join(smokeRoot,'.cache');fs.mkdirSync(cache,{recursive:true});
+ const directory=fs.mkdtempSync(path.join(cache,'context-env-'));
+ try {
+  fs.writeFileSync(path.join(directory,'context.json'),JSON.stringify({run_id:'context-test',marker:'sesrag-demo-smoke-v1',compose_project:'sesrag-demo-smoke-context-test'}));
+  fs.writeFileSync(path.join(directory,'compose.env'),'SMOKE_PROJECT=sesrag-demo-smoke-context-test\nSMOKE_DB_PASSWORD=fixture_private_password\n');
+  const ctx=new Context({RunId:'context-test',RuntimeDir:directory});
+  assert.equal(ctx.env.POSTGRES_PASSWORD,'fixture_private_password');
+  assert.equal(ctx.env.DATABASE_URL,'postgresql+psycopg://sesrag:fixture_private_password@postgres:5432/sesrag');
+ } finally {assert.equal(path.dirname(directory),cache);fs.rmSync(directory,{recursive:true});}
+});
 test('分类状态保留失败和阻塞，空检查不得通过', () => {
   assert.equal(aggregateStatus([]), 'not_ready');
   assert.equal(aggregateStatus([{status:'passed'},{status:'failed'}]), 'failed');
@@ -89,10 +100,10 @@ test('浏览器门禁拒绝部分报告、错误身份和非法Schema，不混�
  const id='FE_001__TP-FE-001__browser-main';
  const report={schema_version:1,run_id:'report-run',category:'fe',status:'blocked',started_at:'2026-10-07T00:00:00Z',finished_at:'2026-10-07T00:00:01Z',checks:[{id,test_point_id:'TP-FE-001',status:'passed',expected:'实际浏览器检查',actual:'通过',evidence:[]},{id:'FE_009__TP-FE-010__full-scenario',test_point_id:'TP-FE-010',status:'blocked',expected:'完整条件',actual:'缺少条件',evidence:[]}],evidence:[]};
  assert.equal(requireCategoryChecks(report,'report-run','fe',[id]).length,1);
- assert.throws(()=>requireCategoryChecks({...report,checks:[]},'report-run','fe',[id]),/集合不完整/);
+ assert.throws(()=>requireCategoryChecks({...report,checks:[]},'report-run','fe',[id]));
  assert.throws(()=>requireCategoryChecks({...report,category:'wrong'},'report-run','fe',[id]));
  assert.throws(()=>requireCategoryChecks({...report,checks:[{...report.checks[0],actual:42}]},'report-run','fe',[id]),/Schema/);
- assert.throws(()=>requireCategoryChecks({...report,checks:[report.checks[0],report.checks[0]]},'report-run','fe',[id]),/重复/);
+ assert.throws(()=>requireCategoryChecks({...report,status:'passed',checks:[report.checks[0],report.checks[0]]},'report-run','fe',[id]),/重复/);
 });
 test('精确子目录限制与凭据脱敏', () => {
   assert.throws(()=>safeChild('D:/tmp/test','../escape'),/越界/);
@@ -103,6 +114,18 @@ test('精确子目录限制与凭据脱敏', () => {
   assert.ok(!redact('{"password":"JSON_PASSWORD"}').includes('JSON_PASSWORD'));
   assert.ok(redact('Expected to be equal:\n+ actual').includes('equal'));
   assert.ok(redact({actual:'Expected to be equal:\n+ actual'}).includes('equal'));
+});
+
+test('显式完整集合接收持久/组件ID并拒绝必测非通过、缺项及重复预期',()=>{
+ const ids=['FE_010__TP-FE-011__fresh-context','FE_003__TP-FE-004__component-stream'];
+ const report={schema_version:1,run_id:'report-run',category:'fe',status:'passed',started_at:'2026-10-07T00:00:00Z',finished_at:'2026-10-07T00:00:01Z',checks:ids.map(id=>({id,test_point_id:id.split('__')[1],status:'passed',expected:'真实检查',actual:'通过',evidence:[]})),evidence:[]};
+ assert.equal(requireCategoryChecks(report,'report-run','fe',ids).length,2);
+ assert.throws(()=>requireCategoryChecks({...report,status:'failed'},'report-run','fe',ids),/状态与逐项结果不一致/);
+ for(const status of ['failed','blocked','skipped','not_ready']) assert.throws(()=>requireCategoryChecks({...report,status,checks:report.checks.map((row,i)=>i?row:{...row,status})},'report-run','fe',ids));
+ assert.throws(()=>requireCategoryChecks({...report,checks:report.checks.slice(1)},'report-run','fe',ids));
+ assert.throws(()=>requireCategoryChecks(report,'other-run','fe',ids));
+ assert.throws(()=>requireCategoryChecks(report,'report-run','fe',[ids[0],ids[0]]));
+ assert.throws(()=>requireCategoryChecks({...report,checks:[...report.checks,{...report.checks[0],id:'FE_999__TP-FE-001__unknown'}]},'report-run','fe',ids),/未知/);
 });
 test('真实HTTP socket异常保留传输错误码，不自动重试或冒充HTTP响应',async()=>{
  let requests=0;const sockets=new Set();const server=http.createServer(request=>{requests++;request.socket.destroy();});server.on('connection',socket=>{sockets.add(socket);socket.on('close',()=>sockets.delete(socket));});

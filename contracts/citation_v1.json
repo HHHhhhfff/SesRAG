@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/citation_v1.json",
+  "title": "Citation",
+  "description": "新引用必须是完整Evidence；legacy分支仅允许历史无批次无基础位置的原始字段，不能伪造新字段。",
+  "oneOf": [
+    {"$ref": "evidence_v1.json"},
+    {
+      "type": "object", "required": ["document_id", "chunk_id", "filename", "start_offset", "end_offset", "score"],
+      "properties": {
+        "document_id": {"type": "string"}, "chunk_id": {"type": "string"}, "filename": {"type": "string"},
+        "start_offset": {"type": "integer", "minimum": 0}, "end_offset": {"type": "integer", "minimum": 0}, "score": {"type": "number"}
+      }, "additionalProperties": false
+    }
+  ]
+}

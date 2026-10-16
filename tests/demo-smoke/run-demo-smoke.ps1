@@ -9,7 +9,7 @@ param(
     [string]$FrontendImage,
     [string]$Category = 'all',
     # LIFE专项只允许固定自检场景；普通产品分类仍使用正式manifest，不接收任意路径。
-    [ValidateSet('not-ready','disabled','protocol','missing-script','rag-empty','doc-limit','nested-recovery')][string]$HarnessScenario,
+    [ValidateSet('not-ready','disabled','protocol','missing-script','rag-empty','doc-limit','nested-recovery','compose-config-failure','migration-failure','redis-cold','redis-strict','real-db-probe-failure','worker-readiness-timeout','frontend-readiness-timeout','cleanup-failure','cleanup-share-read','hard-kill-recovery')][string]$HarnessScenario,
     [bool]$KeepArtifacts = $true,
     [switch]$KeepContainers,
     [ValidateRange(10,3600)][int]$WaitTimeoutSeconds = 180,
@@ -42,6 +42,9 @@ $tmpDir = ''
 $fixtureDir = ''
 $state = $null
 $anonymousVolumes = @()
+$cleanupLock = $null
+$recoveryRejected = $false
+$deploymentScenarios = @('compose-config-failure','migration-failure','redis-cold','redis-strict','real-db-probe-failure','worker-readiness-timeout','frontend-readiness-timeout','cleanup-failure','cleanup-share-read','hard-kill-recovery')
 $report = @{ schema_version = 1; run_id = $runId; started_at = [DateTime]::UtcNow.ToString('o'); test_status = 'blocked'; stages = @{ startup='not_run'; tests='not_run'; report_collection='not_run' }; categories = @(); errors = @() }
 $cleanup = @{ status = 'passed'; steps = @(); residuals = @{} }
 
@@ -71,6 +74,12 @@ function Resource-Ids([string]$Kind) {
 }
 
 function Wait-Environment {
+    $repositoryPython = Join-Path $repoRoot '.venv/Scripts/python.exe'
+    if (-not (Test-Path -LiteralPath $repositoryPython)) { $repositoryPython = 'python' }
+    $headResult = Invoke-SmokeProcess $repositoryPython @('-c', 'from alembic.config import Config; from alembic.script import ScriptDirectory; print(ScriptDirectory.from_config(Config("alembic.ini")).get_current_head())') 15 $repoRoot
+    if ($headResult.exit_code -ne 0 -or [string]::IsNullOrWhiteSpace($headResult.output)) { throw '无法读取当前仓库 Alembic head，拒绝以旧版本宣告环境就绪' }
+    $expectedHead = $headResult.output.Trim()
+    $coldRun = $null
     $until = $startupDeadline
     $last = '尚未获得服务状态'
     while ([DateTime]::UtcNow -lt $until) {
@@ -86,7 +95,7 @@ function Wait-Environment {
         }
         $db = @($states | Where-Object { $_.Service -eq 'postgres' -and $_.Health -eq 'healthy' })
         $redis = @($states | Where-Object { $_.Service -eq 'redis' -and $_.Health -eq 'healthy' })
-        if ($db.Count -and $redis.Count -and $migrate.Count -and $migrate[0].State -eq 'exited' -and $migrate[0].ExitCode -eq 0) {
+        if ($db.Count -and ($redis.Count -or $HarnessScenario -eq 'redis-cold') -and $migrate.Count -and $migrate[0].State -eq 'exited' -and $migrate[0].ExitCode -eq 0) {
             try {
                 $live = Invoke-RestMethod "$baseUrl/health/live" -TimeoutSec 3
                 $ready = Invoke-RestMethod "$baseUrl/health/ready" -TimeoutSec 3
@@ -94,9 +103,25 @@ function Wait-Environment {
                 Write-SmokeJson (Join-Path $artifactDir 'environment/health-ready.json') $ready
                 $front = Invoke-WebRequest $frontendUrl -TimeoutSec 3
                 $proxy = Invoke-RestMethod "$frontendUrl/health/live" -TimeoutSec 3
-                # 补查实际数据库连接；ready当前固定database标记不足以证明依赖可用。
-                $sql = Compose-Call @('exec','-T','postgres','psql','-U','sesrag','-d','sesrag','-Atc',"SELECT version_num FROM alembic_version; SELECT extname FROM pg_extension WHERE extname='vector';") 10
-                if ($live.status -eq 'ok' -and $ready.database -eq 'ready' -and $ready.redis -eq 'ready' -and $ready.worker_count -ge 1 -and $front.StatusCode -eq 200 -and $proxy.status -eq 'ok' -and $sql.exit_code -eq 0 -and $sql.output -match '0001_initial_demo' -and $sql.output -match 'vector') {
+                # 实际目录必须精确匹配当前仓库 head，不能把旧镜像迁移成功当作本轮通过。
+                $probeDatabase = $(if ($HarnessScenario -eq 'real-db-probe-failure') { 'missing_smoke_database' } else { 'sesrag' })
+                $sql = Compose-Call @('exec','-T','postgres','psql','-U','sesrag','-d',$probeDatabase,'-Atc',"SELECT version_num FROM alembic_version; SELECT extname FROM pg_extension WHERE extname='vector';") 10
+                Write-Evidence 'environment/database-probe.txt' $sql.output
+                Write-SmokeJson (Join-Path $artifactDir 'environment/database-probe-process.json') @{exit_code=$sql.exit_code;expected_head=$expectedHead}
+                $databaseLines = @($sql.output -split '\r?\n' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Trim() })
+                $redisExpected = $(if ($HarnessScenario -eq 'redis-cold') { 'degraded' } else { 'ready' })
+                $workerProven = $ready.worker_count -ge 1
+                if ($HarnessScenario -eq 'redis-cold') {
+                    # Redis不可用时worker readiness正确为unknown；用正式Run完成证明真实Worker可执行。
+                    if (-not $coldRun) {
+                        $thread = Invoke-RestMethod "$baseUrl/api/v1/threads" -Method Post -ContentType 'application/json' -Body '{"title":"redis cold probe"}' -TimeoutSec 3
+                        $coldRun = Invoke-RestMethod "$baseUrl/api/v1/threads/$($thread.thread_id)/messages" -Method Post -ContentType 'application/json' -Body '{"content":"cold startup probe"}' -TimeoutSec 3
+                    }
+                    $coldState = Invoke-RestMethod "$baseUrl/api/v1/runs/$($coldRun.run_id)" -TimeoutSec 3
+                    Write-SmokeJson (Join-Path $artifactDir 'environment/redis-cold-run.json') $coldState
+                    $workerProven = $coldState.status -eq 'succeeded'
+                }
+                if ($live.status -eq 'ok' -and $ready.database -eq 'ready' -and $ready.redis -eq $redisExpected -and $workerProven -and $front.StatusCode -eq 200 -and $proxy.status -eq 'ok' -and $sql.exit_code -eq 0 -and $databaseLines.Count -eq 2 -and $databaseLines[0] -ceq $expectedHead -and $databaseLines[1] -ceq 'vector') {
                     Write-Evidence 'environment/database-probe.txt' $sql.output
                     return
                 }
@@ -144,7 +169,13 @@ function Collect-Evidence {
 }
 
 function Cleanup-Environment {
+    if ($recoveryRejected) { $cleanup.status='failed'; $cleanup.steps += @{name='recovery_rejected';message='胶囊校验/恢复失败，保留原材料且不销毁资源'}; return }
     if ($KeepContainers -and $deploymentAttempted) { $cleanup.status = 'deferred'; return }
+    # 先回收登记的宿主进程/独立执行容器，再销毁同一project；PID须核对出生身份。
+    $registered = Invoke-SmokeProcess 'node' @((Join-Path $PSScriptRoot 'tooling/cleanup-registered.mjs'),$runtimeDir,$runId,$project) 180 $repoRoot
+    Write-Evidence 'environment/registered-cleanup.json' $registered.output
+    $cleanup.steps += @{ name='registered_resources'; exit_code=$registered.exit_code }
+    if ($registered.exit_code -ne 0) { $cleanup.status='failed' }
     # 分类超时/树被终止时Node finally不保证执行，父runtime登记作为最后精确兜底。
     try {
     $nestedPath = Join-Path $runtimeDir 'nested-runs.json'
@@ -154,13 +185,15 @@ function Cleanup-Environment {
         foreach ($nested in @($registry.nested)) {
             $nestedDir = Get-SmokeChildPath $runtimeRoot $nested.run_id
             if ($nested.run_id -eq $runId -or $nested.compose_project -eq $project -or $nested.compose_project -notmatch '^sesrag-demo-smoke-[a-z0-9-]+$') { throw '嵌套清理目标不合法' }
-            if (Test-Path -LiteralPath $nestedDir) {
+            $nestedCapsule = Get-SmokeRecoveryPath $runtimeRoot $nested.run_id
+            if ((Test-Path -LiteralPath $nestedDir) -or (Test-Path -LiteralPath $nestedCapsule)) {
+                if (Test-Path -LiteralPath $nestedCapsule) { Restore-SmokeRecovery $runtimeRoot $nested.run_id }
                 $nestedState = Get-Content -LiteralPath (Join-Path $nestedDir 'context.json') -Raw | ConvertFrom-Json
                 if ($nestedState.run_id -ne $nested.run_id -or $nestedState.compose_project -ne $nested.compose_project -or $nestedState.marker -ne 'sesrag-demo-smoke-v1') { throw '嵌套清理凭据不匹配' }
                 $recovery = Invoke-SmokeProcess (Get-Process -Id $PID).Path @('-NoProfile','-File',$PSCommandPath,'-CleanupRunId',$nested.run_id) 240 $repoRoot
                 Write-Evidence "logs/nested-recovery-$($nested.run_id).log" $recovery.output
                 $nestedCleanupPath = Join-Path (Get-SmokeChildPath $artifactRoot $nested.run_id) 'cleanup.json'
-                $nestedCleaned = -not (Test-Path -LiteralPath $nestedDir)
+                $nestedCleaned = -not (Test-Path -LiteralPath $nestedDir) -and -not (Test-Path -LiteralPath $nestedCapsule)
                 if (Test-Path -LiteralPath $nestedCleanupPath) { $nestedCleaned = $nestedCleaned -and ((Get-Content -LiteralPath $nestedCleanupPath -Raw | ConvertFrom-Json).status -eq 'passed') } else { $nestedCleaned = $false }
                 $cleanup.steps += @{ name='nested_recovery'; run_id=$nested.run_id; project=$nested.compose_project; exit_code=$recovery.exit_code; cleaned=$nestedCleaned }
                 if (-not $nestedCleaned) { $cleanup.status='failed' }
@@ -216,7 +249,24 @@ function Cleanup-Environment {
     }
     Remove-SmokeChild $tmpRoot $runId
     # 清理失败保留最小运行凭据以便精确重试，不能毁掉恢复依据；仍删除业务临时文件。
-    if ($cleanup.status -eq 'passed') { Remove-SmokeChild $runtimeRoot $runId }
+    if ($cleanup.status -eq 'passed') {
+        # 可读不代表可删除；整个递归删除期间独立单文件胶囊始终保持完整，覆盖共享锁/新锁竞争。
+        $capsule = $null
+        if ($state -and $state.marker -eq 'sesrag-demo-smoke-v1' -and (Test-Path -LiteralPath (Join-Path $runtimeDir 'compose.env'))) {
+            $capsule = Save-SmokeRecovery $runtimeRoot $runId
+        }
+        try {
+            Remove-SmokeChild $runtimeRoot $runId
+            if ($capsule) { [IO.File]::Delete($capsule) }
+        } catch {
+            $original = $_
+            if ($capsule -and (Test-Path -LiteralPath $capsule)) {
+                try { Restore-SmokeRecovery $runtimeRoot $runId }
+                catch { $cleanup.steps += @{name='recovery_capsule_restore';message='恢复胶囊保留；部分恢复失败，须检查文件共享锁后重试'} }
+            }
+            throw $original
+        }
+    }
     $cleanup.steps += @{ name = 'local_paths'; tmp_removed = -not (Test-Path -LiteralPath $tmpDir); runtime_removed = -not (Test-Path -LiteralPath $runtimeDir) }
 }
 
@@ -228,6 +278,10 @@ try {
     $tmpDir = Get-SmokeChildPath $tmpRoot $runId
     foreach ($dir in @($artifactDir,(Join-Path $artifactDir 'categories'),(Join-Path $artifactDir 'environment'),(Join-Path $artifactDir 'logs'))) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     if ($CleanupRunId) {
+        $savedCapsule = Get-SmokeRecoveryPath $runtimeRoot $runId
+        if (Test-Path -LiteralPath $savedCapsule) {
+            try { Restore-SmokeRecovery $runtimeRoot $runId } catch { $recoveryRejected=$true; throw }
+        }
         if (Test-Path -LiteralPath (Join-Path $artifactDir 'summary.json')) {
             Copy-Item -LiteralPath (Join-Path $artifactDir 'summary.json') -Destination (Join-Path $artifactDir ('summary-before-cleanup-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmss') + '.json'))
         }
@@ -282,8 +336,15 @@ try {
     $report.git_dirty = [bool](Invoke-SmokeProcess 'git' @('status','--porcelain') 10 $repoRoot).output.Trim()
     $report.owner_summary = "isolated-owner:$runId"
     # Shell环境变量优先于--env-file；显式传入本次值防止宿主环境污染。
-    $composeEnvironment = @{ SMOKE_PROJECT=$project; SMOKE_DB_PASSWORD=$password; SMOKE_OWNER_ID=$state.owner_id; SMOKE_API_PORT=$state.api_port; SMOKE_FRONTEND_PORT=$state.frontend_port }
+    # 根 Compose 强制运行时 Secret；隔离工程注入本次随机凭据，避免回退到开发密码。
+    $composeEnvironment = @{ SMOKE_PROJECT=$project; SMOKE_DB_PASSWORD=$password; SMOKE_OWNER_ID=$state.owner_id; SMOKE_API_PORT=$state.api_port; SMOKE_FRONTEND_PORT=$state.frontend_port; POSTGRES_PASSWORD=$password; DATABASE_URL="postgresql+psycopg://sesrag:${password}@postgres:5432/sesrag" }
     $composeArgs = @('compose','--project-name',$project,'--project-directory',$repoRoot,'--env-file',$envFile,'--file',(Join-Path $repoRoot 'docker-compose.yml'),'--file',(Join-Path $PSScriptRoot 'compose/docker-compose.demo-smoke.yml'))
+    $faultOverride = Join-Path $runtimeDir 'harness-override.json'
+    if (-not $CleanupRunId -and $HarnessScenario -in $deploymentScenarios) {
+        $generated = Invoke-SmokeProcess 'node' @((Join-Path $PSScriptRoot 'tooling/harness-overrides.mjs'),$HarnessScenario,$faultOverride) 15 $repoRoot
+        if ($generated.exit_code -ne 0) { throw '固定故障编排生成失败' }
+    }
+    if (Test-Path -LiteralPath $faultOverride) { $composeArgs += @('--file',$faultOverride) }
     Write-Host "Run: $runId；project: $project"
     Write-Host "API: $baseUrl；frontend: $frontendUrl"
     $info = Docker-Call @('info','--format','{{.ServerVersion}}') 15
@@ -295,8 +356,10 @@ try {
         foreach ($tag in @("${project}-backend:local", "${project}-frontend:local")) {
             if ((Docker-Call @('image','ls','-q',$tag)).output.Trim()) { throw '测试镜像tag已存在，拒绝复用未知镜像' }
         }
+        $report.stages.preflight = 'running'
         $cfg = Compose-Call @('config','--format','json')
         Write-Evidence 'environment/compose-config.txt' $cfg.output
+        Write-SmokeJson (Join-Path $artifactDir 'environment/compose-config-process.json') @{exit_code=$cfg.exit_code}
         if ($cfg.exit_code -ne 0) { throw 'Compose覆盖配置不能解析（需支持!override的Compose 2.24.4+）' }
         $parsedConfig = $cfg.output | ConvertFrom-Json
         foreach ($entry in @(@('api',$state.api_port),@('frontend',$state.frontend_port))) {
@@ -328,8 +391,10 @@ try {
             }
         }
         $startupDeadline = [DateTime]::UtcNow.AddSeconds($WaitTimeoutSeconds)
+        $report.stages.startup = 'running'
         $up = Compose-Call @('up','--detach','--no-build') $WaitTimeoutSeconds
         Write-Evidence 'environment/compose-up.txt' $up.output
+        Write-SmokeJson (Join-Path $artifactDir 'environment/compose-up-process.json') @{exit_code=$up.exit_code}
         if ($up.exit_code -ne 0) { throw "Compose启动失败（$($up.exit_code)）" }
         Wait-Environment
         $report.stages.startup = 'passed'
@@ -338,7 +403,8 @@ try {
         $manifestPath = Join-Path $categoryRoot 'manifest.json'
         if ($HarnessScenario) {
             $categoryRoot = Join-Path $PSScriptRoot 'tooling/harness-fixtures'
-            $manifestPath = Join-Path $categoryRoot "$HarnessScenario.json"
+            $manifestName = $(if ($HarnessScenario -in $deploymentScenarios -and $HarnessScenario -ne 'hard-kill-recovery') { 'deployment' } else { $HarnessScenario })
+            $manifestPath = Join-Path $categoryRoot "$manifestName.json"
             $report.harness_scenario = $HarnessScenario
         }
         $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -364,13 +430,13 @@ try {
             }
             # 分类路径只能是当前目录下一个.ps1/.mjs文件，不接受目录逃逸。
             if ($categoryItem.script -notmatch '^[a-z0-9-]+\.(ps1|mjs)$') { throw '非法分类脚本路径' }
-            if ([int]$categoryItem.timeout_seconds -lt 1 -or [int]$categoryItem.timeout_seconds -gt 7200) { throw '分类超时必须1～7200秒' }
+            if ([int]$categoryItem.timeout_seconds -lt 1 -or [int]$categoryItem.timeout_seconds -gt 21600) { throw '分类超时必须1～21600秒（独立QLT需驱动缺失分类）' }
             $categoryPath = Join-Path $categoryRoot $categoryItem.script
             if (-not (Test-Path -LiteralPath $categoryPath)) { throw 'enabled分类缺少脚本' }
             $argsList = @('-BaseUrl',$baseUrl,'-FrontendUrl',$frontendUrl,'-RunId',$runId,'-ArtifactDir',$artifactDir,'-RuntimeDir',$runtimeDir,'-FixtureDir',$fixtureDir)
             $scriptHash = (Get-FileHash -LiteralPath $categoryPath -Algorithm SHA256).Hash
             if ($categoryPath.EndsWith('.ps1')) { $exe = (Get-Process -Id $PID).Path; $argsList = @('-NoProfile','-File',$categoryPath) + $argsList } else { $exe='node'; $argsList=@($categoryPath) + $argsList }
-            $result = Invoke-SmokeProcess $exe $argsList ([int]$categoryItem.timeout_seconds) $PSScriptRoot @{ PLAYWRIGHT_BROWSERS_PATH=(Join-Path $PSScriptRoot '.cache/ms-playwright') }
+            $result = Invoke-SmokeProcess $exe $argsList ([int]$categoryItem.timeout_seconds) $PSScriptRoot @{ PLAYWRIGHT_BROWSERS_PATH=(Join-Path $PSScriptRoot '.cache/ms-playwright') } (Join-Path $runtimeDir 'process-resources.json') @{run_id=$runId;project=$project}
             Write-Host "分类 $($categoryItem.name) 完成（退出码 $($result.exit_code)），中文过程证据：logs/category-$($categoryItem.name).log"
             Write-Evidence "logs/category-$($categoryItem.name).log" $result.output
             $jsonPath = Join-Path $artifactDir "categories/$($categoryItem.name).json"
@@ -391,8 +457,14 @@ try {
         if ($Interactive) { [void](Read-Host '可在打印的地址手工测试；完成后按Enter收集报告并销毁环境') }
         if ($SessionSeconds) { Write-Host "保留${SessionSeconds}秒用于环境检查，之后自动销毁…"; Start-Sleep -Seconds $SessionSeconds }
         $report.stages.tests = $report.test_status
+        if ($HarnessScenario -in @('cleanup-failure','cleanup-share-read')) {
+            $share = $(if ($HarnessScenario -eq 'cleanup-share-read') { [IO.FileShare]::Read } else { [IO.FileShare]::None })
+            $cleanupLock = [IO.File]::Open((Join-Path $runtimeDir 'locked-cleanup-sentinel'),[IO.FileMode]::Create,[IO.FileAccess]::ReadWrite,$share)
+            Write-Host 'CLEANUP_LOCK_ARMED'
+        }
     }
 } catch {
+    foreach ($stage in @('preflight','startup','tests')) { if ($report.stages[$stage] -eq 'running') { $report.stages[$stage]='failed' } }
     $report.errors += (Protect-SmokeText $_.Exception.Message @($password))
     if ($deploymentAttempted -and -not $CleanupRunId) { $report.test_status = 'failed' } else { $report.test_status = 'blocked' }
     Write-Warning $report.errors[-1]
@@ -429,4 +501,5 @@ try {
         if (-not $KeepArtifacts -and $cleanup.status -eq 'passed') { Remove-SmokeChild $artifactRoot $runId; Write-Host '本次报告已按KeepArtifacts=false删除，无法再从磁盘复查。' }
     } else { $report.exit_code = 2 }
 }
+if ($cleanupLock) { $cleanupLock.Dispose() }
 exit $report.exit_code

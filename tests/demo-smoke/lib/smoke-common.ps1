@@ -25,6 +25,68 @@ function Remove-SmokeChild([string]$Root, [string]$Child) {
     }
 }
 
+# I2：胶囊只包含固定恢复文件，作为单个原子文件放在同一ignored runtime根；不进入artifact。
+function Get-SmokeRecoveryNames {
+    return @('context.json','compose.env','harness-override.json','resources.json','nested-runs.json','process-resources.json','frontend-resources.json','execution-resources.json','frontend-resources.json.tmp')
+}
+function Get-SmokeRecoveryPath([string]$Root, [string]$RunId) {
+    $runtime = Get-SmokeChildPath $Root $RunId
+    $capsule = $runtime + '-recovery.json'
+    foreach ($file in @($capsule,($capsule+'.tmp'))) {
+        if ((Test-Path -LiteralPath $file) -and ((Get-Item -LiteralPath $file).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw '不允许链接恢复胶囊' }
+    }
+    return $capsule
+}
+function Read-SmokeRecovery([string]$Root, [string]$RunId) {
+    $capsule = Get-SmokeRecoveryPath $Root $RunId
+    $data = Get-Content -LiteralPath $capsule -Raw | ConvertFrom-Json -AsHashtable
+    if ($data.marker -ne 'sesrag-smoke-recovery-v1' -or $data.run_id -ne $RunId) { throw '恢复胶囊身份不匹配' }
+    if (-not $data.files.ContainsKey('context.json') -or -not $data.files.ContainsKey('compose.env')) { throw '恢复胶囊不完整' }
+    foreach ($name in $data.files.Keys) { if ($name -notin (Get-SmokeRecoveryNames)) { throw '恢复胶囊包含非法路径' } }
+    $context = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($data.files['context.json'])).TrimStart([char]0xFEFF) | ConvertFrom-Json
+    if ($context.marker -ne 'sesrag-demo-smoke-v1' -or $context.run_id -ne $RunId -or $context.compose_project -ne $data.project -or $data.project -notmatch '^sesrag-demo-smoke-[a-z0-9-]+$' -or -not $data.project.EndsWith($RunId.Split('-')[-1])) { throw '恢复胶囊context身份不匹配' }
+    return $data
+}
+function Save-SmokeRecovery([string]$Root, [string]$RunId) {
+    $runtime = Get-SmokeChildPath $Root $RunId
+    $capsule = Get-SmokeRecoveryPath $Root $RunId
+    $files = @{}
+    foreach ($name in (Get-SmokeRecoveryNames)) {
+        $file = Join-Path $runtime $name
+        if (Test-Path -LiteralPath $file) {
+            $item = Get-Item -LiteralPath $file
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw '恢复材料必须为普通文件' }
+            $files[$name] = [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+        }
+    }
+    $context = Get-Content -LiteralPath (Join-Path $runtime 'context.json') -Raw | ConvertFrom-Json
+    if ($context.marker -ne 'sesrag-demo-smoke-v1' -or $context.run_id -ne $RunId -or $context.compose_project -notmatch '^sesrag-demo-smoke-[a-z0-9-]+$' -or -not $context.compose_project.EndsWith($RunId.Split('-')[-1]) -or -not $files.ContainsKey('compose.env')) { throw '拒绝保存不完整或错误身份胶囊' }
+    $data = @{marker='sesrag-smoke-recovery-v1';run_id=$RunId;project=$context.compose_project;files=$files}
+    [IO.File]::WriteAllText($capsule+'.tmp',($data | ConvertTo-Json -Depth 30),[Text.UTF8Encoding]::new($false))
+    [IO.File]::Move($capsule+'.tmp',$capsule,$true)
+    [void](Read-SmokeRecovery $Root $RunId)
+    return $capsule
+}
+function Restore-SmokeRecovery([string]$Root, [string]$RunId) {
+    $data = Read-SmokeRecovery $Root $RunId
+    $runtime = Get-SmokeChildPath $Root $RunId
+    New-Item -ItemType Directory -Path $runtime -Force | Out-Null
+    # 先核验所有已有材料再写任何缺失项，避免冲突context之前已写入其他凭据。
+    foreach ($name in $data.files.Keys) {
+        $file = Join-Path $runtime $name
+        if (Test-Path -LiteralPath $file) {
+            $item = Get-Item -LiteralPath $file
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw '不允许覆盖链接恢复材料' }
+            # 已存在且相同的锁定文件不重写；任何身份/内容冲突直接拒绝。
+            if ([Convert]::ToBase64String([IO.File]::ReadAllBytes($file)) -ne $data.files[$name]) { throw '已有恢复材料与胶囊冲突' }
+        }
+    }
+    foreach ($name in $data.files.Keys) {
+        $file = Join-Path $runtime $name
+        if (-not (Test-Path -LiteralPath $file)) { [IO.File]::WriteAllBytes($file,[Convert]::FromBase64String($data.files[$name])) }
+    }
+}
+
 function Protect-SmokeText([string]$Value, [string[]]$Secrets = @()) {
     foreach ($secret in $Secrets) {
         if ($secret) { $Value = $Value.Replace($secret, '[REDACTED]') }
@@ -64,10 +126,13 @@ function Get-SmokePort([int]$Preferred, [int[]]$Excluded = @()) {
 
 function Invoke-SmokeProcess(
     [string]$Executable, [string[]]$Arguments, [int]$TimeoutSeconds = 60,
-    [string]$WorkingDirectory = '', [hashtable]$Environment = @{}
+    [string]$WorkingDirectory = '', [hashtable]$Environment = @{},
+    [string]$RegistryPath = '', [hashtable]$RegistryOwner = @{}
 ) {
     $startInfo = [Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = $Executable
+    # 启动前解析且真正使用同一exe绝对路径；Windows早期MainModule可能尚未加载，不能作为身份来源。
+    $application = Get-Command -Name $Executable -CommandType Application -ErrorAction Stop | Select-Object -First 1
+    $startInfo.FileName = [IO.Path]::GetFullPath($application.Path)
     $startInfo.UseShellExecute = $false
     $startInfo.CreateNoWindow = $true
     $startInfo.RedirectStandardOutput = $true
@@ -83,9 +148,37 @@ function Invoke-SmokeProcess(
     $process.StartInfo = $startInfo
     $timedOut = $false
     $started = $false
+    $registry = $null
+    $registryEntry = $null
     try {
+        if ($RegistryPath) {
+            $registry = @{ schema_version=1; parent_run_id=$RegistryOwner.run_id; project=$RegistryOwner.project; resources=@() }
+            if (Test-Path -LiteralPath $RegistryPath) { $registry = Get-Content -LiteralPath $RegistryPath -Raw | ConvertFrom-Json -AsHashtable }
+            if ($registry.parent_run_id -ne $RegistryOwner.run_id -or $registry.project -ne $RegistryOwner.project) { throw '进程登记身份不匹配' }
+            $registryEntry = @{ id=[guid]::NewGuid().ToString('N'); kind='category-process'; status='planned' }
+            $registry.resources += $registryEntry
+            Write-SmokeJson $RegistryPath $registry
+        }
         [void]$process.Start()
         $started = $true
+        if ($registryEntry) {
+            try {
+                # 快速退出可能发生于任何一次属性采样之间，不能凭数值PID伪造可恢复身份。
+                if ($process.HasExited) { throw 'process-exited-before-identity' }
+                $identity = @{ pid=$process.Id; started=$process.StartTime.ToUniversalTime().Ticks.ToString(); executable=$startInfo.FileName }
+                if (-not $identity.started -or -not $identity.executable) { throw '活跃子进程缺少完整出生身份' }
+                $registryEntry.status='running'
+                $registryEntry.process_identity=$identity
+            } catch {
+                # 再观察一次真实退出，覆盖HasExited与StartTime查询间的退出竞争；活跃错误仍失败。
+                if (-not $process.HasExited -and -not $process.WaitForExit(50)) { throw }
+                $registryEntry.status='closed'
+                $registryEntry.observed_process_closed=$true
+                $registryEntry.identity_not_observed_due_to_exit=$true
+                $registryEntry.process_exit_code=$process.ExitCode
+            }
+            Write-SmokeJson $RegistryPath $registry
+        }
         $stdout = $process.StandardOutput.ReadToEndAsync()
         $stderr = $process.StandardError.ReadToEndAsync()
         $timer = [Diagnostics.Stopwatch]::StartNew()
@@ -104,6 +197,11 @@ function Invoke-SmokeProcess(
     } finally {
         # 异常/可捕获Ctrl+C先关闭分类子进程树，再由总入口清理Compose资源。
         if ($started -and -not $process.HasExited) { $process.Kill($true); $process.WaitForExit() }
+        if ($registryEntry) {
+            $registryEntry.status='closed'; $registryEntry.observed_process_closed=$true
+            if ($started) { $registryEntry.process_exit_code=$process.ExitCode }
+            Write-SmokeJson $RegistryPath $registry
+        }
         $process.Dispose()
     }
 }

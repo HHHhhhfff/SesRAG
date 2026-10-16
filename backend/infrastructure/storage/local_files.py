@@ -1,4 +1,5 @@
 import hashlib
+from contextlib import suppress
 from pathlib import Path
 
 
@@ -15,12 +16,30 @@ class LocalFileStorage:
         target = self.root / storage_key
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = target.with_suffix(target.suffix + ".tmp")
-        temporary.write_bytes(content)
-        temporary.replace(target)
+        try:
+            temporary.write_bytes(content)
+            temporary.replace(target)
+        except OSError:
+            # 只清理由本次 UUID 保存拥有的文件，不递归删除共享目录。
+            for owned in (temporary, target):
+                with suppress(OSError):
+                    owned.unlink(missing_ok=True)
+            with suppress(OSError):
+                target.parent.rmdir()
+            raise
         return storage_key, content_hash
 
     def read(self, storage_key: str) -> bytes:
+        return self.resolve(storage_key).read_bytes()
+
+    def resolve(self, storage_key: str) -> Path:
         target = (self.root / storage_key).resolve()
         if self.root.resolve() not in target.parents:
             raise ValueError("storage key escapes upload root")
-        return target.read_bytes()
+        return target
+
+    def remove(self, storage_key: str) -> None:
+        target = self.resolve(storage_key)
+        target.unlink(missing_ok=True)
+        with suppress(OSError):
+            target.parent.rmdir()

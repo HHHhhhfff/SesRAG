@@ -51,30 +51,36 @@ async def post_cancel(
 async def stream_events(
     run_id: str,
     request: Request,
-    after_seq: int = 0,
+    after_seq: str = "0",
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
     notifier=Depends(get_notifier),
 ):
     last_event_id = request.headers.get("Last-Event-ID", str(after_seq))
     try:
-        after_seq = max(0, int(last_event_id))
+        cursor = max(0, int(last_event_id))
     except ValueError:
-        after_seq = 0
+        cursor = 0
+    # 握手前检查所有权，避免 StreamingResponse 发出 200 后才暴露 404。
+    await get_run_detail(session, settings, run_id)
+    await session.rollback()
 
     async def generator():
-        nonlocal after_seq
+        nonlocal cursor
         while True:
             if await request.is_disconnected():
                 return
             async with request.app.state.session_factory() as stream_session:
-                events = await get_run_events(stream_session, settings, run_id, after_seq)
+                detail = await get_run_detail(stream_session, settings, run_id)
+                events = await get_run_events(stream_session, settings, run_id, cursor)
             for event in events:
-                after_seq = event["seq"]
+                cursor = event["seq"]
                 payload = json.dumps(event, ensure_ascii=False, default=str)
-                yield f"id: {after_seq}\nevent: {event['type']}\ndata: {payload}\n\n"
+                yield f"id: {cursor}\nevent: {event['type']}\ndata: {payload}\n\n"
                 if event["type"] in {"run.succeeded", "run.failed", "run.cancelled"}:
                     return
+            if not events and detail["status"] in {"succeeded", "failed", "cancelled"}:
+                return
             await asyncio.sleep(settings.sse_poll_interval)
 
     del notifier

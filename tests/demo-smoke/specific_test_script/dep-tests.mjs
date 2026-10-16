@@ -1,10 +1,13 @@
 import {runCategory,assert,execute,repoRoot} from '../lib/category-kit.mjs';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
+import {deploymentFaultChecks} from '../tooling/lifecycle-focused.mjs';
+import {composeRagCheck} from '../tooling/compose-rag-check.mjs';
 export const coveredCases=['DEP_001','DEP_002','DEP_003','DEP_004','DEP_005','DEP_006','DEP_007','DEP_008','DEP_009'];
 
 await runCategory('dep',async s=>{
  const c=s.ctx;
+ await s.check('DEP_006','TP-DEP-007','root-compose-rag-consumption','根Compose四字段实际传到隔离API/Worker启动，快照、切分、TopK消费及非法启动拒绝',()=>composeRagCheck(c));
  // DEP_001：容器真实拓扑与新卷迁移，不以健康HTTP替代数据库结构。
  await s.check('DEP_001','TP-DEP-001','topology','六服务来自本次隔离容器，迁移成功，五服务运行',async()=>{
   const r=c.compose(['ps','-a','--format','json']);assert.equal(r.code,0);
@@ -14,7 +17,8 @@ await runCategory('dep',async s=>{
   return rows.map(x=>({service:x.Service,state:x.State,health:x.Health,exit_code:x.ExitCode}));
  });
  await s.check('DEP_001','TP-DEP-002','schema','Alembic head、vector和七业务表实际存在',()=>{
-  const version=c.sql('SELECT version_num FROM alembic_version');assert.equal(version[0].version_num,'0001_initial_demo');
+  const head=execute(path.join(repoRoot,'.venv/Scripts/python.exe'),['-c','from alembic.config import Config;from alembic.script import ScriptDirectory;print(ScriptDirectory.from_config(Config("alembic.ini")).get_current_head())']);assert.equal(head.code,0);
+  const version=c.sql('SELECT version_num FROM alembic_version');assert.equal(version[0].version_num,head.stdout.trim());
   const tables=c.sql("SELECT tablename FROM pg_tables WHERE schemaname='public'").map(x=>x.tablename);
   for(const name of ['threads','messages','runs','tasks','run_events','documents','chunks'])assert.ok(tables.includes(name),name);
   assert.equal(c.sql("SELECT extname FROM pg_extension WHERE extname='vector'")[0].extname,'vector');return {version,tables};
@@ -32,7 +36,7 @@ await runCategory('dep',async s=>{
  await s.check('DEP_003','TP-DEP-004','declared-migration-gate','根Compose及当前覆盖后的API/Worker声明migrate成功退出依赖',()=>{
   const r=execute(path.join(repoRoot,'.venv/Scripts/python.exe'),['-c',"import json,yaml;d=yaml.safe_load(open('docker-compose.yml',encoding='utf8'));print(json.dumps({name:d['services'][name]['depends_on']['migrate']['condition'] for name in ['api','worker']}))"]);assert.equal(r.code,0);const root=JSON.parse(r.stdout);const merged=c.compose(['config','--format','json']);assert.equal(merged.code,0);const config=JSON.parse(merged.stdout);for(const name of ['api','worker']){assert.equal(root[name],'service_completed_successfully');assert.equal(config.services[name].depends_on.migrate.condition,'service_completed_successfully');}return {root,merged:{api:config.services.api.depends_on.migrate.condition,worker:config.services.worker.depends_on.migrate.condition},scope:'静态依赖声明；不代表首次迁移故障已实测'};
  });
- s.blockCase('DEP_003','首次迁移失败独立驱动尚未完成；已有静态依赖声明不等于动态失败阻断/清理验收。');
+ await deploymentFaultChecks(s,['migration-failure'],'DEP_003','TP-DEP-004');
  // DEP_004：API写入与Worker读取同文件哈希，重启后依然存在。
  await s.check('DEP_004','TP-DEP-005','shared-restart','原始字节/哈希/文档/分块在API与Worker共享且重启后保留',async()=>{
   const bytes=Buffer.from('DEP_004共享原文\n中文存储证据');const uploaded=await c.upload('shared.txt',bytes);assert.equal(uploaded.status,201);const id=uploaded.body.document_id;await c.waitDoc(id);
@@ -45,7 +49,7 @@ await runCategory('dep',async s=>{
  // DEP_005：独立人工数据流校审结论；直接解析根部署，不把测试覆盖当产品修复。
  await s.check('DEP_005','TP-DEP-006','root-secret-review','根部署Secret由运行时传入，不能写死或进入前端/镜像',()=>{
   const r=execute(path.join(repoRoot,'.venv/Scripts/python.exe'),['-c',"import yaml,json;d=yaml.safe_load(open('docker-compose.yml',encoding='utf8'));s=d['services'];print(json.dumps({'db_runtime': '${' in str(s['postgres']['environment'].get('POSTGRES_PASSWORD','')), 'api_url_runtime': '${' in str(s['api']['environment'].get('DATABASE_URL','')), 'frontend_secret_keys': [k for k in s['frontend'].get('environment',{}) if 'KEY' in k or 'PASSWORD' in k]}))"]);
-  assert.equal(r.code,0);const result=JSON.parse(r.stdout);c.evidence('dep/root-secret-review.json',{...result,review:'Dockerfile COPY与.dockerignore边界、前端仅VITE_API_BASE_URL已逐项审阅；根Compose DB密码/URL为字面值，测试覆盖仅本次随机密码。'});assert.ok(result.db_runtime&&result.api_url_runtime,'根Compose数据库密码/连接串仍为固定字面值；不是运行时Secret注入');assert.deepEqual(result.frontend_secret_keys,[]);return result;
+  assert.equal(r.code,0);const result=JSON.parse(r.stdout);c.evidence('dep/root-secret-review.json',{...result,review:'Dockerfile COPY与.dockerignore边界、前端仅VITE_API_BASE_URL已逐项审阅；根Compose密码/URL通过运行时必填注入，测试使用本次随机密码。'});assert.ok(result.db_runtime&&result.api_url_runtime,'根Compose数据库密码/连接串仍为固定字面值；不是运行时Secret注入');assert.deepEqual(result.frontend_secret_keys,[]);return result;
  });
  // DEP_006：对真实Settings构造逐个非法值，不以配置字段存在为通过。
  await s.check('DEP_006','TP-DEP-007','invalid-settings','正值有效，0/负值和heartbeat>=TTL在使用前拒绝',()=>{
@@ -54,7 +58,7 @@ await runCategory('dep',async s=>{
  });
  await s.check('DEP_007','TP-DEP-008','vector-config','384匹配，128必须拒绝或存在匹配PG列',()=>{
   const column=c.sql("SELECT format_type(a.atttypid,a.atttypmod) AS type FROM pg_attribute a WHERE a.attrelid='chunks'::regclass AND a.attname='embedding'")[0].type;
-  const r=c.python(`import json\nfrom backend.config import Settings\nfrom backend.infrastructure.providers.mock import MockEmbeddingProvider\na=Settings(vector_dimension=384);b=Settings(vector_dimension=128)\nprint('SMOKE_JSON:'+json.dumps({'default':len(MockEmbeddingProvider(a.vector_dimension).embed('q')),'alternate':len(MockEmbeddingProvider(b.vector_dimension).embed('q')),'accepted128':b.vector_dimension==128}))`);
+  const r=c.python(`import json\nfrom backend.config import Settings\nfrom backend.infrastructure.providers.mock import MockEmbeddingProvider\na=Settings(vector_dimension=384)\ntry: Settings(vector_dimension=128);accepted=True\nexcept ValueError: accepted=False\nprint('SMOKE_JSON:'+json.dumps({'default':len(MockEmbeddingProvider(a.vector_dimension).embed('q')),'accepted128':accepted}))`);
   c.evidence('dep/vector-dimension.json',{column,...r});assert.equal(column,'vector(384)');assert.equal(r.default,384);assert.ok(!r.accepted128||column==='vector(128)','Settings接受128，数据库固定384且无启动拒绝');return {column,...r};
  });
  await s.check('DEP_008','TP-DEP-009','constraints','外键、seq唯一、用户消息唯一、幂等复合unique及Task kind CHECK齐全',()=>{
@@ -74,7 +78,7 @@ await runCategory('dep',async s=>{
   const missing=[];if(!has('messages','u',/thread_id, idempotency_key/))missing.push('messages(thread_id,idempotency_key) unique');if(JSON.stringify(actual.map(x=>x.admitted))!==JSON.stringify(expected))missing.push('tasks kind/run_id/document_id CHECK语义不完整');assert.deepEqual(missing,[],'用例规定约束缺失/不完整');return rows;
  });
  await s.check('DEP_009','TP-DEP-010','cold-start-dependency-review','通知可降级：API/Worker冷启动不由Redis healthy硬门禁阻断',()=>{
-  const r=execute(path.join(repoRoot,'.venv/Scripts/python.exe'),['-c',"import json,yaml;d=yaml.safe_load(open('docker-compose.yml',encoding='utf8'));print(json.dumps({name:d['services'][name]['depends_on'].get('redis') for name in ['api','worker']}))"]);assert.equal(r.code,0);const result=JSON.parse(r.stdout);c.evidence('dep/redis-cold-dependency.json',{dependencies:result,review:'Notifier.connect可降级，但根Compose api/worker depends_on.redis healthy会在进程启动前阻断；静态依赖与ADR降级设计冲突，动态冷启动还未执行。'});assert.ok(!Object.values(result).some(x=>x?.condition==='service_healthy'),'根编排仍硬依赖Redis healthy，冷启动无法执行通知降级');return result;
+  const r=execute(path.join(repoRoot,'.venv/Scripts/python.exe'),['-c',"import json,yaml;d=yaml.safe_load(open('docker-compose.yml',encoding='utf8'));print(json.dumps({name:d['services'][name]['depends_on'].get('redis') for name in ['api','worker']}))"]);assert.equal(r.code,0);const result=JSON.parse(r.stdout);c.evidence('dep/redis-cold-dependency.json',{dependencies:result,review:'根Compose未以Redis healthy阻断启动；冷启动降级与真实Run完成另由独立固定场景验证。'});assert.ok(!Object.values(result).some(x=>x?.condition==='service_healthy'),'根编排仍硬依赖Redis healthy，冷启动无法执行通知降级');return result;
  });
- s.blockCase('DEP_009','冷启动Redis不可达场景需独立Compose覆盖，不能以运行后停Redis代替；静态冲突已单独实际解析，完整冷启动动态待补。');
+ await deploymentFaultChecks(s,['redis-cold'],'DEP_009','TP-DEP-010');
 });

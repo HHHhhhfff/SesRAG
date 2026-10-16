@@ -13,6 +13,7 @@ def to_response(document) -> DocumentResponse:
     return DocumentResponse(
         document_id=document.document_id,
         filename=document.filename,
+        source=document.source,
         extension=document.extension,
         size_bytes=document.size_bytes,
         content_hash=document.content_hash,
@@ -35,7 +36,7 @@ async def upload_document(
         settings,
         file.filename or "unnamed.txt",
         file.content_type,
-        await file.read(),
+        await file.read(10 * 1024 * 1024 + 1),
     )
     return to_response(document)
 

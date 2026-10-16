@@ -1,3 +1,4 @@
+import {documentRagCoverage} from './document-rag-coverage.mjs';
 import fs from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {runCategory,assert} from '../lib/category-kit.mjs';
@@ -7,6 +8,7 @@ const driver=fs.readFileSync(new URL('./idx-driver.py',import.meta.url),'utf8');
 const types={txt:'text/plain',md:'text/markdown',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'};
 
 await runCategory('idx',async s=>{
+ await documentRagCoverage(s);
   const c=s.ctx;let data;
   // IDX_001：生产Mock确定性只证明离线流程，不证明真实检索语义。
   await s.check('IDX_001','TP-IDX-001','mock-repeat-finite','同文本同配置向量完全一致、384维且数值有限',async()=>{
@@ -20,12 +22,6 @@ await runCategory('idx',async s=>{
     const rows=c.sql(`SELECT document_id,index_batch_id,seq,text,start_offset,end_offset,embedding::text AS vector FROM chunks WHERE document_id='${d.document_id}' ORDER BY seq`);assert.ok(rows.length);for(const [i,row]of rows.entries()){assert.equal(row.document_id,d.document_id);assert.equal(row.index_batch_id,d.active_index_batch_id);assert.equal(row.seq,i);assert.equal(row.text,[...f.text].slice(row.start_offset,row.end_offset).join(''));const vector=JSON.parse(row.vector);assert.equal(vector.length,384);assert.ok(vector.every(Number.isFinite));}assert.equal(rows[0].start_offset,0);assert.equal(rows.at(-1).end_offset,[...f.text].length);
     return {document_id:d.document_id,task_id:tasks[0].task_id,status:d.status,task_state:tasks[0].state,batch_id:d.active_index_batch_id,chunks:rows.length,format:ext};
   });
-  s.block('IDX_002','TP-IDX-003','indexing-phase','uploaded→indexing→indexed每阶段有确定步骤证据','上传与终态已真实验证；缺少E2慢Embedding/步骤屏障，快速终态不能倒推indexing阶段。');
-  s.blockCase('IDX_003','缺少E2真实领取Task与383/385维Provider受控驱动；默认384向量成功不能证明错维禁止发布。');
-  s.block('IDX_004','TP-IDX-004','candidate-inflight','首次/重建候选构建中不可召回且全部成功后才切换','缺少E2多块慢Embedding屏障与独立PG检索采样；不SQL伪造候选状态。');
-  s.block('IDX_004','TP-IDX-006','failed-rebuild-old-active','第N块失败回滚候选并保留旧active检索','缺少E2第N块失败Provider与构建期间检索驱动，正常重建成功另DOC_011独立验证。');
-  s.block('IDX_005','TP-IDX-005','commit-window','索引active发布与Task成功原子提交','缺少E2两commit之间精确故障驱动；当前两事务风险保留，不能用普通成功终态证明原子性。');
-  s.block('IDX_005','TP-IDX-008','ordinary-exhaustion','普通错误重排至上限且Task/Document一致failed','缺少E2重复普通异常驱动，当前retry_waiting回排缺口；PAR_003永久错误不能代替此分支。');
   // IDX_006：仅移动此例精确source至同目录可恢复备份，finally原位恢复。
   await s.check('IDX_006','TP-IDX-009','missing-own-source','本次源文件丢失重建明确失败且Task/Document一致failed、保留旧active',async()=>{
     const r=await c.upload(`IDX_006-${randomUUID()}.txt`,Buffer.from('IDX_006源丢失重建安全资料'));assert.equal(r.status,201);const original=await c.waitDoc(r.body.document_id,30000);assert.equal(original.status,'indexed');
@@ -35,5 +31,4 @@ await runCategory('idx',async s=>{
       assert.equal(d.active_index_batch_id,saved.active_index_batch_id,JSON.stringify(actual));assert.ok(rows.length&&rows.every(x=>x.index_batch_id===saved.active_index_batch_id),JSON.stringify(actual));assert.equal(d.status,'failed',`源丢失未有界结算：${JSON.stringify(actual)}`);assert.equal(t.state,'failed',JSON.stringify(actual));assert.ok(d.last_error_code&&t.last_error_code);return actual;
     }finally{if(moved)action('restore');if(stopped){assert.equal(c.compose(['start','worker']).code,0);await c.ready();}}
   });
-  s.blockCase('IDX_007','缺少E2多块慢Provider与pg_stat_activity确定采样；源码session位置不足以代替长事务实际指标，不擅自增加固定SLO阈值。');
 });

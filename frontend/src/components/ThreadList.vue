@@ -13,7 +13,14 @@ const emit = defineEmits<{ select: [string]; create: [] }>()
         <span class="eyebrow">SESRAG</span>
         <h1>持久会话</h1>
       </div>
-      <button class="icon-button" title="新建会话" aria-label="新建会话" @click="emit('create')"><Plus :size="18" /></button>
+      <button
+        class="icon-button"
+        title="新建会话"
+        aria-label="新建会话"
+        @click="emit('create')"
+      >
+        <Plus :size="18" />
+      </button>
     </div>
     <button
       v-for="thread in threads"
@@ -25,7 +32,12 @@ const emit = defineEmits<{ select: [string]; create: [] }>()
       <MessageSquare :size="16" />
       <span>{{ thread.title }}</span>
     </button>
-    <div v-if="!threads.length" class="empty-state">暂无会话</div>
+    <div
+      v-if="!threads.length"
+      class="empty-state"
+    >
+      暂无会话
+    </div>
   </aside>
 </template>
 

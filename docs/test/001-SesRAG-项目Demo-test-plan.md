@@ -156,7 +156,7 @@ docker compose `
 
 - 为 api、frontend 暴露测试专用宿主端口，默认使用 `18000` 和 `15173`；总入口预检占用情况，必要时选择空闲端口并通过环境变量传入。
 - 将 `OWNER_ID` 设置为本次测试专用 owner，例如 `demo-smoke-<run_id>`，避免与开发数据混淆。
-- 固定 `MOCK_PROVIDER=true`，不要求外部模型 Key；真实 Provider 测试不属于本 Demo 本机 smoke 默认流程。
+- 默认主环境固定 `MOCK_PROVIDER=true`，不要求外部模型 Key；真实外部供应商效果不属于本机 smoke。ADR-002 的协议故障专项可以使用生产 OpenAI-compatible Adapter 访问测试目录内的本地 HTTP/SSE 服务，使用虚拟凭据，不访问外部供应商，专项资源仍由同一总入口登记和清理。
 - 保持 API/Worker 共享 uploads volume，但使用独立 Compose project name 产生隔离的网络和命名卷。
 - 不向宿主机暴露 PostgreSQL/Redis 端口；测试通过 API、SSE、Docker health 和必要的容器内诊断访问它们。
 - 为 frontend 注入测试 API 地址，确保浏览器访问的是本次测试 API 端口。
@@ -388,3 +388,13 @@ LIFE新增固定`nested-recovery`分类超时父登记兜底自检；中文报�
 任务5～6已在相同dirty工作区、164个被测产品/脚本/契约/锁/fixture文件冻结不变的基线上，依次完成`20261007t072506-2fc5b075`与`20261007t075158-2907bbdf`两个完整all。各21分类、423检查；分别通过236/237、失败69/68、受限118/118。主入口均failed/1，部署/报告收集/清理均passed；唯一状态波动为WK_023数据库恢复，不得以第二轮通过覆盖第一轮失败。
 
 结果与PRD八项验收见[测试报告](../../tests/demo-smoke/测试报告.md)，失败并集和局部/暂不可共104条问题登记见[缺陷报告](../../tests/demo-smoke/缺陷报告.md)，真实命令、冻结/资源证据与校审见[执行审批](../../tests/demo-smoke/任务5-6执行与审批记录.md)。[用例](../../tests/demo-smoke/test-cases.md)已填149实际结果及104复现/稳定性，45暂不可完整动态后两栏按要求保留空。前述“待正式验收”等是各阶段历史；当前是执行闭环与报告完成，不是产品验收通过。修复/补驱动后须重新完整验证。
+
+## 17. ADR-002 修复阶段的验证边界（2026-10-12）
+
+当前按 [ADR-002](../adr/002-SesRAG-Demo-缺陷修复-plan.md) 修复代码和测试工程，旧两轮结果继续作为缺陷基线，不覆盖为新通过记录。本阶段先补本机可满足的慢 Provider、真实 PG 多连接、故障/清理驱动，再冻结更新后的实现执行完整两轮。最终结论、明确暂缓及纳入但未解决事项在 `tests/demo-smoke/复测和验收报告.md` 中交付；此节不是测试结果。
+
+确定性故障测试允许测试目录内的进程导入正式 application、Queue、Journal、Runtime/Handler，并用该用例的 session factory 或 Port 包装屏障/一次故障；仍由生产业务函数创建及推进 Thread/Run/Task/Document，不以 SQL 修改 state、seq、generation 伪造条件。SQL 观察连接保持只读；真正的 PG 锁/接管竞争不能由 SQLite 或组件传输替身代替。测试 bootstrap、协议替身和控制路由不得加入正式生产 API。
+
+常规环境继续要求 Redis 正常和 Worker 可见心跳；专用 Redis 冷启动降级场景单独使用已确认的就绪条件，验证 PG 权威业务可继续，不全局放宽普通门禁。迁移版本比较使用当前固定迁移目录的真实 Alembic head，不硬编码旧 `0001`。运行时随机数据库凭据同时映射根 Compose 必填环境变量，不输出密码。
+
+`OWN_001`、`PAR_004`、`FE_009 ordinary-browser-offline`、真实外部模型效果和生产容量按 ADR-002 暂缓；其他已纳入的仓库可补条件不能仅以“驱动尚未准备”宣称修复完成。分类原报告保留 failed/blocked；含明确暂缓的 all 即使纳入检查全部通过，严格主入口仍可能非零，验收报告必须解释两种口径，不修改退出码强行 passed。

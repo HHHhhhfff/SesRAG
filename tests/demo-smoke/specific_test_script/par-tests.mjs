@@ -1,3 +1,4 @@
+import {documentRagCoverage} from './document-rag-coverage.mjs';
 import fs from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {runCategory, assert} from '../lib/category-kit.mjs';
@@ -39,9 +40,9 @@ await runCategory('par',async s=>{
   await s.check('PAR_003','TP-PAR-006','whitespace-observation','空白文本按当前字符切分行为索引，不擅自增加strip规则',async()=>{
     const content=' \n\t ',id=await upload('PAR_003-whitespace',Buffer.from(content),'txt'),d=await c.waitDoc(id,30000),rows=chunks(id);assert.equal(d.status,'indexed');assert.equal(rows.length,1);assert.equal(rows[0].text,content);return {document_id:id,status:d.status,whitespace_characters:content.length};
   });
-  s.block('PAR_003','TP-IDX-008','ordinary-error-exhaustion','普通索引异常耗尽时Task/Document一致failed','本例仅真实验证EMPTY_DOCUMENT永久错误；普通错误耗尽及回排闭环归IDX_005，尚缺E2驱动。');
   for(const name of ['table_only','mixed_regions'])await s.check('PAR_004','TP-PAR-008',name,'明确非段落区域保留结果，table-only按EMPTY_DOCUMENT、混合正文按实际顶层段落索引',async()=>{
     assert.ok(data?.[name]);const f=data[name],id=await upload('PAR_004-'+name,Buffer.from(f.bytes,'base64'),'docx'),d=await c.waitDoc(id,30000),rows=chunks(id);assert.equal(f.text,f.expected);if(name==='table_only'){assert.equal(f.text,'');assert.equal(d.status,'failed');assert.equal(d.last_error_code,'EMPTY_DOCUMENT');assert.equal(rows.length,0);}else{assert.equal(d.status,'indexed');assert.equal(rows.map(x=>x.text).join(''),f.text);assert.equal(f.regions.body,true);}return {document_id:id,status:d.status,retained_regions:f.regions,scope:'当前顶层paragraphs覆盖观察'};
   });
   s.block('PAR_004','TP-PAR-008','full-region-support','明确docx表格/页眉/文本框的产品支持契约','已动态记录各区域是否保留；PRD尚未细化区域范围，当前顶层paragraphs遗漏需需求确认，不能称完整docx区域支持。');
+ await documentRagCoverage(s);
 });

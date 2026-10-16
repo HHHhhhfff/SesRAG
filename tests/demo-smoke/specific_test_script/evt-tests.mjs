@@ -1,13 +1,11 @@
-import fs from 'node:fs';
-import Ajv2020 from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
+import { executionCoverage } from './execution-coverage.mjs';
+import { contractValidator } from '../lib/api-contracts.mjs';
 import { runCategory, assert, poll } from '../lib/category-kit.mjs';
 import { uuid, lazy, increasing, sqlValue, runFacts, stoppedWorker, successful, restartApi, readSSE, eventSummary, sseSummary } from './run-test-driver.mjs';
 
 export const coveredCases = ['EVT_001', 'EVT_002', 'EVT_003', 'EVT_004', 'EVT_005'];
-const ajv = new Ajv2020({ allErrors: true });
-addFormats(ajv);
-const validateEvent = ajv.compile(JSON.parse(fs.readFileSync(new URL('../../../contracts/run_event_v1.json', import.meta.url), 'utf8')));
+const ajv = contractValidator();
+const validateEvent = ajv.getSchema('https://sesrag.local/contracts/run_event_v1.json');
 
 await runCategory('evt', async s => {
   const ctx = s.ctx;
@@ -47,7 +45,6 @@ await runCategory('evt', async s => {
     assert.equal(data.events.at(-1).type, 'run.succeeded');
     return { run_id: data.run.run_id, types: data.events.map(event => event.type), assistant_message_id: data.run.assistant_message_id };
   });
-  for (const sub of ['two_connection_append', 'rollback_then_append']) s.block('EVT_002', 'TP-EVT-002', sub, '真实PG并发append_event唯一递增，回滚不永久占序号，Run游标与记录一致', `E2 ${sub}真实生产append_event双连接/提交失败屏障尚未准备，不手写Event SQL代替`);
 
   // EVT_003：保存初始事件，完成、重复读取、正式归档和API重启后逐字段比较旧事实。
   const histories = lazy(async () => {
@@ -123,4 +120,5 @@ await runCategory('evt', async s => {
       return { document_id: doc.document_id, document_status: doc.status, task: tasks[0], before, after };
     });
   }
+  await executionCoverage(s);
 });

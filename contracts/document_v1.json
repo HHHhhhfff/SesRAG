@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/document_v1.json",
+  "title": "SesRAG Document v1",
+  "type": "object",
+  "required": ["document_id", "filename", "source", "extension", "size_bytes", "content_hash", "status", "created_at", "updated_at", "active_index_batch_id", "last_error_code"],
+  "properties": {
+    "document_id": {"type": "string"},
+    "filename": {"type": "string"},
+    "source": {"const": "local_upload"},
+    "extension": {"type": "string"},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "content_hash": {"type": "string"},
+    "status": {"type": "string"},
+    "active_index_batch_id": {"type": ["string", "null"]},
+    "last_error_code": {"type": ["string", "null"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}

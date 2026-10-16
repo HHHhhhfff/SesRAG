@@ -1,8 +1,10 @@
+import {documentRagCoverage} from './document-rag-coverage.mjs';
 import {runCategory,assert} from '../lib/category-kit.mjs';
 import {chromium} from 'playwright';
 export const coveredCases=['SEC_001','SEC_002','SEC_003','SEC_004','SEC_005'];
 
 await runCategory('sec',async s=>{
+ await documentRagCoverage(s);
  const c=s.ctx;
  // SEC_001：只请求已知测试文件候选直链，不枚举宿主文件。
  await s.check('SEC_001','TP-SEC-001','static-paths','API/frontend上传候选直链不能暴露原始正文',async()=>{
@@ -33,7 +35,6 @@ await runCategory('sec',async s=>{
  await s.check('SEC_004','TP-SEC-005','normal-facts','正常snapshot/Event/Message和默认日志不泄漏本次临时密码',async()=>{
   const t=await c.thread('SEC_004事实');const m=await c.submit(t.thread_id,'公开测试问题');await c.waitRun(m.run_id);const facts={detail:await c.detail(t.thread_id),events:await c.events(m.run_id),snapshot:c.sql(`SELECT snapshot_json FROM runs WHERE run_id='${m.run_id}'`)};const logs=c.compose(['logs','--no-color','--tail','200','api','worker']);const combined=JSON.stringify(facts)+logs.stdout;assert.ok(!combined.includes(c.env.SMOKE_DB_PASSWORD));assert.ok(!JSON.stringify(facts).includes('model_api_key'));return {run_id:m.run_id,normal_secret_leak:false};
  });
- for(const tp of ['TP-SEC-004','TP-SEC-005'])s.block('SEC_004',tp,'exception-sentinel','存储/Provider异常源敏感哨兵在全部输出面脱敏','E2/E4异常驱动尚未完成；正常事实无密码不代表异常str(exc)已脱敏。DB故障响应另HLT_002真实执行。');
  await s.check('SEC_005','TP-SEC-006','bounded-upload-review','上传应在全量读前有界拒绝，而不是读完才检查10MiB',()=>{
   const result=c.python(`import ast,json,pathlib\nt=ast.parse(pathlib.Path('backend/api/routes/documents.py').read_text())\nf=next(n for n in ast.walk(t) if isinstance(n,ast.AsyncFunctionDef) and n.name=='upload_document')\nreads=[n for n in ast.walk(f) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr=='read']\nprint('SMOKE_JSON:'+json.dumps({'unbounded_reads':sum(not n.args and not n.keywords for n in reads),'read_calls':len(reads)}))`);
   c.evidence('sec/upload-memory-review.json',{...result,review:'数据流已审阅：await file.read -> create_document大小检查；app无请求体上限。AST仅检测此已确认路径的无界read形态，未来改变结构需重审，不自动推断其他中间件正确。',dynamic_resource_exhaustion:'未运行'});

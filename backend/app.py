@@ -1,7 +1,10 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import InterfaceError, OperationalError
+from sqlalchemy.exc import TimeoutError as DatabaseTimeoutError
 
 from backend.api.routes import documents, health, runs, threads
 from backend.application.errors import ApplicationError
@@ -24,15 +27,74 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             async with engine.begin() as connection:
                 await connection.run_sync(Base.metadata.create_all)
         await notifier.connect()
-        yield
-        await notifier.close()
-        await engine.dispose()
+        try:
+            yield
+        finally:
+            await notifier.close()
+            await engine.dispose()
 
     app = FastAPI(title="SesRAG", version="0.1.0", lifespan=lifespan)
     app.state.settings = app_settings
     app.state.engine = engine
     app.state.session_factory = session_factory
     app.state.notifier = notifier
+
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_handler(_request: Request, exc: RequestValidationError):
+        safe_locations = {
+            "body",
+            "query",
+            "path",
+            "header",
+            "cookie",
+            "title",
+            "content",
+            "file",
+            "after_seq",
+            "thread_id",
+            "run_id",
+            "document_id",
+            "idempotency-key",
+        }
+        safe_types = {
+            "missing",
+            "string_type",
+            "string_too_short",
+            "string_too_long",
+            "int_parsing",
+            "int_type",
+            "greater_than_equal",
+            "json_invalid",
+            "model_attributes_type",
+            "model_type",
+            "value_error",
+        }
+        # 校验异常包含原始 input/ctx/msg；仅白名单字段投影，未知路径不得回显输入键。
+        detail = [
+            {
+                "type": error["type"] if error.get("type") in safe_types else "request_validation",
+                "loc": [
+                    part
+                    if type(part) is int or (isinstance(part, str) and part in safe_locations)
+                    else "field"
+                    for part in error.get("loc", ())
+                ]
+                or ["body"],
+                "msg": "请求参数校验失败",
+            }
+            for error in exc.errors()
+        ]
+        return JSONResponse(status_code=422, content={"detail": detail})
+
+    async def database_unavailable_handler(_request: Request, _exc: Exception):
+        # 依赖异常可能携带 DSN、SQL 和参数；公开响应只返回稳定错误码。
+        return JSONResponse(
+            status_code=503,
+            content={"code": "DATABASE_UNAVAILABLE", "message": "数据库暂不可用，请稍后重试"},
+        )
+
+    for error_type in (OperationalError, InterfaceError, DatabaseTimeoutError):
+        app.add_exception_handler(error_type, database_unavailable_handler)
 
     @app.exception_handler(ApplicationError)
     async def application_error_handler(_request: Request, exc: ApplicationError):

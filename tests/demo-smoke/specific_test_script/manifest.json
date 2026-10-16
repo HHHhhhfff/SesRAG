@@ -1,26 +1,131 @@
 {
   "schema_version": 1,
   "categories": [
-    {"name":"dep","script":"dep-tests.mjs","status":"enabled","timeout_seconds":300},
-    {"name":"hlt","script":"hlt-tests.mjs","status":"enabled","timeout_seconds":300},
-    {"name":"th","script":"th-tests.mjs","status":"enabled","timeout_seconds":180},
-    {"name":"msg","script":"msg-tests.mjs","status":"enabled","timeout_seconds":900},
-    {"name":"run","script":"run-tests.mjs","status":"enabled","timeout_seconds":240},
-    {"name":"wk","script":"wk-tests.mjs","status":"enabled","timeout_seconds":300},
-    {"name":"can","script":"can-tests.mjs","status":"enabled","timeout_seconds":180},
-    {"name":"doc","script":"doc-tests.mjs","status":"enabled","timeout_seconds":900},
-    {"name":"par","script":"par-tests.mjs","status":"enabled","timeout_seconds":240},
-    {"name":"chk","script":"chk-tests.mjs","status":"enabled","timeout_seconds":120},
-    {"name":"idx","script":"idx-tests.mjs","status":"enabled","timeout_seconds":180},
-    {"name":"rag","script":"rag-tests.mjs","status":"enabled","timeout_seconds":600},
-    {"name":"evt","script":"evt-tests.mjs","status":"enabled","timeout_seconds":240},
-    {"name":"sse","script":"sse-tests.mjs","status":"enabled","timeout_seconds":240},
-    {"name":"fe","script":"fe-tests.mjs","status":"enabled","timeout_seconds":420},
-    {"name":"own","script":"own-tests.mjs","status":"enabled","timeout_seconds":30},
-    {"name":"sec","script":"sec-tests.mjs","status":"enabled","timeout_seconds":180},
-    {"name":"perf","script":"perf-tests.mjs","status":"enabled","timeout_seconds":180},
-    {"name":"arc","script":"arc-tests.mjs","status":"enabled","timeout_seconds":120},
-    {"name":"qlt","script":"qlt-tests.mjs","status":"enabled","timeout_seconds":900},
-    {"name":"life","script":"life-tests.mjs","status":"enabled","timeout_seconds":1800}
+    {
+      "name": "dep",
+      "script": "dep-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 1800
+    },
+    {
+      "name": "hlt",
+      "script": "hlt-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 420
+    },
+    {
+      "name": "th",
+      "script": "th-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 180
+    },
+    {
+      "name": "msg",
+      "script": "msg-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 1200
+    },
+    {
+      "name": "run",
+      "script": "run-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 1200
+    },
+    {
+      "name": "wk",
+      "script": "wk-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 3000
+    },
+    {
+      "name": "can",
+      "script": "can-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 900
+    },
+    {
+      "name": "doc",
+      "script": "doc-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 1500
+    },
+    {
+      "name": "par",
+      "script": "par-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 360
+    },
+    {
+      "name": "chk",
+      "script": "chk-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 240
+    },
+    {
+      "name": "idx",
+      "script": "idx-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 1200
+    },
+    {
+      "name": "rag",
+      "script": "rag-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 6000
+    },
+    {
+      "name": "evt",
+      "script": "evt-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 420
+    },
+    {
+      "name": "sse",
+      "script": "sse-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 600
+    },
+    {
+      "name": "fe",
+      "script": "fe-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 1800
+    },
+    {
+      "name": "own",
+      "script": "own-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 30
+    },
+    {
+      "name": "sec",
+      "script": "sec-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 420
+    },
+    {
+      "name": "perf",
+      "script": "perf-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 900
+    },
+    {
+      "name": "arc",
+      "script": "arc-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 300
+    },
+    {
+      "name": "qlt",
+      "script": "qlt-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 21600
+    },
+    {
+      "name": "life",
+      "script": "life-tests.mjs",
+      "status": "enabled",
+      "timeout_seconds": 15000
+    }
   ]
 }

@@ -16,6 +16,7 @@ packages = {
     "ruff": "ruff",
     "mypy": "mypy",
     "httpx": "httpx",
+    "httpx2": "httpx2",
     "psycopg": "psycopg",
     "sqlalchemy": "SQLAlchemy",
     "docx": "python-docx",

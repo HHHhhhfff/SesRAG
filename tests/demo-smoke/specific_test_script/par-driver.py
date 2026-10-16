@@ -8,6 +8,7 @@ from pathlib import Path
 from docx import Document
 from docx.oxml import parse_xml
 
+from backend.application.errors import PermanentTaskError
 from backend.infrastructure.rag.parsers import parse_document
 
 result = {}
@@ -56,19 +57,31 @@ with tempfile.TemporaryDirectory(prefix="par-fixtures-") as directory:
             expected = "BODY_SENTINEL"
         path = root / (name + ".docx")
         document.save(path)
-        parsed = parse_document(path, ".docx")
+        parse_error_code = None
+        try:
+            parsed = parse_document(path, ".docx")
+        except PermanentTaskError as error:
+            # 仅两个预期无顶层段落的fixture接受空文错误；保留原字节供正式上传验证。
+            if name not in {"empty_docx", "table_only"} or error.code != "EMPTY_DOCUMENT":
+                raise
+            parsed = None
+            parse_error_code = error.code
+        parsed_text = parsed.text if parsed is not None else ""
         result[name] = {
             "bytes": base64.b64encode(path.read_bytes()).decode(),
-            "text": parsed.text,
+            "text": parsed_text,
             "expected": expected,
-            "source_name": parsed.source_name,
+            "source_name": parsed.source_name if parsed is not None else path.name,
+            "parse_error_code": parse_error_code,
+            "parse_status": "expected_empty_error" if parsed is None else "parsed",
+            "parse_result_source": "backend.infrastructure.rag.parsers.parse_document",
             "position_fields": [
                 field
                 for field in ("positions", "locations", "start_offset", "end_offset")
                 if hasattr(parsed, field)
             ],
             "regions": {
-                region: sentinel in parsed.text
+                region: sentinel in parsed_text
                 for region, sentinel in {
                     "body": "BODY_SENTINEL",
                     "header": "HEADER_SENTINEL",
