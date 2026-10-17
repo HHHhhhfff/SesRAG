@@ -39,22 +39,15 @@ AGENTS.md      仓库级 AI 开发约束
 
 ## 快速启动
 
-要求 Docker Desktop、Docker Compose 和 Node.js 20（仅本地前端开发需要）。后端镜像使用 Python 3.12；宿主机不需要安装 Python 3.12。
+本地 Compose 部署支持 Windows（PowerShell 7.4+、Docker Desktop Linux Engine）和 Linux（Docker Engine、Compose v2）。首次部署、PostgreSQL 凭据生成/恢复、迁移备份与回退、容器更新和验证命令统一见[Demo 本地开发 Runbook](docs/runbooks/demo-development.md)。`.env.example` 仅为模板，不能原样用于启动；不要在已有 PostgreSQL 数据卷时重新生成数据库密码或覆盖 `.env`。
 
-```powershell
-Copy-Item .env.example .env
-# 在 .env 中替换 POSTGRES_PASSWORD 和 DATABASE_URL 的占位凭据；密码需 URL 编码。
-docker compose up -d --build
-docker compose ps
-```
-
-访问：
+后端镜像使用 Python 3.12，宿主机无需安装 Python 3.12。服务就绪后访问：
 
 - 前端：<http://localhost:5173>
 - API 文档：<http://localhost:8000/docs>
 - Readiness：<http://localhost:8000/health/ready>
 
-首次启动由 `migrate` 容器执行 Alembic 迁移。PostgreSQL 使用 `pgvector/pgvector:pg16`，API 和 Worker 共享 `uploads` volume。停止服务使用 `docker compose down`；需要删除本地数据库卷时才使用 `docker compose down -v`。
+首次启动由 `migrate` 容器执行 Alembic 迁移。PostgreSQL 使用 `pgvector/pgvector:pg16`，API 和 Worker 共享 `uploads` volume。停止服务使用 `docker compose down`；只有明确确认要永久清除本项目数据库与上传文件、且所需数据已备份后，才使用 `docker compose down -v`。升级、回退、备份和恢复步骤见本地开发 Runbook。
 
 ## 环境变量
 
