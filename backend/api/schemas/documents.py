@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 class DocumentResponse(BaseModel):
     document_id: str
     filename: str
+    source: Literal["local_upload"]
     extension: str
     size_bytes: int
     content_hash: str

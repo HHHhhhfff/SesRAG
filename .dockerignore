@@ -1,6 +1,7 @@
 .git
 .env
 .venv
+*.egg-info
 __pycache__
 *.py[cod]
 .pytest_cache
@@ -12,4 +13,10 @@ uploads
 frontend/node_modules
 frontend/dist
 postgres_data
-
+# 测试运行凭据/报告/工具缓存不得发送到镜像构建上下文。
+tests/demo-smoke/runtime
+tests/demo-smoke/artifacts
+tests/demo-smoke/tmp
+tests/demo-smoke/node_modules
+tests/demo-smoke/.cache
+tests/demo-smoke/compose/.env.demo-smoke.local

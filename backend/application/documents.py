@@ -26,6 +26,15 @@ async def create_document(
     content_type: str | None,
     content: bytes,
 ) -> tuple[DocumentModel, TaskModel]:
+    # 客户端历史上传允许带目录；只保存安全逻辑 basename，不保留宿主路径。
+    filename = filename.replace("\\", "/").rsplit("/", 1)[-1]
+    if (
+        not filename
+        or len(filename) > 255
+        or any(c in filename for c in "/\\:")
+        or any(ord(c) < 32 or ord(c) == 127 for c in filename)
+    ):
+        raise ApplicationError("INVALID_DOCUMENT_FILENAME", "文件名无效", 422)
     extension = Path(filename).suffix.lower()
     if extension not in ALLOWED_EXTENSIONS:
         raise ApplicationError("UNSUPPORTED_DOCUMENT_TYPE", "仅支持 txt、md、docx 文档", 415)
@@ -44,8 +53,11 @@ async def create_document(
         raise ApplicationError("DOCUMENT_MIME_MISMATCH", "文档 MIME 类型与扩展名不匹配", 415)
 
     document_id = str(uuid4())
-    storage = LocalFileStorage(settings.upload_path)
-    storage_key, content_hash = storage.save(document_id, extension, content)
+    try:
+        storage = LocalFileStorage(settings.upload_path)
+        storage_key, content_hash = storage.save(document_id, extension, content)
+    except OSError:
+        raise ApplicationError("DOCUMENT_STORAGE_FAILED", "文档存储暂不可用", 503) from None
     batch_id = str(uuid4())
     task_id = str(uuid4())
     try:
@@ -53,6 +65,7 @@ async def create_document(
             document_id=document_id,
             owner_id=settings.owner_id,
             filename=filename,
+            source="local_upload",
             extension=extension,
             size_bytes=len(content),
             content_hash=content_hash,
@@ -74,11 +87,15 @@ async def create_document(
         session.add_all([document, task])
         await session.commit()
     except Exception:
-        await session.rollback()
-        target = settings.upload_path / storage_key
-        if target.exists():
-            target.unlink()
-        raise
+        try:
+            await session.rollback()
+        except Exception:
+            pass
+        try:
+            storage.remove(storage_key)
+        except OSError:
+            raise ApplicationError("DOCUMENT_CLEANUP_FAILED", "文档清理失败", 503) from None
+        raise ApplicationError("DOCUMENT_PERSIST_FAILED", "文档登记失败", 503) from None
     return document, task
 
 
@@ -94,7 +111,12 @@ async def list_documents(session: AsyncSession, settings: Settings) -> list[Docu
 async def create_index_task(
     session: AsyncSession, settings: Settings, document_id: str
 ) -> TaskModel:
-    document = await session.get(DocumentModel, document_id)
+    document = await session.scalar(
+        select(DocumentModel)
+        .where(DocumentModel.document_id == document_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     if document is None or document.owner_id != settings.owner_id:
         raise ApplicationError("DOCUMENT_NOT_FOUND", "文档不存在", 404)
     active = await session.execute(

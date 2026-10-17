@@ -8,7 +8,7 @@ class InvalidTransitionError(ValueError):
 
 
 _RUN_TRANSITIONS: dict[RunState, set[RunState]] = {
-    RunState.QUEUED: {RunState.RUNNING, RunState.CANCELLED},
+    RunState.QUEUED: {RunState.RUNNING, RunState.CANCELLED, RunState.FAILED},
     RunState.RUNNING: {
         RunState.RETRY_WAITING,
         RunState.SUCCEEDED,
@@ -22,14 +22,16 @@ _RUN_TRANSITIONS: dict[RunState, set[RunState]] = {
 }
 
 _TASK_TRANSITIONS: dict[TaskState, set[TaskState]] = {
-    TaskState.QUEUED: {TaskState.LEASED, TaskState.CANCELLED},
+    TaskState.QUEUED: {TaskState.LEASED, TaskState.CANCELLED, TaskState.FAILED},
     TaskState.LEASED: {
+        TaskState.QUEUED,
         TaskState.RUNNING,
         TaskState.RETRY_WAITING,
         TaskState.CANCELLED,
         TaskState.FAILED,
     },
     TaskState.RUNNING: {
+        TaskState.QUEUED,
         TaskState.SUCCEEDED,
         TaskState.RETRY_WAITING,
         TaskState.CANCELLED,

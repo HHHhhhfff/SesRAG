@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "categories": [
+    { "name": "life-nested-deferred", "script": "life-nested-deferred.mjs", "status": "enabled", "timeout_seconds": 90 }
+  ]
+}

@@ -1,6 +1,6 @@
 import hashlib
 import math
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 
 
 class MockEmbeddingProvider:
@@ -23,7 +23,7 @@ class MockModelProvider:
 
     async def stream_answer(
         self, question: str, evidence: list[dict[str, str]]
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str, None]:
         del question
         if evidence:
             answer = f"根据检索到的资料：{evidence[0].get('text', '')}"

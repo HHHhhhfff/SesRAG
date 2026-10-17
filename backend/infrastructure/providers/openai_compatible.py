@@ -1,10 +1,25 @@
-from collections.abc import AsyncIterator
+import asyncio
+import json
+from collections.abc import AsyncGenerator
 
 import httpx
 
+from backend.application.errors import PermanentTaskError, TransientTaskError
+from backend.application.vector_validation import validate_vector
+
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+PROVIDER_TIMEOUT = 60
+
+
+def check_status(status: int) -> None:
+    if 200 <= status < 300:
+        return
+    error = TransientTaskError if status in (408, 429) or status >= 500 else PermanentTaskError
+    raise error(f"PROVIDER_HTTP_{status}", "模型服务请求失败")
+
 
 class OpenAICompatibleProvider:
-    """最小 OpenAI-compatible 适配器；不在领域层暴露厂商 SDK。"""
+    """有界 HTTP/SSE 适配器；上游响应及凭据不进入公开异常。"""
 
     def __init__(self, base_url: str, api_key: str, model: str, embedding_model: str) -> None:
         self.base_url = base_url.rstrip("/")
@@ -12,32 +27,108 @@ class OpenAICompatibleProvider:
         self.model = model
         self.embedding_model = embedding_model
 
+    async def _bytes(self, endpoint, payload):
+        try:
+            # generator 的每个 anext 可在不同 Task 中执行；预算不跨 yield 绑定某个 Task。
+            deadline = asyncio.get_running_loop().time() + PROVIDER_TIMEOUT
+            async with httpx.AsyncClient(timeout=30) as client:
+                request = client.build_request(
+                    "POST",
+                    f"{self.base_url}/{endpoint}",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json=payload,
+                )
+                remaining = deadline - asyncio.get_running_loop().time()
+                response = await asyncio.wait_for(
+                    client.send(request, stream=True), max(0, remaining)
+                )
+                try:
+                    check_status(response.status_code)
+                    count = 0
+                    iterator = response.aiter_bytes()
+                    while True:
+                        remaining = deadline - asyncio.get_running_loop().time()
+                        if remaining <= 0:
+                            raise TimeoutError()
+                        try:
+                            chunk = await asyncio.wait_for(anext(iterator), remaining)
+                        except StopAsyncIteration:
+                            break
+                        count += len(chunk)
+                        if count > MAX_RESPONSE_BYTES:
+                            raise PermanentTaskError("PROVIDER_RESPONSE_LIMIT", "模型响应超过限制")
+                        yield chunk
+                finally:
+                    await response.aclose()
+        except (TimeoutError, httpx.TimeoutException):
+            raise TransientTaskError("PROVIDER_TIMEOUT", "模型服务超时") from None
+        except httpx.TransportError:
+            raise TransientTaskError("PROVIDER_TRANSPORT_ERROR", "模型服务连接失败") from None
+
     async def embed(self, text: str) -> list[float]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                f"{self.base_url}/embeddings",
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json={"model": self.embedding_model, "input": text},
-            )
-            response.raise_for_status()
-            return response.json()["data"][0]["embedding"]
+        body = b"".join(
+            [
+                chunk
+                async for chunk in self._bytes(
+                    "embeddings", {"model": self.embedding_model, "input": text}
+                )
+            ]
+        )
+        try:
+            vector = json.loads(body)["data"][0]["embedding"]
+        except (ValueError, KeyError, IndexError, TypeError):
+            raise PermanentTaskError("PROVIDER_INVALID_RESPONSE", "模型响应格式无效") from None
+        return validate_vector(vector)
 
     async def stream_answer(
         self, question: str, evidence: list[dict[str, str]]
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str, None]:
         prompt = "\n".join(item.get("text", "") for item in evidence)
-        async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(
-                f"{self.base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json={
-                    "model": self.model,
-                    "stream": False,
-                    "messages": [
-                        {"role": "system", "content": "只根据给定证据回答。"},
-                        {"role": "user", "content": f"问题：{question}\n证据：{prompt}"},
-                    ],
-                },
-            )
-            response.raise_for_status()
-            yield response.json()["choices"][0]["message"]["content"]
+        payload = {
+            "model": self.model,
+            "stream": True,
+            "messages": [
+                {"role": "system", "content": "只根据给定证据回答。"},
+                {"role": "user", "content": f"问题：{question}\n证据：{prompt}"},
+            ],
+        }
+        pending = b""
+        content = False
+        completed = False
+        stream = self._bytes("chat/completions", payload)
+        try:
+            async for chunk in stream:
+                pending += chunk
+                while b"\n" in pending:
+                    line, pending = pending.split(b"\n", 1)
+                    line = line.rstrip(b"\r")
+                    if not line.startswith(b"data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == b"[DONE]":
+                        completed = True
+                        break
+                    try:
+                        choices = json.loads(data)["choices"]
+                        if not choices:
+                            continue
+                        delta = choices[0]["delta"].get("content")
+                        if delta is None:
+                            continue
+                        if not isinstance(delta, str):
+                            raise ValueError()
+                    except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+                        raise PermanentTaskError(
+                            "PROVIDER_INVALID_RESPONSE", "模型响应格式无效"
+                        ) from None
+                    if delta:
+                        content = content or bool(delta.strip())
+                        yield delta
+                if completed:
+                    break
+        finally:
+            await stream.aclose()
+        if not completed:
+            raise PermanentTaskError("PROVIDER_INVALID_RESPONSE", "模型流未正常结束")
+        if not content:
+            raise PermanentTaskError("PROVIDER_EMPTY_CONTENT", "模型没有返回有效内容")

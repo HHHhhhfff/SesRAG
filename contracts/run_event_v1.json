@@ -2,32 +2,418 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sesrag.local/contracts/run_event_v1.json",
   "title": "SesRAG Run Event v1",
-  "type": "object",
-  "required": ["schema_version", "event_id", "run_id", "seq", "type", "occurred_at", "data"],
-  "properties": {
-    "schema_version": {"const": 1},
-    "event_id": {"type": "string", "format": "uuid"},
-    "run_id": {"type": "string", "format": "uuid"},
-    "seq": {"type": "integer", "minimum": 1},
-    "type": {
-      "type": "string",
-      "enum": [
-        "run.created",
-        "task.queued",
-        "task.leased",
-        "run.started",
-        "retrieval.completed",
-        "answer.delta",
-        "task.retry_scheduled",
-        "message.completed",
-        "run.succeeded",
-        "run.failed",
-        "run.cancelled"
-      ]
+  "$defs": {
+    "EventEnvelope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "type": {
+          "enum": [
+            "run.created",
+            "task.queued",
+            "task.leased",
+            "run.started",
+            "retrieval.completed",
+            "answer.delta",
+            "task.retry_scheduled",
+            "message.completed",
+            "run.succeeded",
+            "run.failed",
+            "run.cancelled"
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     },
-    "occurred_at": {"type": "string", "format": "date-time"},
-    "data": {"type": "object"}
+    "RetrievalItem": {
+      "type": "object",
+      "required": [
+        "document_id",
+        "chunk_id",
+        "index_batch_id",
+        "locations",
+        "start_offset",
+        "end_offset",
+        "score"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "chunk_id": {
+          "type": "string"
+        },
+        "index_batch_id": {
+          "type": "string"
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "evidence_v1.json#/properties/locations/items"
+          }
+        },
+        "start_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "score": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    }
   },
-  "additionalProperties": false
+  "allOf": [
+    {
+      "$ref": "#/$defs/EventEnvelope"
+    },
+    {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "run.created"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "message_id"
+              ],
+              "properties": {
+                "message_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "task.queued"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "task_id"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "task.leased"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "task_id",
+                "worker_id",
+                "generation",
+                "attempt"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "worker_id": {
+                  "type": "string"
+                },
+                "generation": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "attempt": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "run.started"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "task_id"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "retrieval.completed"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "count",
+                "items"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/RetrievalItem"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "answer.delta"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "task.retry_scheduled"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "error_code",
+                "attempt"
+              ],
+              "properties": {
+                "error_code": {
+                  "type": "string"
+                },
+                "attempt": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "message.completed"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "message_id",
+                "citations"
+              ],
+              "properties": {
+                "message_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "citations": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "citation_v1.json"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "run.succeeded"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "message_id"
+              ],
+              "properties": {
+                "message_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "run.failed"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "error_code",
+                "attempt"
+              ],
+              "properties": {
+                "error_code": {
+                  "type": "string"
+                },
+                "attempt": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "const": "run.cancelled"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "reason"
+              ],
+              "properties": {
+                "reason": {
+                  "const": "user_requested"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  ]
 }
 

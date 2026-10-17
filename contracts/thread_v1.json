@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/thread_v1.json",
+  "title": "ThreadSummary",
+  "type": "object",
+  "required": ["thread_id", "owner_id", "title", "archived_at", "created_at", "updated_at"],
+  "properties": {
+    "thread_id": {"type": "string"}, "owner_id": {"type": "string"}, "title": {"type": "string"},
+    "archived_at": {"type": ["string", "null"], "format": "date-time"},
+    "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}
+  }, "additionalProperties": false
+}

@@ -15,10 +15,30 @@ async def append_event(
     data: dict[str, Any],
 ) -> RunEventModel:
     """锁定 Run 后分配 seq，保证同一 Run 的事件严格递增。"""
+    # 只有当前事务已持有 Run 锁才允许保留本事务修改；旧 identity 必须刷新。
+    locked = session.info.get("locked_runs", {}).get(run_id)
+    if locked is not None and locked is session.sync_session.get_transaction():
+        await session.flush()
     result = await session.execute(
-        select(RunModel).where(RunModel.run_id == run_id).with_for_update()
+        select(RunModel)
+        .where(RunModel.run_id == run_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     run = result.scalar_one()
+    session.info.setdefault("locked_runs", {})[run_id] = session.sync_session.get_transaction()
+    if run.status in {"succeeded", "failed", "cancelled"}:
+        # 允许当前结算事务写事实事件，但终态提交后禁止任何追加。
+        terminal = await session.scalar(
+            select(RunEventModel.event_id)
+            .where(
+                RunEventModel.run_id == run_id,
+                RunEventModel.type.in_(["run.succeeded", "run.failed", "run.cancelled"]),
+            )
+            .limit(1)
+        )
+        if terminal or event_type not in {f"run.{run.status}", "message.completed"}:
+            raise ValueError("RUN_TERMINAL")
     run.next_event_seq += 1
     event = RunEventModel(
         event_id=str(uuid4()),

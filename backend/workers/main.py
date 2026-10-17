@@ -6,7 +6,7 @@ from backend.db.session import create_engine, create_session_factory
 from backend.infrastructure.events.redis_notifier import RedisNotifier
 from backend.workers.runtime import WorkerRuntime, install_signal_handlers
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 async def main() -> None:

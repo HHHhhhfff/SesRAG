@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/health_v1.json",
+  "title": "HealthReady",
+  "type": "object", "required": ["status", "database", "redis", "worker", "worker_count"],
+  "properties": {
+    "status": {"enum": ["ok", "degraded", "unavailable"]}, "database": {"enum": ["ready", "unavailable"]},
+    "redis": {"enum": ["ready", "degraded"]}, "worker": {"enum": ["ready", "unknown"]},
+    "worker_count": {"type": "integer", "minimum": 0}, "code": {"const": "DATABASE_UNAVAILABLE"}
+  }, "additionalProperties": false
+}

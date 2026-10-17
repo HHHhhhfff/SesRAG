@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/run_v1.json",
+  "title": "RunDetail",
+  "$defs": {
+    "RunStatus": {"enum": ["queued", "running", "retry_waiting", "succeeded", "failed", "cancelled"]},
+    "TaskSummary": {
+      "type": "object", "required": ["task_id", "kind", "state", "attempt", "worker_id", "generation", "lease_expires_at", "last_error_code"],
+      "properties": {
+        "task_id": {"type": "string"}, "kind": {"enum": ["run"]},
+        "state": {"enum": ["queued", "leased", "running", "retry_waiting", "succeeded", "failed", "cancelled"]},
+        "attempt": {"type": "integer", "minimum": 0}, "worker_id": {"type": ["string", "null"]},
+        "generation": {"type": "integer", "minimum": 0}, "lease_expires_at": {"type": ["string", "null"], "format": "date-time"},
+        "last_error_code": {"type": ["string", "null"]}
+      }, "additionalProperties": false
+    }
+  },
+  "type": "object", "required": ["run_id", "thread_id", "status", "user_message_id", "assistant_message_id", "task", "last_error_code"],
+  "properties": {
+    "run_id": {"type": "string"}, "thread_id": {"type": "string"}, "status": {"$ref": "#/$defs/RunStatus"},
+    "user_message_id": {"type": "string"}, "assistant_message_id": {"type": ["string", "null"]},
+    "task": {"$ref": "#/$defs/TaskSummary"}, "last_error_code": {"type": ["string", "null"]}
+  }, "additionalProperties": false
+}

@@ -1,5 +1,7 @@
 .env
 .venv/
+# 项目内editable安装生成的元数据，不是源码或测试数据。
+*.egg-info/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -13,3 +15,10 @@ frontend/node_modules/
 frontend/dist/
 .npm-cache/
 *.log
+# 本机隔离测试的凭据、报告、浏览器依赖和临时数据，不进入版本控制。
+tests/demo-smoke/runtime/
+tests/demo-smoke/artifacts/
+tests/demo-smoke/tmp/
+tests/demo-smoke/node_modules/
+tests/demo-smoke/.cache/
+tests/demo-smoke/compose/.env.demo-smoke.local

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>SesRAG 本机 docx 测试资料。</w:t></w:r></w:p>
+    <w:p><w:r><w:t>资料编号 SESRAG-SMOKE-DOCX-001。</w:t></w:r></w:p>
+    <w:p><w:r><w:t>仅用于后续文档解析和引用身份检查，不包含敏感信息。</w:t></w:r></w:p>
+  </w:body>
+</w:document>

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Demo Smoke category result v1",
+  "type": "object",
+  "required": ["schema_version", "run_id", "category", "status", "started_at", "finished_at", "checks", "evidence"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "category": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "status": { "enum": ["passed", "failed", "blocked", "skipped", "not_ready"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "test_point_id", "status", "expected", "actual", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "test_point_id": { "type": "string", "pattern": "^TP-[A-Z]+-[0-9]{3}$" },
+          "status": { "enum": ["passed", "failed", "blocked", "skipped", "not_ready"] },
+          "expected": { "type": "string" },
+          "actual": { "type": "string" },
+          "evidence": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "evidence": { "type": "array", "items": { "type": "string" } }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "passed" } } },
+      "then": { "properties": { "checks": { "type": "array", "minItems": 1 } } }
+    }
+  ],
+  "additionalProperties": true
+}

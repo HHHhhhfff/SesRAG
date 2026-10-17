@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/message_v1.json",
+  "title": "SesRAG Message v1",
+  "type": "object",
+  "required": ["message_id", "thread_id", "seq", "role", "source", "content", "status", "created_at", "run_id", "citations"],
+  "properties": {
+    "message_id": {"type": "string"},
+    "thread_id": {"type": "string"},
+    "seq": {"type": "integer", "minimum": 1},
+    "role": {"enum": ["user", "assistant"]},
+    "source": {"enum": ["user_input", "assistant_generation"]},
+    "content": {"type": "string"},
+    "status": {"type": "string"},
+    "run_id": {"type": ["string", "null"]},
+    "citations": {"type": "array", "items": {"$ref": "citation_v1.json"}},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}

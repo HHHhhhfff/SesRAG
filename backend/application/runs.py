@@ -8,6 +8,7 @@ from backend.config import Settings
 from backend.db.models import MessageModel, RunModel, TaskModel
 from backend.domain.enums import RunState, TaskState
 from backend.infrastructure.events.journal import append_event, list_events
+from backend.infrastructure.queue.postgres_queue import lock_run, lock_task
 
 
 async def load_run(
@@ -30,12 +31,18 @@ async def load_run(
 
 async def cancel_run(session: AsyncSession, settings: Settings, run_id: str) -> RunModel:
     run, task = await load_run(session, settings, run_id)
+    # 所有结算统一 Task -> Run -> Thread 锁序，取消与成功互斥。
+    locked_task = await lock_task(session, task.task_id)
+    assert locked_task is not None
+    task = locked_task
+    run = await lock_run(session, run_id)
     if run.status in {RunState.SUCCEEDED.value, RunState.FAILED.value, RunState.CANCELLED.value}:
         return run
     run.cancel_requested_at = datetime.now(timezone.utc)
     run.status = RunState.CANCELLED.value
     if task.state not in {TaskState.SUCCEEDED.value, TaskState.FAILED.value}:
         task.state = TaskState.CANCELLED.value
+    task.lease_expires_at = None
     await append_event(session, run.run_id, "run.cancelled", {"reason": "user_requested"})
     await session.commit()
     return run
@@ -102,6 +109,8 @@ async def get_thread_detail(session: AsyncSession, settings: Settings, thread_id
                 "thread_id": item.thread_id,
                 "seq": item.seq,
                 "role": item.role,
+                "source": item.source,
+                "created_at": item.created_at,
                 "content": item.content,
                 "status": item.status,
                 "run_id": item.run_id,

@@ -1,18 +1,18 @@
-import inspect
 from collections.abc import Callable
+from functools import partial
 from uuid import uuid4
 
-from sqlalchemy import delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from backend.application.errors import PermanentTaskError
+from backend.application.task_execution import check_locked_times, guarded_call, lock_execution
+from backend.application.vector_validation import validate_vector
 from backend.config import Settings
-from backend.db.models import ChunkModel, DocumentModel, TaskModel
+from backend.db.models import DocumentModel
 from backend.domain.enums import DocumentState, TaskState
-from backend.infrastructure.queue.postgres_queue import mark_succeeded, schedule_retry
+from backend.domain.ports import EmbeddingPort, IndexedChunk, ParserPort, VectorStorePort
 from backend.infrastructure.rag.chunker import chunk_text
-from backend.infrastructure.rag.parsers import parse_document
-from backend.infrastructure.storage.local_files import LocalFileStorage
 
 
 async def process_index_task(
@@ -21,95 +21,79 @@ async def process_index_task(
     task_id: str,
     worker_id: str,
     generation: int,
-    embed: Callable[[str], list[float]],
+    provider: EmbeddingPort,
+    parser: ParserPort,
+    vector_store_factory: Callable[[AsyncSession], VectorStorePort],
 ) -> None:
     async with session_factory() as session:
-        task = await session.get(TaskModel, task_id)
-        if task is None or task.generation != generation or task.worker_id != worker_id:
-            return
-        document = await session.get(DocumentModel, task.document_id)
+        task, _ = await lock_execution(session, task_id, worker_id, generation)
+        document = await session.scalar(
+            select(DocumentModel)
+            .where(DocumentModel.document_id == task.document_id)
+            .with_for_update()
+        )
         if document is None:
             raise PermanentTaskError("DOCUMENT_NOT_FOUND", "索引任务引用的文档不存在")
+        check_locked_times(task.lease_expires_at, task.deadline_at)
         document.status = DocumentState.INDEXING.value
+        document_id, storage_key, extension = (
+            document.document_id,
+            document.storage_key,
+            document.extension,
+        )
+        batch_id = task.progress_json.get("index_batch_id") or str(uuid4())
+        lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
+        await session.flush()
+        check_locked_times(lease_expires_at, deadline_at)
         await session.commit()
 
-    storage = LocalFileStorage(settings.upload_path)
-    try:
-        storage.read(document.storage_key)
-        parsed = parse_document(settings.upload_path / document.storage_key, document.extension)
-        chunks = chunk_text(
-            parsed.text, chunk_size=settings.chunk_size, overlap=settings.chunk_overlap
+    guarded = partial(guarded_call, session_factory, task_id, worker_id, generation)
+    parsed = await guarded(partial(parser.parse, storage_key, extension))
+    drafts = chunk_text(parsed.text, chunk_size=settings.chunk_size, overlap=settings.chunk_overlap)
+    if not drafts or parsed.text == "":
+        raise PermanentTaskError("EMPTY_DOCUMENT", "文档没有可索引文本")
+    candidates = []
+    for draft in drafts:
+        vector = validate_vector(await guarded(partial(provider.embed, draft.text)))
+        candidates.append(
+            IndexedChunk(
+                str(uuid4()),
+                draft.seq,
+                draft.text,
+                draft.start_offset,
+                draft.end_offset,
+                vector,
+                tuple(
+                    p
+                    for p in parsed.locations
+                    if p.end_offset > draft.start_offset and p.start_offset < draft.end_offset
+                ),
+            )
         )
-        if not chunks:
-            raise PermanentTaskError("EMPTY_DOCUMENT", "文档解析后没有可索引文本")
-        batch_id = task.progress_json.get("index_batch_id") or str(uuid4())
-        async with session_factory() as session:
-            current = await session.get(TaskModel, task_id)
-            current_document = await session.get(DocumentModel, document.document_id)
-            if current is None or current_document is None:
-                return
-            if current.generation != generation or current.worker_id != worker_id:
-                return
-            current.progress_json = {**(current.progress_json or {}), "index_batch_id": batch_id}
-            await session.execute(
-                delete(ChunkModel).where(
-                    ChunkModel.document_id == document.document_id,
-                    ChunkModel.index_batch_id == batch_id,
-                )
-            )
-            for draft in chunks:
-                vector = embed(draft.text)
-                if inspect.isawaitable(vector):
-                    vector = await vector
-                if len(vector) != settings.vector_dimension:
-                    raise PermanentTaskError(
-                        "EMBEDDING_DIMENSION_MISMATCH", "Embedding 维度与配置不一致"
-                    )
-                session.add(
-                    ChunkModel(
-                        chunk_id=str(uuid4()),
-                        document_id=document.document_id,
-                        index_batch_id=batch_id,
-                        seq=draft.seq,
-                        text=draft.text,
-                        start_offset=draft.start_offset,
-                        end_offset=draft.end_offset,
-                        embedding=vector,
-                    )
-                )
-            current_document.active_index_batch_id = batch_id
-            current_document.status = DocumentState.INDEXED.value
-            current_document.last_error_code = None
-            await session.execute(
-                delete(ChunkModel).where(
-                    ChunkModel.document_id == document.document_id,
-                    ChunkModel.index_batch_id != batch_id,
-                )
-            )
-            await session.commit()
-        async with session_factory() as session:
-            await mark_succeeded(session, task_id, worker_id, generation)
-    except PermanentTaskError as exc:
-        async with session_factory() as session:
-            current = await session.get(TaskModel, task_id)
-            current_document = await session.get(DocumentModel, document.document_id)
-            if current is not None and current_document is not None:
-                current.state = TaskState.FAILED.value
-                current.last_error_code = exc.code
-                current.last_error_message = exc.message
-                current_document.status = DocumentState.FAILED.value
-                current_document.last_error_code = exc.code
-                await session.commit()
-        raise
-    except Exception as exc:
-        async with session_factory() as session:
-            await schedule_retry(
-                session,
-                task_id,
-                worker_id,
-                generation,
-                settings,
-                "INDEX_FAILED",
-                str(exc),
-            )
-        raise
+
+    # 外部解析/Embedding 全部完成后才拿发布锁；失败没有候选持久残留。
+    async with session_factory() as session:
+        current, _ = await lock_execution(session, task_id, worker_id, generation)
+        current_document = await session.scalar(
+            select(DocumentModel)
+            .where(DocumentModel.document_id == document_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if current_document is None:
+            raise PermanentTaskError("DOCUMENT_NOT_FOUND", "索引任务引用的文档不存在")
+        lease_expires_at, deadline_at = current.lease_expires_at, current.deadline_at
+        check_locked_times(lease_expires_at, deadline_at)
+        await vector_store_factory(session).replace(document_id, batch_id, candidates)
+        await session.flush()
+        # flush/后续锁等待也可能跨越租约；最终事实改变前再次校验。
+        check_locked_times(lease_expires_at, deadline_at)
+        current.progress_json = {**current.progress_json, "index_batch_id": batch_id}
+        current_document.active_index_batch_id = batch_id
+        current_document.status = DocumentState.INDEXED.value
+        current_document.last_error_code = None
+        current.state = TaskState.SUCCEEDED.value
+        current.lease_expires_at = None
+        await session.flush()
+        check_locked_times(lease_expires_at, deadline_at)
+        await session.commit()

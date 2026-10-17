@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -54,6 +55,8 @@ async def create_message_run(
     idempotency_key: str | None,
 ) -> tuple[MessageModel, RunModel, TaskModel, bool]:
     thread = await get_thread(session, settings, thread_id)
+    # 同线程的幂等复查和 seq 分配必须由同一把行锁保护。
+    await session.refresh(thread, with_for_update=True)
     if idempotency_key:
         existing = await session.execute(
             select(MessageModel).where(
@@ -71,7 +74,6 @@ async def create_message_run(
             )
             return message, run, task_result.scalar_one(), True
 
-    await session.refresh(thread, with_for_update=True)
     thread.next_message_seq += 1
     thread.updated_at = now_utc()
     message = MessageModel(
@@ -79,6 +81,7 @@ async def create_message_run(
         thread_id=thread_id,
         seq=thread.next_message_seq,
         role=MessageRole.USER.value,
+        source="user_input",
         content=content,
         status=MessageStatus.COMPLETED.value,
         idempotency_key=idempotency_key,
@@ -90,7 +93,12 @@ async def create_message_run(
         user_message_id=message.message_id,
         status=RunState.QUEUED.value,
         snapshot_json={
-            "model": "mock",
+            "mock_provider": settings.mock_provider,
+            "model": "mock" if settings.mock_provider else settings.model_name,
+            "embedding_model": settings.embedding_model_name,
+            "base_url": safe_base_url(settings.model_base_url),
+            "vector_dimension": settings.vector_dimension,
+            "owner_id": settings.owner_id,
             "retrieval": {"top_k": settings.rag_top_k},
             "prompt_version": 1,
         },
@@ -112,7 +120,24 @@ async def create_message_run(
     await session.flush()
     run.primary_task_id = task.task_id
     message.run_id = run.run_id
+    await session.flush()
     await append_event(session, run.run_id, "run.created", {"message_id": message.message_id})
     await append_event(session, run.run_id, "task.queued", {"task_id": task.task_id})
     await session.commit()
     return message, run, task, False
+
+
+def safe_base_url(value: str | None) -> str | None:
+    if not value:
+        return None
+    parsed = urlsplit(value)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ApplicationError("INVALID_PROVIDER_URL", "Provider URL 配置无效", 422)
+    return value.rstrip("/")

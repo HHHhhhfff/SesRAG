@@ -55,17 +55,21 @@ h1, h2 { margin: 4px 0 0; font-size: 18px; letter-spacing: 0; }
 .error-banner { margin: 14px 30px 0; padding: 10px 12px; border: 1px solid #74464b; color: #f0b3b3; background: #321e22; border-radius: 6px; font-size: 13px; }
 .connection-dot { color: #788993; font-size: 11px; }
 .connection-dot.online { color: #7bc8a9; }
+.health-panel { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 11px; color: #9cabb5; }
+.citation:focus-visible, button:focus-visible { outline: 2px solid #81c9a8; outline-offset: 3px; }
+.citation-detail { padding: 8px; color: #cdd8dd; font-size: 12px; overflow-wrap: anywhere; }
+.failure-summary { color: #e19090; font-size: 12px; }
+.document-item { flex-wrap: wrap; }
+.stream-status { color: #9cabb5; font-size: 12px; }
 
 @media (max-width: 1000px) {
   .app-shell { grid-template-columns: 220px minmax(0, 1fr); }
-  .detail-column { display: none; }
+  .detail-column { grid-column: 1 / -1; border-left: 0; border-top: 1px solid #26313a; }
 }
 
 @media (max-width: 680px) {
   .app-shell { display: block; }
   .thread-panel { border-right: 0; border-bottom: 1px solid #26313a; }
-  .thread-panel .thread-item { display: none; }
-  .thread-panel .thread-item.active { display: flex; }
   .topbar, .composer { padding-left: 16px; padding-right: 16px; }
   .message-list { padding: 20px 12px; }
 }

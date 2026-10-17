@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence_v1.json",
+  "title": "Evidence v1",
+  "type": "object",
+  "required": ["document_id", "chunk_id", "index_batch_id", "filename", "start_offset", "end_offset", "score", "locations"],
+  "properties": {
+    "document_id": {"type": "string"}, "chunk_id": {"type": "string"},
+    "index_batch_id": {"type": "string"}, "filename": {"type": "string"},
+    "start_offset": {"type": "integer", "minimum": 0},
+    "end_offset": {"type": "integer", "minimum": 0}, "score": {"type": "number"},
+    "locations": {"type": "array", "items": {
+      "type": "object", "required": ["kind", "number", "start_offset", "end_offset"],
+      "properties": {
+        "kind": {"enum": ["line", "paragraph"]}, "number": {"type": "integer", "minimum": 1},
+        "start_offset": {"type": "integer", "minimum": 0},
+        "end_offset": {"type": "integer", "minimum": 0}
+      }, "additionalProperties": false
+    }}
+  }, "additionalProperties": false
+}

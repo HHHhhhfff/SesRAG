@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "total_seconds": 15000,
+  "ordinary_nested_seconds": 300,
+  "recovery_seconds": 240,
+  "daemon_seconds": 90,
+  "nested_recovery_seconds": 420,
+  "client_seconds": 120,
+  "parts": [
+    {"name": "4 ordinary + 10 fixed fault nested", "count": 14, "seconds": 300},
+    {"name": "daemon failure", "count": 1, "seconds": 90},
+    {"name": "nested recovery special", "count": 1, "seconds": 420},
+    {"name": "diagnostic + hard kill + 2 locks explicit recovery", "count": 4, "seconds": 240},
+    {"name": "client probe plus bounded close", "count": 1, "seconds": 180},
+    {"name": "all 16 registered nested finally recovery reserve", "count": 16, "seconds": 240},
+    {"name": "conservative read-only diagnostic call slots", "count": 315, "seconds": 15},
+    {"name": "local evidence and scheduling reserve", "count": 1, "seconds": 585}
+  ]
+}
