@@ -11,10 +11,16 @@ ADR002当前状态：同一冻结源码的两轮all已实际执行；纳入目�
 | 术语 | 统一含义 | 来源 | 当前状态 |
 | --- | --- | --- | --- |
 | `Thread` | 长期会话容器，拥有消息顺序、归档状态和多个 Run。 | `backend/db/models.py` 的 `ThreadModel`；`backend/application/threads.py` | 已实现 |
-| `Message` | Thread 内按 `seq` 排序的事实消息；角色为 `user` 或 `assistant`。 | `backend/db/models.py` 的 `MessageModel`；`backend/api/schemas/threads.py` | 已实现 |
+| `Branch` | Thread 中可继续对话的一条路径，以父 Branch 和 fork Message 组合祖先前缀与自身消息，不复制祖先；同分叉点可有多个子分支。head/version 记录本路径末尾，seq 仍为 Thread 全局顺序。 | [PRD-002](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)；[ADR-003 §5/§7](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md) | 已接受设计，待实施 |
+| `Message` | 当前 Demo 中按 Thread 内 `seq` 排序的事实消息；角色为 `user` 或 `assistant`。PRD-002 目标增加来源 Branch 关系，祖先消息可由后代 Branch 引用。 | `backend/db/models.py` 的 `MessageModel`；`backend/api/schemas/threads.py`；PRD-002 | 当前已实现；Branch 关系规划中 |
 | Message `source` | 消息的安全逻辑来源；用户输入为 `user_input`，生成回答为 `assistant_generation`，不是宿主文件路径。与 role 的参与者身份语义分开。 | `MessageModel.source`；`contracts/message_v1.json`；`migrations/versions/0002_demo_integrity.py` | 已实现（ADR-002 基础修复） |
-| `Run` | 一条用户 Message 触发的一次完整执行身份；重试不会创建新的 Run。 | `backend/db/models.py` 的 `RunModel`；`backend/application/runs.py` | 已实现 |
-| `RunSnapshot` | Run 创建时冻结的非 Secret 模型、Provider、维度、owner、检索和提示词版本配置，运行中只读。旧 Mock 协议按固定 384 和持久 Thread owner 解码；不可恢复的配置明确失败，不猜测运行时默认值。 | `RunModel.snapshot_json`；`backend/application/threads.py:create_message_run`；`backend/workers/handlers/run_handler.py:decode_snapshot` | 当前代码已实现；ADR-002 两轮纳入目标已复验，范围限制见报告 |
+| `Run` | 一条用户 Message 触发的一次完整执行身份；Worker 对 Task 的自动尝试沿用同一 Run。PRD-002 目标中，用户主动重试/重新生成会创建关联原输入的新 Run。 | `backend/db/models.py` 的 `RunModel`；`backend/application/runs.py`；PRD-002 | 自动尝试已实现；用户主动重试/重新生成规划中 |
+| `RunSnapshot` | Run 创建时冻结的非 Secret 模型、Provider、维度、owner、检索和提示词版本配置，运行中只读。PRD-002 目标增加可选模型 Profile 版本和上下文策略。旧 Mock 协议按固定 384 和持久 Thread owner 解码；不可恢复的配置明确失败，不猜测运行时默认值。 | `RunModel.snapshot_json`；`backend/application/threads.py:create_message_run`；`backend/workers/handlers/run_handler.py:decode_snapshot`；PRD-002 | 当前代码已实现；Profile/上下文策略扩展规划中 |
+| `ModelProfile` | 服务端可选择的生成模型配置，以 profile_id/version 标识不可变参数；数据库元数据为事实，导入文件只作输入，Secret 按受信引用运行时注入。前端只看到安全字段。 | [PRD-002](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)；[ADR-003 §5.2](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md) | 已接受设计，待实施 |
+| `ContextPlan` | Run 某次 Task/generation 执行实际选择的 Branch 历史、证据、裁剪/摘要及预算说明；每次尝试最多发布一份只读计划，Run 可关联多份历史计划，完整 Prompt 不落库。 | [PRD-002](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)；[ADR-003 §5/§7.7](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md) | 已接受设计，待实施 |
+| `ConversationSummary` | 有来源 message_id/字符区间/hash/策略版本的简易派生摘要；本轮采用确定性提取，不替换原始 Message，也不跨 Thread/Branch 复用。 | [PRD-002](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)；[ADR-003 §7.7](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md) | 已接受设计，待实施 |
+| `SessionOperation` | v2 消息/分支/用户重试/重生成操作的内部幂等记录，保存规范化请求 hash 和结果身份；同 Thread 同键同内容重放原结果，异内容冲突。 | [ADR-003 §5.2](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md)；计划新增 `backend/application/session_operations.py` | 已接受设计，待实施 |
+| `cancelling` | v2 Run 已持久化取消请求但尚未确认的非终态；Task 保持活动状态，到 Worker/到期回收确认后转 cancelled。不能由浏览器计时器推断结束。 | [PRD-002 §7.4](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)；[ADR-003 §7.6](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md) | 已接受设计，待实施 |
 | `ExecutionStopped` | 当前执行者因取消、失租、deadline 或终态退出的内部信号；不表示新代执行失败，不允许旧执行者追加事实或覆盖错误。 | `backend/application/task_execution.py`；`backend/workers/runtime.py` | 当前代码及执行专项已审查；ADR-002 两轮纳入目标已复验，范围限制见报告 |
 | `Run Context` | 只属于一次 Run 的临时运行上下文，不作为长期会话事实。 | `docs/prd/SesRAG-完整项目-PRD.md` 的 PRD2 设计 | 规划中 |
 | `Checkpoint` | Run 因等待人工输入或恢复点而暂停时保存的可恢复位置。 | `docs/prd/SesRAG-完整项目-PRD.md` 的 PRD2 设计 | 规划中 |
@@ -56,6 +62,7 @@ ADR002当前状态：同一冻结源码的两轮all已实际执行；纳入目�
 | --- | --- | --- | --- |
 | `Provider` | 对外部模型或 Embedding 能力的统一服务边界；Provider 失败必须映射为稳定错误语义。 | `backend/infrastructure/providers/mock.py`、`openai_compatible.py` | 已实现 |
 | `ModelProvider` | 生成回答或回答增量的 Provider 接口语义。 | `backend/workers/handlers/run_handler.py`；`backend/infrastructure/providers/mock.py:MockModelProvider` | 已实现 |
+| `ModelRequest` / `TokenCounter` | ModelRequest 是应用层交给 Provider 的普通消息/输出预算/证据 DTO；TokenCounter 是模型输入计数能力边界，Mock 确定计数，真实配置显式绑定 encoding/版本，不猜测所有模型 Token 语义。 | [ADR-003 §4.3/§7.7](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md)；计划新增 `backend/domain/ports/session.py` | 已接受设计，待实施 |
 | `EmbeddingProvider` | 将文本转换为固定维度向量的 Provider 接口语义。 | `backend/infrastructure/providers/mock.py:MockEmbeddingProvider` | 已实现 |
 | `Port` | 领域或应用层依赖的稳定能力接口，隐藏具体基础设施实现；协议/DTO 不引用 ORM、FastAPI 或厂商 SDK。 | `backend/domain/ports/__init__.py`；ADR-002 RM-07 | 当前代码及5b真实替换专项已审查；两轮纳入目标已复验，范围限制见报告 |
 | `Adapter` | Port 的具体基础设施实现，例如 PostgreSQL、Redis、pgvector 或 OpenAI-compatible Provider。 | `backend/infrastructure/` | 已实现 |

@@ -14,7 +14,7 @@ contracts/     Thread/Message/Run/Document/Health、响应/引用和 Run Event �
 tests/         单元、API 和集成测试
 tests/demo-smoke/ 本机隔离临时测试、21分类脚本、总入口、报告/清理、测试点和用例
 docker/        API/Worker 与前端镜像定义
-docs/prd/      Demo 与完整项目 PRD
+docs/prd/      Demo、v0.2 与完整项目 PRD
 docs/adr/      实施方案和架构决策
 docs/pr/       PRD 实施完成后的开发结果记录
 docs/test/     PRD 测试验收方案和结果
@@ -25,9 +25,10 @@ AGENTS.md      仓库级 AI 开发约束
 
 ## 文档入口
 
-- 产品目标：[`docs/prd/`](docs/prd/)，当前 Demo 为 [`001-SesRAG-项目Demo-PRD.md`](docs/prd/001-SesRAG-项目Demo-PRD.md)，完整目标为 [`SesRAG-完整项目-PRD.md`](docs/prd/SesRAG-完整项目-PRD.md)。
+- 产品目标：[`docs/prd/`](docs/prd/)，当前 Demo 为 [`001-SesRAG-项目Demo-PRD.md`](docs/prd/001-SesRAG-项目Demo-PRD.md)，v0.2 持久化会话与对话工作台为 [`002-SesRAG-持久化会话与对话工作台-PRD.md`](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)，完整目标为 [`SesRAG-完整项目-PRD.md`](docs/prd/SesRAG-完整项目-PRD.md)。
 - 测试后 Demo 缺陷修复实施方案 / ADR：[002-SesRAG-Demo-缺陷修复-plan.md](docs/adr/002-SesRAG-Demo-缺陷修复-plan.md)。正式两轮结果、范围限制和已清理资源见[复测和验收报告](tests/demo-smoke/复测和验收报告.md)，不能以方案状态代替测试结果。
 - 实施方案与架构决策：[`docs/adr/`](docs/adr/)。
+- v0.2 持久化会话与对话工作台实施方案：[ADR-003](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md)；当前状态为已接受，代码尚待实施和验收。
 - ADR-002实际变更和当前证据边界：[缺陷修复实施记录](docs/pr/002-SesRAG-Demo-缺陷修复-PR.md)；含实际文件用途与正式两轮证据，退出及独立审批以复测报告为准。
 - 开发结果与测试验收：[`docs/pr/`](docs/pr/)、[`docs/test/`](docs/test/)。Demo 正式测试实施方案见 [`docs/test/001-SesRAG-项目Demo-test-plan.md`](docs/test/001-SesRAG-项目Demo-test-plan.md)，历史验收结果见 [`docs/test/001-SesRAG-项目Demo-test.md`](docs/test/001-SesRAG-项目Demo-test.md)。
 - Demo 测试点与需求覆盖：[`tests/demo-smoke/测试点设计与需求覆盖矩阵.md`](tests/demo-smoke/测试点设计与需求覆盖矩阵.md)；本机隔离环境、21分类脚本映射、总入口、报告及资源清理见 [`tests/demo-smoke/README.md`](tests/demo-smoke/README.md)。分类执行及条件不足分别报告，不代表产品全部验收通过。
