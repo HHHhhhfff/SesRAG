@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Plus, MessageSquare } from 'lucide-vue-next'
-import type { ThreadSummary } from '../types/api'
+import type { ThreadSummary } from '../types/api-v2'
 
-defineProps<{ threads: ThreadSummary[]; activeId?: string }>()
-const emit = defineEmits<{ select: [string]; create: [] }>()
+defineProps<{ threads: ThreadSummary[]; activeId?: string; hasMore?: boolean }>()
+const emit = defineEmits<{ select: [string]; create: []; more: [] }>()
 </script>
 
 <template>
@@ -31,6 +31,15 @@ const emit = defineEmits<{ select: [string]; create: [] }>()
     >
       <MessageSquare :size="16" />
       <span>{{ thread.title }}</span>
+      <small v-if="thread.archived_at">已归档</small>
+    </button>
+    <button
+      v-if="hasMore"
+      class="secondary-button thread-more"
+      type="button"
+      @click="emit('more')"
+    >
+      加载更多
     </button>
     <div
       v-if="!threads.length"

@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.db.base import Base
-from backend.db.models import MessageModel, TaskModel, ThreadModel
+from backend.db.models import BranchModel, MessageModel, TaskModel, ThreadModel
 
 
 def test_message_idempotency_is_unique_only_within_one_thread():
@@ -17,9 +17,17 @@ def test_message_idempotency_is_unique_only_within_one_thread():
         session.flush()
         session.add_all(
             [
+                BranchModel(branch_id=t, thread_id=t, name="默认", is_default=True)
+                for t in ["a", "b"]
+            ]
+        )
+        session.flush()
+        session.add_all(
+            [
                 MessageModel(
                     message_id=t,
                     thread_id=t,
+                    branch_id=t,
                     seq=1,
                     role="user",
                     content="question",
@@ -33,6 +41,7 @@ def test_message_idempotency_is_unique_only_within_one_thread():
             MessageModel(
                 message_id="duplicate",
                 thread_id="a",
+                branch_id="a",
                 seq=2,
                 role="user",
                 content="question",
@@ -49,11 +58,16 @@ def test_assistant_is_unique_per_run_but_user_can_share_run_id():
     with Session(engine) as session:
         session.add(ThreadModel(thread_id="thread", owner_id="owner"))
         session.flush()
+        session.add(
+            BranchModel(branch_id="branch", thread_id="thread", name="默认", is_default=True)
+        )
+        session.flush()
         for seq, role in [(1, "user"), (2, "assistant")]:
             session.add(
                 MessageModel(
                     message_id=str(seq),
                     thread_id="thread",
+                    branch_id="branch",
                     seq=seq,
                     role=role,
                     content="text",
@@ -65,6 +79,7 @@ def test_assistant_is_unique_per_run_but_user_can_share_run_id():
             MessageModel(
                 message_id="duplicate",
                 thread_id="thread",
+                branch_id="branch",
                 seq=3,
                 role="assistant",
                 content="text",

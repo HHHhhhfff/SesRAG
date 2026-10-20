@@ -83,3 +83,21 @@ class ModelProvider(Protocol):
     def stream_answer(
         self, question: str, evidence: list[dict[str, str]]
     ) -> AsyncGenerator[str, None]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ModelRequestMessage:
+    role: str
+    content: str
+
+
+@dataclass(frozen=True, slots=True)
+class ModelRequest:
+    messages: tuple[ModelRequestMessage, ...]
+    max_output_tokens: int
+    selected_evidence: tuple[tuple[str, str], ...]
+    generation_params: dict
+
+
+class ModelRequestProvider(Protocol):
+    def stream_request(self, request: ModelRequest) -> AsyncGenerator[str, None]: ...

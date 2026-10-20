@@ -7,6 +7,9 @@ from sqlalchemy.exc import InterfaceError, OperationalError
 from sqlalchemy.exc import TimeoutError as DatabaseTimeoutError
 
 from backend.api.routes import documents, health, runs, threads
+from backend.api.routes.v2 import models as models_v2
+from backend.api.routes.v2 import runs as runs_v2
+from backend.api.routes.v2 import threads as threads_v2
 from backend.application.errors import ApplicationError
 from backend.config import Settings
 from backend.db.base import Base
@@ -104,6 +107,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(threads.router)
+    app.include_router(threads_v2.router)
+    app.include_router(models_v2.router)
+    app.include_router(runs_v2.router)
     app.include_router(runs.router)
     app.include_router(documents.router)
     return app

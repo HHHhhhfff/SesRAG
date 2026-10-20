@@ -16,8 +16,17 @@ button { cursor: pointer; }
 .detail-column { border-left: 1px solid #26313a; padding: 22px 18px; }
 .conversation-column { min-width: 0; display: flex; flex-direction: column; background: #0f141a; }
 .panel-heading, .section-heading, .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.title-line, .title-edit { display: flex; align-items: center; gap: 8px; }
+.title-edit input { min-width: 180px; padding: 7px 9px; color: #e7edf2; background: #151d23; border: 1px solid #33414b; border-radius: 5px; }
 .panel-heading { margin-bottom: 28px; }
 .topbar { min-height: 82px; padding: 18px 30px; border-bottom: 1px solid #26313a; }
+.workspace-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 30px; border-bottom: 1px solid #26313a; background: #111920; }
+.compact-control { display: inline-flex; align-items: center; gap: 6px; color: #9cabb5; font-size: 12px; }
+.compact-control select { max-width: 210px; padding: 6px 8px; color: #dce6eb; background: #18222a; border: 1px solid #33414b; border-radius: 5px; }
+.run-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.context-notice { margin: 12px 0; color: #9fc9bd; font-size: 11px; }
+.text-action { margin-left: 8px; padding: 0; border: 0; color: #81c9a8; background: transparent; font-size: 11px; }
+.thread-more { width: 100%; justify-content: center; }
 .eyebrow { color: #8b9aa6; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
 h1, h2 { margin: 4px 0 0; font-size: 18px; letter-spacing: 0; }
 .icon-button, .send-button { display: grid; place-items: center; border: 1px solid #33414b; color: #dce6eb; background: #18222a; }

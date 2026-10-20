@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/model_profile_v2.json",
+  "title": "ModelProfile",
+  "$defs": {
+    "ModelProfileKey": {
+      "type": "object", "required": ["profile_id", "version"],
+      "properties": {"profile_id": {"type": "string", "minLength": 1, "maxLength": 100}, "version": {"type": "integer", "minimum": 1}},
+      "additionalProperties": false
+    },
+    "ModelSelection": {
+      "type": "object", "required": ["profile_id", "version", "display_name", "provider_kind", "model_name", "context_window_tokens", "max_output_tokens"],
+      "properties": {
+        "profile_id": {"type": "string", "minLength": 1, "maxLength": 100},
+        "version": {"type": "integer", "minimum": 1},
+        "display_name": {"type": "string", "minLength": 1},
+        "provider_kind": {"enum": ["mock", "openai_compatible"]},
+        "model_name": {"type": "string", "minLength": 1},
+        "context_window_tokens": {"type": "integer", "minimum": 1},
+        "max_output_tokens": {"type": "integer", "minimum": 1}
+      }, "additionalProperties": false
+    },
+    "ProfileSelectionRequest": {
+      "type": "object",
+      "properties": {
+        "model_profile_id": {"type": "string", "minLength": 1, "maxLength": 100},
+        "model_profile_version": {"type": "integer", "minimum": 1}
+      },
+      "dependentRequired": {"model_profile_id": ["model_profile_version"], "model_profile_version": ["model_profile_id"]},
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": ["profile_id", "version", "display_name", "provider_kind", "model_name", "context_window_tokens", "max_output_tokens", "status", "reason", "is_default"],
+  "properties": {
+    "profile_id": {"type": "string", "minLength": 1, "maxLength": 100},
+    "version": {"type": "integer", "minimum": 1},
+    "display_name": {"type": "string", "minLength": 1},
+    "provider_kind": {"enum": ["mock", "openai_compatible"]},
+    "model_name": {"type": "string", "minLength": 1},
+    "context_window_tokens": {"type": "integer", "minimum": 1},
+    "max_output_tokens": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["enabled", "disabled", "invalid"]},
+    "reason": {"enum": [null, "MODEL_PROFILE_DISABLED", "MODEL_PROFILE_INVALID", "MODEL_CREDENTIAL_UNAVAILABLE"]},
+    "is_default": {"type": "boolean"}
+  },
+  "if": {"properties": {"status": {"const": "enabled"}}},
+  "then": {"properties": {"reason": {"type": "null"}}},
+  "else": {"properties": {"reason": {"type": "string"}, "is_default": {"const": false}}},
+  "additionalProperties": false
+}

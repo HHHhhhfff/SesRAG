@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.application.errors import PermanentTaskError
 from backend.config import Settings
 from backend.db.models import DocumentModel, RunModel, TaskModel
 from backend.infrastructure.events.journal import append_event
@@ -114,6 +115,11 @@ async def settle_failure(
         run = await lock_run(session, task.run_id)
         if run.status in TERMINAL:
             return False
+        if run.execution_schema_version == 2 and run.cancel_requested_at:
+            if require_active and not lease_valid(task):
+                return False
+            await settle_cancelled(session, task, run)
+            return True
     elif task.document_id:
         document = (
             await session.execute(
@@ -132,16 +138,44 @@ async def settle_failure(
     if run is not None:
         run.status = task.state
         run.last_error_code = error_code
-        await append_event(
-            session,
-            run.run_id,
-            "task.retry_scheduled" if retry else "run.failed",
-            {"error_code": error_code, "attempt": task.attempt},
-        )
+        try:
+            await append_event(
+                session,
+                run.run_id,
+                "task.retry_scheduled" if retry else "run.failed",
+                {"error_code": error_code, "attempt": task.attempt},
+            )
+        except PermanentTaskError as exc:
+            if exc.code != "RUN_EVENT_LIMIT" or not retry:
+                raise
+            task.state = run.status = "failed"
+            task.last_error_code = run.last_error_code = "RUN_EVENT_LIMIT"
+            await append_event(session, run.run_id, "run.failed", {"error_code": "RUN_EVENT_LIMIT"})
     if document is not None:
         document.status = "indexing" if retry else "failed"
         document.last_error_code = error_code
     return True
+
+
+async def settle_cancelled(session, task, run):
+    """调用方已持有 Task/Run 锁，取消优先于错误、deadline 和回排。"""
+    run.status = task.state = "cancelled"
+    task.lease_expires_at = None
+    await append_event(session, run.run_id, "run.cancelled", {"reason": "user_requested"})
+
+
+async def acknowledge_cancellation(session, task_id, worker_id, generation):
+    task = await lock_owned_task(session, task_id, worker_id, generation)
+    if task is None or not task.run_id:
+        await session.rollback()
+        return False
+    run = await lock_run(session, task.run_id)
+    if run.execution_schema_version != 2 or not run.cancel_requested_at or run.status in TERMINAL:
+        await session.rollback()
+        return False
+    lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
+    await settle_cancelled(session, task, run)
+    return await commit_authorized(session, lease_expires_at, deadline_at)
 
 
 async def claim_next_task(
@@ -172,6 +206,10 @@ async def claim_next_task(
         if run.status in TERMINAL:
             await session.rollback()
             return None
+        if run.cancel_requested_at:
+            await settle_cancelled(session, task, run)
+            await session.commit()
+            return None
     now = utc_now()
     if task.deadline_at.replace(tzinfo=timezone.utc) <= now:
         await settle_failure(session, task, "TASK_DEADLINE_EXCEEDED")
@@ -187,17 +225,24 @@ async def claim_next_task(
     )
     lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
     if task.run_id:
-        await append_event(
-            session,
-            task.run_id,
-            "task.leased",
-            {
-                "task_id": task.task_id,
-                "worker_id": worker_id,
-                "generation": task.generation,
-                "attempt": task.attempt,
-            },
-        )
+        try:
+            await append_event(
+                session,
+                task.run_id,
+                "task.leased",
+                {
+                    "task_id": task.task_id,
+                    "worker_id": worker_id,
+                    "generation": task.generation,
+                    "attempt": task.attempt,
+                },
+            )
+        except PermanentTaskError as exc:
+            if exc.code != "RUN_EVENT_LIMIT":
+                raise
+            await settle_failure(session, task, "RUN_EVENT_LIMIT")
+            await commit_authorized(session, lease_expires_at, deadline_at)
+            return None
     if not await commit_authorized(session, lease_expires_at, deadline_at):
         return None
     return task
@@ -210,6 +255,11 @@ async def renew_lease(
     if task is None:
         await session.rollback()
         return False
+    if task.run_id:
+        run = await lock_run(session, task.run_id)
+        if run.status in TERMINAL or run.cancel_requested_at:
+            await session.rollback()
+            return False
     # 新 lease 不能复活等待中已到期的旧授权。
     lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
     task.lease_expires_at = min(
@@ -226,6 +276,11 @@ async def mark_running(
     if task is None or task.state != "leased":
         await session.rollback()
         return False
+    if task.run_id:
+        run = await lock_run(session, task.run_id)
+        if run.status in TERMINAL or run.cancel_requested_at:
+            await session.rollback()
+            return False
     lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
     task.state = "running"
     return await commit_authorized(session, lease_expires_at, deadline_at)
@@ -300,6 +355,13 @@ async def requeue_expired(session: AsyncSession) -> int:
         ).scalars()
     )
     for task in tasks:
+        if task.run_id:
+            run = await lock_run(session, task.run_id)
+            if run.status in TERMINAL:
+                continue
+            if run.execution_schema_version == 2 and run.cancel_requested_at:
+                await settle_cancelled(session, task, run)
+                continue
         deadline = task.deadline_at.replace(tzinfo=timezone.utc) <= now
         if deadline or task.attempt >= task.max_attempts:
             await settle_failure(

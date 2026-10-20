@@ -21,7 +21,7 @@ export class ApiError extends Error {
 }
 
 export function failureCode(cause: unknown, fallback: string): string {
-  return cause instanceof ApiError ? cause.code : fallback
+  return cause instanceof ApiError ? cause.code : cause instanceof Error && /^[A-Z][A-Z0-9_]{0,79}$/.test(cause.message) ? cause.message : fallback
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit, acceptedStatuses: number[] = []): Promise<T> {

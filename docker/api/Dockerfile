@@ -9,7 +9,8 @@ COPY migrations ./migrations
 COPY alembic.ini ./
 
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir .
+    && pip install --no-cache-dir . \
+    && python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 
 CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
 

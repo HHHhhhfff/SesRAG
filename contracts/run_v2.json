@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/run_v2.json",
+  "title": "RunDetail",
+  "$defs": {
+    "RunStatus": {"enum": ["queued", "running", "retry_waiting", "cancelling", "succeeded", "failed", "cancelled"]},
+    "OperationKind": {"enum": ["initial", "user_retry", "regenerate", "branch_continue"]},
+    "SnapshotSummary": {
+      "type": "object", "required": ["schema_version", "prompt_version", "context_policy_version", "summary_policy_version", "counter_version", "context_window_tokens", "reserved_output_tokens", "safety_margin_tokens", "retrieval_enabled", "retrieval_top_k", "embedding_dimensions"],
+      "properties": {
+        "schema_version": {"const": 2}, "prompt_version": {"type": "string", "minLength": 1}, "context_policy_version": {"type": "string", "minLength": 1},
+        "summary_policy_version": {"type": "string", "minLength": 1}, "counter_version": {"type": "string", "minLength": 1},
+        "context_window_tokens": {"type": "integer", "minimum": 1}, "reserved_output_tokens": {"type": "integer", "minimum": 1},
+        "safety_margin_tokens": {"type": "integer", "minimum": 0}, "retrieval_enabled": {"type": "boolean"},
+        "retrieval_top_k": {"type": "integer", "minimum": 1}, "embedding_dimensions": {"const": 384}
+      }, "additionalProperties": false
+    },
+    "RunSummary": {
+      "type": "object", "required": ["run_id", "branch_id", "user_message_id", "assistant_message_id", "parent_run_id", "operation_kind", "execution_schema_version", "status", "created_at"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1}, "branch_id": {"type": "string", "minLength": 1}, "user_message_id": {"type": "string", "minLength": 1},
+        "assistant_message_id": {"type": ["string", "null"], "minLength": 1}, "parent_run_id": {"type": ["string", "null"], "minLength": 1},
+        "operation_kind": {"$ref": "#/$defs/OperationKind"}, "execution_schema_version": {"enum": [1, 2]}, "status": {"$ref": "#/$defs/RunStatus"},
+        "created_at": {"type": "string", "format": "date-time"}
+      }, "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": ["run_id", "thread_id", "branch_id", "status", "user_message_id", "assistant_message_id", "parent_run_id", "operation_kind", "execution_schema_version", "legacy", "model_profile_id", "model_profile_version", "model", "snapshot", "context_plan", "task", "last_error_code", "cancel_requested_at", "created_at", "updated_at"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1}, "thread_id": {"type": "string", "minLength": 1}, "branch_id": {"type": "string", "minLength": 1},
+    "status": {"$ref": "#/$defs/RunStatus"}, "user_message_id": {"type": "string", "minLength": 1},
+    "assistant_message_id": {"type": ["string", "null"], "minLength": 1}, "parent_run_id": {"type": ["string", "null"], "minLength": 1},
+    "operation_kind": {"$ref": "#/$defs/OperationKind"}, "execution_schema_version": {"enum": [1, 2]}, "legacy": {"type": "boolean"},
+    "model_profile_id": {"type": ["string", "null"], "minLength": 1}, "model_profile_version": {"type": ["integer", "null"], "minimum": 1},
+    "model": {"oneOf": [{"$ref": "model_profile_v2.json#/$defs/ModelSelection"}, {"type": "null"}]},
+    "snapshot": {"oneOf": [{"$ref": "#/$defs/SnapshotSummary"}, {"type": "null"}]},
+    "context_plan": {"oneOf": [{"$ref": "context_plan_v2.json#/$defs/ContextPlanSummary"}, {"type": "null"}]},
+    "task": {"$ref": "run_v1.json#/$defs/TaskSummary"}, "last_error_code": {"type": ["string", "null"]},
+    "cancel_requested_at": {"type": ["string", "null"], "format": "date-time"},
+    "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "if": {"properties": {"execution_schema_version": {"const": 1}}},
+  "then": {"properties": {"legacy": {"const": true}, "model_profile_id": {"type": "null"}, "model_profile_version": {"type": "null"}, "model": {"type": "null"}, "snapshot": {"type": "null"}, "context_plan": {"type": "null"}, "status": {"$ref": "run_v1.json#/$defs/RunStatus"}}},
+  "else": {"properties": {"legacy": {"const": false}, "model_profile_id": {"type": "string"}, "model_profile_version": {"type": "integer"}, "model": {"$ref": "model_profile_v2.json#/$defs/ModelSelection"}, "snapshot": {"$ref": "#/$defs/SnapshotSummary"}}},
+  "additionalProperties": false
+}

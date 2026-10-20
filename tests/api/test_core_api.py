@@ -19,10 +19,6 @@ def test_thread_message_run_and_event_flow(tmp_path):
         assert thread.status_code == 201
         thread_id = thread.json()["thread_id"]
 
-        archived = client.post(f"/api/v1/threads/{thread_id}/archive")
-        assert archived.status_code == 200
-        assert archived.json()["archived"] is True
-
         message = client.post(
             f"/api/v1/threads/{thread_id}/messages",
             headers={"Idempotency-Key": "message-1"},
@@ -31,6 +27,13 @@ def test_thread_message_run_and_event_flow(tmp_path):
         assert message.status_code == 201
         run_id = message.json()["run_id"]
         assert message.json()["status"] == "queued"
+
+        archived = client.post(f"/api/v1/threads/{thread_id}/archive")
+        assert archived.status_code == 200
+        assert archived.json()["archived"] is True
+        blocked = client.post(f"/api/v1/threads/{thread_id}/messages", json={"content": "new"})
+        assert blocked.status_code == 409
+        assert blocked.json()["code"] == "THREAD_ARCHIVED"
 
         duplicate = client.post(
             f"/api/v1/threads/{thread_id}/messages",

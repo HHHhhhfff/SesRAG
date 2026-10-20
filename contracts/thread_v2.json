@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/thread_v2.json",
+  "title": "ThreadSummary",
+  "type": "object",
+  "required": ["thread_id", "owner_id", "title", "default_branch_id", "conversation_version", "archived_at", "created_at", "updated_at"],
+  "properties": {
+    "thread_id": {"type": "string", "minLength": 1},
+    "owner_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "description": "原样返回持久化标题；legacy 空标题或空白标题在元数据升级后仍保留，新写入约束由请求契约校验。"},
+    "default_branch_id": {"type": "string", "minLength": 1},
+    "conversation_version": {"enum": [1, 2]},
+    "archived_at": {"type": ["string", "null"], "format": "date-time"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}

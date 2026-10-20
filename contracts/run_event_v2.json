@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/run_event_v2.json",
+  "title": "RunEvent",
+  "$defs": {
+    "ExecutionTaskId": {"type": "string", "format": "uuid"},
+    "ExecutionAttempt": {"type": "integer", "minimum": 1},
+    "ExecutionGeneration": {"type": "integer", "minimum": 1},
+    "ControlTaskId": {"type": ["string", "null"], "format": "uuid"},
+    "ControlAttempt": {"type": ["integer", "null"], "minimum": 0},
+    "ControlGeneration": {"type": ["integer", "null"], "minimum": 0},
+    "EventEnvelopeV2": {
+      "type": "object", "required": ["schema_version", "event_id", "run_id", "seq", "type", "occurred_at", "data"],
+      "properties": {
+        "schema_version": {"const": 2}, "event_id": {"type": "string", "format": "uuid"}, "run_id": {"type": "string", "format": "uuid"},
+        "seq": {"type": "integer", "minimum": 1},
+        "type": {"enum": ["run.created", "task.queued", "task.leased", "run.started", "retrieval.completed", "answer.delta", "task.retry_scheduled", "message.completed", "run.succeeded", "run.failed", "run.cancelled", "context.planned", "context.compacted", "run.cancelling", "run.retry_created", "run.regenerated"]},
+        "occurred_at": {"type": "string", "format": "date-time"}, "data": {"type": "object"}
+      }, "additionalProperties": false
+    },
+    "RunEventV2": {
+      "allOf": [
+        {"$ref": "#/$defs/EventEnvelopeV2"},
+        {"oneOf": [
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.created"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "message_id", "branch_id", "operation_kind"], "properties": {
+              "task_id": {"$ref": "#/$defs/ControlTaskId"}, "attempt": {"$ref": "#/$defs/ControlAttempt"}, "generation": {"$ref": "#/$defs/ControlGeneration"},
+              "message_id": {"type": "string", "format": "uuid"}, "branch_id": {"type": "string", "format": "uuid"}, "operation_kind": {"$ref": "run_v2.json#/$defs/OperationKind"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "task.queued"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation"], "properties": {
+              "task_id": {"$ref": "#/$defs/ControlTaskId"}, "attempt": {"$ref": "#/$defs/ControlAttempt"}, "generation": {"$ref": "#/$defs/ControlGeneration"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "task.leased"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "worker_id"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"}, "worker_id": {"type": "string", "minLength": 1}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.started"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "retrieval.completed"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "count", "items"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"},
+              "count": {"type": "integer", "minimum": 0}, "items": {"type": "array", "items": {"$ref": "run_event_v1.json#/$defs/RetrievalItem"}}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "answer.delta"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "text"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"}, "text": {"type": "string"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "task.retry_scheduled"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "error_code"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"}, "error_code": {"type": "string", "minLength": 1}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "message.completed"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "message_id", "citations"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"},
+              "message_id": {"type": "string", "format": "uuid"}, "citations": {"type": "array", "items": {"$ref": "citation_v1.json"}}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.succeeded"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "message_id"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"}, "message_id": {"type": "string", "format": "uuid"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.failed"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "error_code"], "properties": {
+              "task_id": {"$ref": "#/$defs/ControlTaskId"}, "attempt": {"$ref": "#/$defs/ControlAttempt"}, "generation": {"$ref": "#/$defs/ControlGeneration"}, "error_code": {"type": "string", "minLength": 1}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.cancelled"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "reason"], "properties": {
+              "task_id": {"$ref": "#/$defs/ControlTaskId"}, "attempt": {"$ref": "#/$defs/ControlAttempt"}, "generation": {"$ref": "#/$defs/ControlGeneration"}, "reason": {"const": "user_requested"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "context.planned"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "plan", "omitted_ranges", "summary_ids"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"},
+              "plan": {"$ref": "context_plan_v2.json#/$defs/ContextPlanSummary"}, "omitted_ranges": {"type": "array", "maxItems": 200, "items": {"$ref": "context_plan_v2.json#/$defs/MessageRange"}},
+              "summary_ids": {"type": "array", "maxItems": 200, "items": {"type": "string", "minLength": 1}}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "context.compacted"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "summary"], "properties": {
+              "task_id": {"$ref": "#/$defs/ExecutionTaskId"}, "attempt": {"$ref": "#/$defs/ExecutionAttempt"}, "generation": {"$ref": "#/$defs/ExecutionGeneration"}, "summary": {"$ref": "context_plan_v2.json#/$defs/SummaryMetadata"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.cancelling"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "reason"], "properties": {
+              "task_id": {"$ref": "#/$defs/ControlTaskId"}, "attempt": {"$ref": "#/$defs/ControlAttempt"}, "generation": {"$ref": "#/$defs/ControlGeneration"}, "reason": {"const": "user_requested"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.retry_created"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "parent_run_id", "branch_id", "user_message_id"], "properties": {
+              "task_id": {"$ref": "#/$defs/ControlTaskId"}, "attempt": {"$ref": "#/$defs/ControlAttempt"}, "generation": {"$ref": "#/$defs/ControlGeneration"},
+              "parent_run_id": {"type": "string", "format": "uuid"}, "branch_id": {"type": "string", "format": "uuid"}, "user_message_id": {"type": "string", "format": "uuid"}
+            }, "additionalProperties": false}
+          }},
+          {"type": "object", "required": ["type", "data"], "properties": {
+            "type": {"const": "run.regenerated"},
+            "data": {"type": "object", "required": ["task_id", "attempt", "generation", "parent_run_id", "branch_id", "user_message_id"], "properties": {
+              "task_id": {"$ref": "#/$defs/ControlTaskId"}, "attempt": {"$ref": "#/$defs/ControlAttempt"}, "generation": {"$ref": "#/$defs/ControlGeneration"},
+              "parent_run_id": {"type": "string", "format": "uuid"}, "branch_id": {"type": "string", "format": "uuid"}, "user_message_id": {"type": "string", "format": "uuid"}
+            }, "additionalProperties": false}
+          }}
+        ]}
+      ]
+    }
+  },
+  "oneOf": [{"$ref": "run_event_v1.json"}, {"$ref": "#/$defs/RunEventV2"}]
+}

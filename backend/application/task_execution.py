@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from backend.db.models import MessageModel, ThreadModel
+from backend.db.models import BranchModel, MessageModel, ThreadModel
 from backend.infrastructure.events.journal import append_event
 from backend.infrastructure.queue import postgres_queue as queue
 
@@ -92,6 +92,14 @@ async def complete_run(session, task_id, worker_id, generation, answer, citation
             .execution_options(populate_existing=True)
         )
     ).scalar_one()
+    branch = (
+        await session.scalars(
+            select(BranchModel)
+            .where(BranchModel.branch_id == run.branch_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+    ).one()
     # 等待 Thread 锁期间租约也可能到期，所有锁获得后再次检查。
     if not queue.lease_valid(task):
         raise ExecutionStopped()
@@ -101,6 +109,7 @@ async def complete_run(session, task_id, worker_id, generation, answer, citation
     assistant = MessageModel(
         message_id=str(uuid4()),
         thread_id=thread.thread_id,
+        branch_id=branch.branch_id,
         seq=thread.next_message_seq,
         role="assistant",
         source="assistant_generation",
@@ -110,6 +119,9 @@ async def complete_run(session, task_id, worker_id, generation, answer, citation
         citations_json=citations,
     )
     session.add(assistant)
+    await session.flush()
+    branch.head_message_id = assistant.message_id
+    branch.version += 1
     run.assistant_message_id = assistant.message_id
     run.status = "succeeded"
     task.state = "succeeded"

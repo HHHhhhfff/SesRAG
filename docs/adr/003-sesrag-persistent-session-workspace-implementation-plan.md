@@ -6,7 +6,7 @@
 
 **版本**：v0.2
 
-**日期**：2026-10-19
+**日期**：2026-10-20
 
 **对应项目开发版本**：`sesrag_v0.2` / `v0.2`
 
@@ -18,7 +18,7 @@
 
 **实施结果**：
 
-（按任务要求暂留空，完成实施和测试后填写；“已接受”只表示方案可作为实施基线。）
+功能实现和分类/质量门禁证据见[PR-003](../pr/003-SesRAG-持久化会话与对话工作台-PR.md)。
 
 **编号说明**：PRD-002 是产品需求编号；ADR-002 已用于上一轮缺陷修复，因此本方案顺延为 ADR-003。全文 FR/NFR 编号均来自 PRD-002，不与 Demo 测试用例编号混用。
 
@@ -142,6 +142,8 @@ PostgreSQL：Thread / Branch / Message / Run / Snapshot / Context / Task / Event
 
 保留 owner/title/seq/archived/timestamps，新增 `conversation_version`（1 或 2，旧数据为 1）；v2 创建为 2，旧 Thread 在首次 v2 会话写入时按 §6.1 原子升级（读取/取消旧 Run 不触发升级）。标题修剪首尾空白后为 1～200 字符。归档 Thread 可以读取和取消现有 Run，但创建新消息、分支、重试或重新生成返回 `THREAD_ARCHIVED`（409）；归档不自动取消已有执行。
 
+上述标题非空和修剪约束仅用于新的 v2 创建/显式重命名请求；v2 响应按持久化值原样投影 legacy 标题，包括空字符串和空白字符串。只修改归档等元数据而升级 conversation_version 时也不隐式重命名；响应契约与新写入请求契约分别校验，既有 v1 合法历史不因读取或元数据升级而改写。
+
 #### `branches`
 
 | 字段 | 类型/约束 | 说明 |
@@ -179,6 +181,8 @@ PostgreSQL：Thread / Branch / Message / Run / Snapshot / Context / Task / Event
 同一 Branch 最多一个非终态 Run（包含 cancelling），以 Branch 行锁和 Run 部分唯一索引共同保证。v2 提交新消息需 `expected_version`，v1 按 §6.2.2 在锁内隐式使用默认 Branch；末尾变化返回 `BRANCH_HEAD_CHANGED`，已有活动 Run 返回 `BRANCH_BUSY`，均为 409。不同 Branch 可以并发，Thread 的 seq 仍由短事务锁串行分配。
 
 Snapshot schema 2 固定 owner、branch/输入锚点、选中 Profile 的完整非敏感版本、Prompt/上下文/摘要/TokenCounter 版本及参数、输出预留、检索配置和执行上限。不得仅保存 Profile ID 后在恢复时读取当前可变模型参数。自动重试仍用原 Snapshot；用户显式操作生成新的 Snapshot，并记录 parent_run_id。
+
+实施细化：`retrieval` 明确冻结 `enabled`、`top_k`、`embedding_dimensions`、`embedding_model`、`embedding_provider_kind`、无凭据的 `embedding_base_url` 和 `embedding_config_ref`。Mock模式由创建时的配置决定，不按模型名称猜测；真实Embedding只通过受信alias运行时取凭据。恢复/自动重试不得读取当前Settings覆盖服务地址或模型；切换生成Profile不改变这组检索配置。缺字段或不安全URL的schema2快照明确失败，不猜测默认值。上述字段仅位于服务端快照，公开Run摘要继续只展示安全预算与检索开关/top_k/维数。
 
 #### `model_profiles`
 
@@ -409,6 +413,7 @@ SSE 的 v1/v2 都保持 Header Last-Event-ID 优先于 query after_seq；无法�
 - `runStore` 以 run_id + seq 去重（不是以 attempt 重置 seq）；草稿按 task_id + generation 分段。收到 terminal/message.completed 后重新 GET Run/Branch 和事件后缀，以最终 Message 替换当前草稿；failed/cancelled 的部分正文留在运行历史，不能显示为完成回答。
 - 浏览器本地只保存所选 Thread/Branch/Run 偏好，启动时由服务端验证；无效则回到非归档 Thread 的默认 Branch。活动 Run 优先于最近终态 Run。完整刷新丢失草稿时，必须重放该 Run 的已有 Journal 来重建，不能只恢复 last_seq 却跳过其之前的正文；同页短线重连才从内存中已应用的 last_seq 接续。切换时关闭旧流并用 epoch 丢弃迟到回调。
 - `modelStore` 读取安全 ModelProfile；提交前校验选择，运行后只显示 Snapshot 摘要和上下文处理提示。
+- retry/regenerate 默认不发送全局保存的模型偏好，由服务端复制来源Profile。查看该Run后，用户在模型控件手动切换才构成显式覆盖；legacy来源仍要求选定可用Profile。含糊网络结果的原操作重发继续冻结首次payload/幂等键，不随之后选择变化。
 - `MessageTimeline` 保留 Markdown 清洗和 Citation 展开；Branch/重试/重新生成操作只调用正式 API，不在本地复制或拼接事实。
 
 ### 7.6 Run/Task 状态、取消与竞态
@@ -462,6 +467,7 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | Profile disabled/配置不完整 | 新 Run 409 MODEL_PROFILE_UNAVAILABLE；旧 Snapshot 参数不变，缺凭据明确 MODEL_CREDENTIAL_UNAVAILABLE。 | 不静默回退 Mock/默认模型。 |
 | Provider 401/403/参数错误 | 永久失败，不消耗无限重试；保留 `PROVIDER_HTTP_*` 和安全摘要。 | Run failed，不能伪装无证据。 |
 | Provider 超时/408/429/5xx/连接失败 | 按错误分类有限自动重试；达到上限进入 failed。 | Task attempt、退避、Run Event 可追溯。 |
+| Provider 返回超大或持续缓慢的错误正文 | 成功流和非2xx正文共用累计字节及绝对时长限制；不先无界读取正文。 | 超限为安全 `PROVIDER_RESPONSE_LIMIT` 或 `PROVIDER_TIMEOUT`，不暴露原始错误正文。 |
 | 上下文裁剪后仍超限 | 保存 `CONTEXT_TOO_LARGE`，不调用模型。 | ContextPlan 记录预算失败，原消息完整。 |
 | 简易摘要构造失败 | 按固定策略退回 trim_only；mandatory 超限仍明确失败。 | 不生成无来源摘要，不删除历史。 |
 | SSE 断开/浏览器刷新 | 只停止观察，按 seq 补放；不调用 cancel。 | Run 继续执行，事件不重复。 |
@@ -497,7 +503,9 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 
 ## 9. 项目文件和目录变更
 
-以下是后续代码实施时的预计清单，不表示这些文件本次已经创建。括号中的同目录文件必须分职责实现；新增 Python 包补 `__init__.py`。本 ADR 首版交付已包含 PRD 关联、README 导航和 CONTEXT 设计来源；本版仅修订原 ADR，未实施下列 API、契约或代码变更。
+以下保留设计确认时的预计清单；具体落地文件以PR-003实际变动为准，预计文件名不作为已创建证据。括号中的同目录文件必须分职责实现；新增 Python 包补 `__init__.py`。本 ADR 首版交付已包含 PRD 关联、README 导航和 CONTEXT 设计来源。
+
+实施命名映射：预计的`test_branch_context.py`拆分为`tests/unit/test_branch_paths.py`与`test_context_planning.py`；`test_v2_run_states.py`/`test_v2_provider_context.py`的执行断言落入`tests/integration/test_v2_run_execution.py`与`test_provider_http.py`；预计`fixtures/v2-session/`改为`fixtures/v2-profiles.json`及分类内独立动态数据。新增应用服务进一步拆为`session_threads.py`、`session_runs.py`、`session_execution.py`，`migrations/v2_session_checks.py`集中迁移只读预检。职责不变，避免为匹配预计文件名复制第二套实现。
 
 ### 9.1 预计新增文件/目录
 
@@ -577,6 +585,8 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 
 不新增底层消息队列、向量库或桌面运行时。只有当上下文计数或 Profile 存储需求证明现有路线不足时，另建 ADR 说明替换理由。
 
+本轮受支持的真实encoding基线为`cl100k_base`，与构建阶段预热资产配对；应用先核验缓存文件的大小及固定SHA-256，缺缓存/损坏/不支持的encoding明确不可用。API/Worker不通过tiktoken的默认cache miss机制临时联网下载。将来扩展encoding时同时登记资产来源/hash、构建预热和离线负样本，不把SDK已知的所有encoding都默认为当前镜像可用。
+
 ## 11. 分阶段实施路线
 
 ### 阶段 0：契约和迁移设计冻结
@@ -626,11 +636,11 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | PRD 需求 | 实施方案落点 | 主要文件/测试证据 |
 | --- | --- | --- |
 | FR-TH-01、FR-TH-02、FR-MEM-01 | Branch/Thread 事实、归档、历史路径、消息持久和隔离。 | `backend/application/branches.py`、`threads.py`、迁移 0004、v2 Thread API、`test_v2_session_api.py`、Playwright。 |
-| FR-BR-01 | 父 Branch + fork Message + 子 Branch 读取和幂等。 | `branches.py`、`BranchModel`、Branch API、`test_branch_context.py`。 |
+| FR-BR-01 | 父 Branch + fork Message + 子 Branch 读取和幂等。 | `branches.py`、`BranchModel`、Branch API、`tests/unit/test_branch_paths.py`、`test_context_planning.py`。 |
 | FR-BR-02 | `operation_kind`、`parent_run_id`、新 Run/子 Branch；自动 Task 重试保持原 Run。 | `runs.py`、`task_execution.py`、`run_handler.py`、Run API、PG 并发测试。 |
 | FR-MOD-01、FR-MOD-02 | §5.2/§7.3/阶段2：Profile 单一真源、版本快照、Secret runtime injection；双 Mock 可选择。 | `model_profiles.py`、`providers/registry.py`、0005、`model_profile_v2.json`、Provider 实收/变配置恢复测试。 |
 | FR-STR-01、FR-STR-02 | §6.3/§7.3/阶段3：先提交 Event 再 SSE、按 seq 补放、按 generation 分草稿。 | `journal.py`、`routes/v2/runs.py`、`run.ts`、`run_event_v2.json`、SSE/浏览器测试。 |
-| FR-REC-01、FR-REC-02 | 事实恢复、非终态自动观察、Worker lease/generation 继续执行。 | `WorkspacePage.vue`、`thread.ts`、`runtime.py`、`execution_pg_probe.py`、Playwright。 |
+| FR-REC-01、FR-REC-02 | 事实恢复、非终态自动观察、Worker lease/generation 继续执行。 | `WorkspacePage.vue`、`thread.ts`、`runtime.py`、`tests/integration/session_pg_probe.py`、`tests/demo-smoke/tooling/pg-execution.py`、Playwright。 |
 | FR-RUN-01 | cancelling 状态、取消边界、迟到结果保护和幂等终态。 | `runs.py`、`task_execution.py`、0006、取消/成功竞态测试。 |
 | FR-OBS-01、FR-MD-01 | 时间线安全摘要、Markdown 清洗、Citation 展开、禁止隐藏思维链。 | `RunTimeline.vue`、`MessageTimeline.vue`、`ContextNotice.vue`、安全/组件测试。 |
 | FR-CTX-01、FR-CTX-02 | ContextPlan、TokenCounter、裁剪/摘要来源和预算失败。 | `context.py`、`context_counter.py`、0005、上下文单元/PG 测试。 |
@@ -638,7 +648,7 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | FR-ERR-01 | Provider/上下文/取消/基础设施稳定错误码、有限重试和安全日志。 | `errors.py`、Provider Adapter、Worker runtime、HTTP/故障测试。 |
 | NFR-SEC-01、NFR-SEC-02、NFR-ISO-01 | Secret 引用、请求脱敏、Branch/Run scope、DOMPurify。 | `config.py`、v2 schemas、frontend stores、SEC/FE 测试。 |
 | NFR-REL-01、NFR-REL-02 | PostgreSQL 事实、Task -> Run -> Thread -> Branch 锁序、SSE 投影、lease recovery。 | 0004～0006、`task_execution.py`、真实 PG/Compose smoke。 |
-| NFR-PERF-01、NFR-CAP-01 | API/首 delta 预算、Context/stream/event 有界配置。 | `config.py`、context/provider adapters、性能分类。 |
+| NFR-PERF-01、NFR-CAP-01 | API/首 delta 预算、Context/stream/event 有界配置。 | `config.py`、context/provider adapters、`tests/demo-smoke/tooling/v2-performance.mjs`、WORKSPACEV_001/TP-VW-004。旧v1性能分类只作兼容回归。 |
 | NFR-OBS-01、NFR-TEST-01 | 关联 ID、Context 安全摘要、Mock/慢/失败 Provider、可重放证据。 | `runtime.py`、测试工具、v0.2 smoke 报告。 |
 | NFR-MIG-01、NFR-DEP-01 | 新迁移、旧快照兼容、Compose migrate、Runbook/README 更新。 | `migrations/versions/0004..0006`、`docker-compose.yml`、部署/回滚测试。 |
 
@@ -682,9 +692,9 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 - **SSE 与实时投影**：SSE 不是事实来源；任何丢通知都必须可由 after_seq 补放，浏览器测试要覆盖交界窗口。
 - **迁移回退**：已产生 v2 事实后 downgrade 可能无法无损回退；优先备份恢复和兼容应用切换，Runbook 明确禁止 base 降级删除业务事实。
 
-## 15. 本次方案整体校审记录
+## 15. 原设计确认时的整体校审记录
 
-本次只完成设计文档，不实施代码、不执行迁移或产品验收。校审对照 PRD-002 的功能/非功能清单与当前 models、threads/runs 应用服务、Queue、Run Handler、契约、前端和 smoke 入口，检查结果如下：
+本节记录原设计确认阶段，当时只完成设计文档，未实施代码、迁移或产品验收。校审对照 PRD-002 的功能/非功能清单与当时的 models、threads/runs 应用服务、Queue、Run Handler、契约、前端和 smoke 入口，检查结果如下：
 
 | 校审项 | 结论与调整 |
 | --- | --- |
@@ -698,5 +708,5 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | 本版契约/调用方处置 | v1 契约保留冻结，v2 独立新增并严格引用 schema 1；本轮不正式删除/废弃 v1。新工作台切换、旧 client 保留、两代类型生成和拒绝降级的边界已与 §9/§11/§13 对齐。 |
 | 本版交叉行为校正 | 明确 v2 读取/取消旧 Run 不触发 Thread 升级，legacy 不产生 v2 执行事实；区分业务错误 code/message 与请求参数校验 422 的安全 detail 包装，显式 retry/regenerate 的 Profile 规则不被“默认模型”概述覆盖。 |
 
-本记录是文档校审结论；§13 的实现测试、性能和两轮回归均是后续实施门禁，不能视为本次已经通过。
+本节是设计阶段的文档校审结论，不是实现测试证据；§13的实现测试、性能及两轮回归结果应查阅PR-003与TEST-002。
 

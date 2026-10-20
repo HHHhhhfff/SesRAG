@@ -59,7 +59,7 @@ services:
       TASK_DEADLINE: ${TASK_DEADLINE:-600}
       WORKER_SHUTDOWN_GRACE: ${WORKER_SHUTDOWN_GRACE:-20}
       QUEUE_POLL_INTERVAL: ${QUEUE_POLL_INTERVAL:-1}
-      SSE_POLL_INTERVAL: ${SSE_POLL_INTERVAL:-1}
+      SSE_POLL_INTERVAL: ${SSE_POLL_INTERVAL:-0.2}
     volumes:
       - uploads:/data/uploads
     depends_on:
@@ -100,7 +100,7 @@ services:
       TASK_DEADLINE: ${TASK_DEADLINE:-600}
       WORKER_SHUTDOWN_GRACE: ${WORKER_SHUTDOWN_GRACE:-20}
       QUEUE_POLL_INTERVAL: ${QUEUE_POLL_INTERVAL:-1}
-      SSE_POLL_INTERVAL: ${SSE_POLL_INTERVAL:-1}
+      SSE_POLL_INTERVAL: ${SSE_POLL_INTERVAL:-0.2}
     volumes:
       - uploads:/data/uploads
     depends_on:

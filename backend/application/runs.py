@@ -23,6 +23,8 @@ async def load_run(
     )
     if thread is None or thread.owner_id != settings.owner_id:
         raise ApplicationError("RUN_NOT_FOUND", "Run 不存在", 404)
+    if run.execution_schema_version != 1:
+        raise ApplicationError("API_VERSION_REQUIRED", "此 Run 需要使用 v2 API", 409)
     task_result = await session.execute(
         select(TaskModel).where(TaskModel.task_id == run.primary_task_id)
     )
@@ -95,6 +97,9 @@ async def get_thread_detail(session: AsyncSession, settings: Settings, thread_id
     thread = await session.get(ThreadModel, thread_id)
     if thread is None or thread.owner_id != settings.owner_id:
         raise ApplicationError("THREAD_NOT_FOUND", "Thread 不存在", 404)
+    from backend.application.threads import require_v1_thread
+
+    require_v1_thread(thread)
     messages_result = await session.execute(
         select(MessageModel).where(MessageModel.thread_id == thread_id).order_by(MessageModel.seq)
     )
