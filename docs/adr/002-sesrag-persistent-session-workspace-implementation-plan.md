@@ -14,13 +14,9 @@
 
 **依据**：[`docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md`](../prd/002-SesRAG-持久化会话与对话工作台-PRD.md)
 
-**关联基线**：[`001 Demo PRD`](../prd/001-SesRAG-项目Demo-PRD.md)、[`ADR-001 Demo 实施方案`](001-sesrag-demo-implementation-plan.md)、[`ADR-002 缺陷修复方案`](002-SesRAG-Demo-缺陷修复-plan.md)、[`CONTEXT.md`](../../CONTEXT.md)、[`接口文档`](../接口文档.md)。
+**关联基线**：[`001 Demo PRD`](../prd/001-SesRAG-项目Demo-PRD.md)、[`ADR-001 Demo 实施方案`](001-sesrag-demo-implementation-plan.md)、[`ADR-001 缺陷修复方案`](001-SesRAG-Demo-缺陷修复-plan.md)、[`CONTEXT.md`](../../CONTEXT.md)、[`接口文档`](../接口文档.md)。
 
-**实施结果**：
-
-功能实现和分类/质量门禁证据见[PR-003](../pr/003-SesRAG-持久化会话与对话工作台-PR.md)。
-
-**编号说明**：PRD-002 是产品需求编号；ADR-002 已用于上一轮缺陷修复，因此本方案顺延为 ADR-003。全文 FR/NFR 编号均来自 PRD-002，不与 Demo 测试用例编号混用。
+**实施结果**：功能实现和分类/质量门禁证据见[PR-002](../pr/002-SesRAG-持久化会话与对话工作台-PR.md)。
 
 **取代关系**：本 ADR 不取代 ADR-001 或 ADR-002；它在其基础上扩展 v0.2，会话产品行为和新增迁移/契约以本 ADR 为当前实施依据。
 

@@ -5,7 +5,7 @@
 - **日期**：2026-10-20
 - **状态**：PRD-002 功能已实施；
 - **对应 PRD**：[PRD-002 持久化会话与对话工作台](../prd/002-SesRAG-持久化会话与对话工作台-PRD.md)
-- **对应 ADR**：[ADR-003 持久化会话与对话工作台实施方案](../adr/003-sesrag-persistent-session-workspace-implementation-plan.md)
+- **对应 ADR**：[ADR-002 持久化会话与对话工作台实施方案](../adr/002-sesrag-persistent-session-workspace-implementation-plan.md)
 - **当前分支**：`sesrag_v0.2`
 
 ## 1. 实施结果摘要

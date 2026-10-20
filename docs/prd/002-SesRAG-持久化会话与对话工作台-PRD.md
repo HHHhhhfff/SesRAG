@@ -10,7 +10,7 @@
 
 **适用范围**：`sesrag_v0.2` 第二轮迭代；在现有 SesRAG Demo 上交付浏览器端持久化对话与会话工作台能力。
 
-**对应实施 ADR**：[`ADR-003 持久化会话与对话工作台实施方案`](../adr/003-sesrag-persistent-session-workspace-implementation-plan.md)（已接受；功能及验证进度见实施结果。ADR-002 编号已用于上一轮 Demo 缺陷修复）。
+**对应实施 ADR**：[`ADR-002 持久化会话与对话工作台实施方案`](../adr/002-sesrag-persistent-session-workspace-implementation-plan.md)（已接受；功能及验证进度见实施结果。）。
 
 
 **实施状态更新日期**：2026-10-20。产品范围与验收阈值保持不变；实现完成和完整验收分别记录，不因已有代码自动宣布全部通过。
@@ -20,8 +20,8 @@
 - [`完整项目 PRD`](SesRAG-完整项目-PRD.md)
 - [`ADR-001 Demo 实施方案`](../adr/001-sesrag-demo-implementation-plan.md)
 - [`PR-001 Demo 实施记录`](../pr/001-SesRAG-项目Demo-PR.md)
-- [`ADR-002 Demo 缺陷修复方案`](../adr/002-SesRAG-Demo-缺陷修复-plan.md)
-- [`PR-002 Demo 缺陷修复记录`](../pr/002-SesRAG-Demo-缺陷修复-PR.md)
+- [`ADR-002 Demo 缺陷修复方案`](../adr/001-SesRAG-Demo-缺陷修复-plan.md)
+- [`PR-002 Demo 缺陷修复记录`](../pr/001-SesRAG-Demo-缺陷修复-PR.md)
 - [`接口文档`](../接口文档.md)。
 
 **其他**：本 PRD 是第二轮迭代的产品目标和验收基线。依据当前分支实际代码描述已有能力；实施后的当前结果查阅PR-003/TEST-002。已有能力只有在本 PRD 明确列入验收范围时才算本轮验收项，文档中的现状说明不代表本轮测试已通过。
