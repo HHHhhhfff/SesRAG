@@ -1,0 +1,11 @@
+{
+  "fixture_version": "workspace-fixtures-v1",
+  "owner_id": "workspace-test-owner",
+  "database_name": "sesrag_workspace",
+  "database_user": "sesrag",
+  "default_profile": { "profile_id": "mock-default", "version": 1 },
+  "profile_ids": ["mock-default@1", "mock-small@1", "ws-http-a@1", "ws-http-b@1"],
+  "http_models": ["ws-http-a", "ws-http-b"],
+  "vector_dimension": 384,
+  "encoding_name": "cl100k_base"
+}

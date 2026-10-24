@@ -1,0 +1,308 @@
+{
+  "SES_001": [
+    "api/test_v2_session_api.py::test_v2_create_default_branch_and_v1_version_boundary"
+  ],
+  "SES_002": [
+    "api/test_v2_session_api.py::test_v2_keyset_pages_and_archive_filter"
+  ],
+  "SES_003": [
+    "api/test_v2_session_api.py::test_v2_keyset_pages_and_archive_filter"
+  ],
+  "SES_004": [
+    "api/test_v2_session_api.py::test_detail_message_pagination_and_legacy_branch_head_after_worker",
+    "unit/test_branch_paths.py::test_detail_reads_bounded_page_instead_of_materializing_history"
+  ],
+  "SES_005": [
+    "api/test_v2_schemas.py::test_new_v2_create_and_rename_keep_strict_title_boundary"
+  ],
+  "SES_006": [
+    "api/test_v2_run_api.py::test_create_snapshot_replay_before_archive_and_no_external_calls"
+  ],
+  "SES_007": [
+    "api/test_v2_run_api.py::test_create_snapshot_replay_before_archive_and_no_external_calls",
+    "api/test_v2_session_api.py::test_fork_identity_replay_before_archive_and_inherited_path"
+  ],
+  "SES_008": [
+    "api/test_v2_session_api.py::test_v2_keyset_pages_and_archive_filter"
+  ],
+  "SES_009": [
+    "unit/test_branch_paths.py::test_nested_fork_truncates_ancestry_without_copy_and_rejects_invisible_fork"
+  ],
+  "SES_010": [
+    "unit/test_branch_paths.py::test_nested_fork_truncates_ancestry_without_copy_and_rejects_invisible_fork"
+  ],
+  "SES_011": [
+    "unit/test_branch_paths.py::test_nested_fork_truncates_ancestry_without_copy_and_rejects_invisible_fork",
+    "integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence"
+  ],
+  "SES_012": [
+    "api/test_v2_session_api.py::test_branch_cross_thread_and_invisible_path_and_required_key",
+    "unit/test_branch_paths.py::test_nested_fork_truncates_ancestry_without_copy_and_rejects_invisible_fork"
+  ],
+  "SES_013": [
+    "unit/test_branch_paths.py::test_branch_limits_and_cycles_are_bounded",
+    "unit/test_branch_paths.py::test_hundred_branch_limit_rolls_back_and_other_thread_is_404"
+  ],
+  "SES_014": [
+    "api/test_v2_run_api.py::test_canonical_omitted_profile_and_owner_first_and_stale_head"
+  ],
+  "SES_015": [
+    "api/test_v2_run_api.py::test_create_snapshot_replay_before_archive_and_no_external_calls",
+    "api/test_v2_session_api.py::test_fork_identity_replay_before_archive_and_inherited_path"
+  ],
+  "SES_016": [
+    "@pg::creation_probe",
+    "@pg::creation_edges"
+  ],
+  "SES_017": [
+    "@case::test_SES_017_owner_all_v2_endpoints",
+    "api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse",
+    "api/test_v2_run_api.py::test_canonical_omitted_profile_and_owner_first_and_stale_head"
+  ],
+  "SES_018": [
+    "api/test_v2_run_api.py::test_canonical_omitted_profile_and_owner_first_and_stale_head",
+    "api/test_v2_schemas.py::test_message_rejects_unpaired_profile_blank_and_server_fields"
+  ],
+  "CTX_001": [
+    "integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history"
+  ],
+  "CTX_002": [
+    "integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence",
+    "@case::test_CTX_002_007_summary_scope_and_reuse"
+  ],
+  "CTX_003": [
+    "unit/test_context_planning.py::test_mandatory_budget_check_counts_only_system_and_current_input",
+    "unit/test_context_planning.py::test_mandatory_over_budget_fails_before_candidate_or_evidence_use",
+    "integration/test_v2_run_execution.py::test_mandatory_budget_fails_before_embedding_and_publishes_plan",
+    "@case::test_CTX_003_exact_mandatory_boundary"
+  ],
+  "CTX_004": [
+    "unit/test_context_planning.py::test_history_trimming_removes_whole_old_turns_and_prunes_low_score_evidence_first"
+  ],
+  "CTX_005": [
+    "@case::test_CTX_005_006_plan_variants",
+    "integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history",
+    "integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back",
+    "integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans",
+    "integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event"
+  ],
+  "CTX_006": [
+    "@case::test_CTX_005_006_plan_variants",
+    "integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event",
+    "unit/test_context_planning.py::test_summary_records_only_extracted_source_segments_and_hash"
+  ],
+  "CTX_007": [
+    "integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence",
+    "@case::test_CTX_002_007_summary_scope_and_reuse"
+  ],
+  "CTX_008": [
+    "integration/test_v2_run_execution.py::test_summary_extraction_failure_publishes_trim_only_and_safe_log",
+    "unit/test_context_planning.py::test_summary_counter_failure_is_not_hidden_as_extraction_fallback"
+  ],
+  "CTX_009": [
+    "unit/test_context_planning.py::test_candidate_message_window_keeps_exactly_latest_200_facts",
+    "unit/test_context_planning.py::test_candidate_character_limit_accepts_200000_and_trims_at_200001",
+    "unit/test_context_planning.py::test_candidate_window_omissions_are_reported_as_compact_ranges"
+  ],
+  "CTX_010": [
+    "unit/test_context_planning.py::test_tied_lowest_evidence_eviction_uses_ascending_document_chunk_identity",
+    "unit/test_context_planning.py::test_low_score_evidence_is_removed_before_higher_score_evidence"
+  ],
+  "CTX_011": [
+    "integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence"
+  ],
+  "CTX_012": [
+    "integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence",
+    "@case::test_CTX_012_empty_vs_infrastructure"
+  ],
+  "CTX_013": [
+    "integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event"
+  ],
+  "MOD_001": [
+    "unit/test_model_profiles.py::test_model_list_exposes_no_secret_fields_and_marks_missing_credential",
+    "unit/test_model_profiles.py::test_explicit_import_can_change_default_without_changing_profile_version"
+  ],
+  "MOD_002": [
+    "@case::test_MOD_002_unavailable_profiles",
+    "unit/test_model_profiles.py::test_model_list_exposes_no_secret_fields_and_marks_missing_credential",
+    "api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable",
+    "unit/test_model_profiles.py::test_real_provider_cannot_use_mock_token_counter"
+  ],
+  "MOD_003": [
+    "@case::test_MOD_003_default_change_between_attempts",
+    "integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history",
+    "unit/test_model_profiles.py::test_snapshot_profile_freezes_nonsecret_version_and_registry_rebuilds_mock"
+  ],
+  "MOD_004": [
+    "unit/test_model_profiles.py::test_same_version_profile_model_change_is_rejected",
+    "@case::test_MOD_004_immutable_fields"
+  ],
+  "MOD_005": [
+    "unit/test_model_profiles.py::test_missing_runtime_credential_is_reported_without_disclosing_secret",
+    "@case::test_MOD_005_revoked_runtime_key"
+  ],
+  "MOD_006": [
+    "unit/test_model_profiles.py::test_model_list_exposes_no_secret_fields_and_marks_missing_credential",
+    "unit/test_model_profiles.py::test_snapshot_profile_freezes_nonsecret_version_and_registry_rebuilds_mock"
+  ],
+  "MOD_007": [
+    "unit/test_model_profiles.py::test_profile_rejects_url_credentials_and_unknown_generation_parameters",
+    "unit/test_model_profiles.py::test_snapshot_rejects_incomplete_or_out_of_bounds_nested_policy",
+    "unit/test_model_profiles.py::test_profile_requires_explicit_tiktoken_framing_and_calibration_settings"
+  ],
+  "MOD_008": [
+    "integration/test_v2_run_execution.py::test_worker_embedding_rebuild_uses_frozen_endpoint_and_kind",
+    "integration/test_v2_run_execution.py::test_mock_embedding_mode_does_not_depend_on_embedding_model_label"
+  ],
+  "RUN_001": [
+    "api/test_v2_run_api.py::test_create_snapshot_replay_before_archive_and_no_external_calls"
+  ],
+  "RUN_002": [
+    "integration/test_v2_run_execution.py::test_first_delta_flushes_while_provider_stalls",
+    "@case::test_RUN_002_draft_is_not_message"
+  ],
+  "RUN_003": [
+    "@pg::stale_and_publication_probe",
+    "@pg::commit_failure",
+    "integration/test_v2_run_execution.py::test_v2_final_publication_expiry_rolls_back_message_events_and_head"
+  ],
+  "RUN_004": [
+    "integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans"
+  ],
+  "RUN_005": [
+    "api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version",
+    "integration/test_v2_run_execution.py::test_successful_explicit_retry_turn_survives_failed_creator_context"
+  ],
+  "RUN_006": [
+    "integration/test_v2_run_execution.py::test_regenerate_distinct_children_exclude_old_answer_reuse_input",
+    "integration/test_v2_run_execution.py::test_regenerate_worker_sees_input_prefix_without_old_answer_or_future"
+  ],
+  "RUN_007": [
+    "api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version",
+    "api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable"
+  ],
+  "RUN_008": [
+    "integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans"
+  ],
+  "RUN_009": [
+    "api/test_v2_schemas.py::test_json_contract_samples_also_validate_backend_dtos"
+  ],
+  "RUN_010": [
+    "integration/test_v2_run_execution.py::test_first_delta_flushes_while_provider_stalls"
+  ],
+  "RUN_011": [
+    "api/test_v2_run_api.py::test_sse_header_priority_invalid_cursors_and_bounded_terminal_tail"
+  ],
+  "RUN_012": [
+    "api/test_v2_run_api.py::test_sse_header_priority_invalid_cursors_and_bounded_terminal_tail"
+  ],
+  "RUN_013": [],
+  "RUN_014": [],
+  "RUN_015": [],
+  "RUN_016": [
+    "@pg::stale_and_publication_probe",
+    "@pg::stale_all_writes",
+    "integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back"
+  ],
+  "RUN_017": [
+    "integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority"
+  ],
+  "RUN_018": [
+    "integration/test_v2_run_execution.py::test_worker_observes_cancel_and_acknowledges_without_requeue",
+    "integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority"
+  ],
+  "RUN_019": [
+    "@pg::cancel_success_probe"
+  ],
+  "RUN_020": [
+    "@pg::cancel_success_probe"
+  ],
+  "RUN_021": [
+    "@pg::cancellation_reclaim_probe",
+    "@pg::cancellation_skip_locked",
+    "integration/test_v2_run_execution.py::test_expired_cancellation_ack_rejected_reclaimer_cancels_not_fails"
+  ],
+  "RUN_022": [
+    "unit/test_rag_boundaries.py::test_provider_classifies_http_without_leaking_body"
+  ],
+  "RUN_023": [
+    "@case::test_RUN_023_protocol_worker_terminal",
+    "integration/test_v2_run_execution.py::test_empty_or_invalid_provider_stream_cannot_succeed",
+    "integration/test_provider_http.py"
+  ],
+  "RUN_024": [],
+  "RUN_025": [
+    "integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans",
+    "@case::test_RUN_025_exhaustion"
+  ],
+  "RUN_026": [
+    "integration/test_v2_run_execution.py::test_frozen_resource_limits_fail_with_reserved_terminal",
+    "@case::test_RUN_026_frozen_boundaries"
+  ],
+  "RUN_027": [
+    "@case::test_RUN_027_regular_events_boundary",
+    "integration/test_v2_run_execution.py::test_event_limit_during_retry_becomes_failure_not_stuck_lease"
+  ],
+  "RUN_028": [
+    "@case::test_RUN_028_deadline_exact_and_cancel_priority",
+    "integration/test_v2_run_execution.py::test_frozen_timeout_closes_stream_and_never_publishes_success",
+    "integration/test_lease_recovery.py"
+  ],
+  "RUN_029": [
+    "api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version"
+  ],
+  "RUN_030": [
+    "api/test_validation_safety.py"
+  ],
+  "COMP_001": [
+    "api/test_v2_schemas.py::test_json_contract_samples_also_validate_backend_dtos"
+  ],
+  "COMP_002": [
+    "api/test_core_api.py"
+  ],
+  "COMP_003": [
+    "api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse"
+  ],
+  "COMP_004": [
+    "api/test_v2_run_api.py::test_legacy_projection_cancel_never_upgrade_and_explicit_profile"
+  ],
+  "COMP_005": [
+    "@case::test_COMP_005_007_first_write_upgrade",
+    "api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation",
+    "api/test_v2_session_api.py::test_fork_identity_replay_before_archive_and_inherited_path"
+  ],
+  "COMP_006": [
+    "@case::test_COMP_006_legacy_titles",
+    "api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation",
+    "api/test_v2_schemas.py::test_thread_response_preserves_legacy_title_after_metadata_upgrade"
+  ],
+  "COMP_007": [
+    "@case::test_COMP_005_007_first_write_upgrade",
+    "api/test_v2_run_api.py::test_legacy_projection_cancel_never_upgrade_and_explicit_profile"
+  ],
+  "COMP_008": [
+    "@migration::test_COMP_008_documents_chunks_roundtrip",
+    "unit/test_v2_session_migrations.py::test_mixed_legacy_states_preserve_full_fact_hash_and_counts"
+  ],
+  "COMP_009": [
+    "unit/test_v2_session_migrations.py::test_preflight_identifies_conflicts_without_rewriting_facts",
+    "unit/test_v2_session_migrations.py::test_preflight_rejects_duplicate_work_without_cancel_or_delete",
+    "unit/test_v2_session_migrations.py::test_upgrade_preflight_preserves_revision_and_original_facts"
+  ],
+  "COMP_010": [
+    "unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip"
+  ],
+  "COMP_011": [
+    "unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip",
+    "unit/test_v2_session_migrations.py::test_custom_profile_downgrade_requires_explicit_export"
+  ],
+  "COMP_012": [
+    "@migration::test_COMP_012_independent_context_facts_guard",
+    "unit/test_v2_session_migrations.py::test_downgrade_rejects_every_session_business_fact",
+    "unit/test_v2_session_migrations.py::test_v2_migration_chain_refuses_base_downgrade_even_empty"
+  ],
+  "COMP_013": [
+    "integration/test_document_flow.py",
+    "api/test_foundation_health.py"
+  ]
+}

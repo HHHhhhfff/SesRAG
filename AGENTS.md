@@ -155,3 +155,17 @@ ADR 状态使用以下中文值：
 - 接口行为变化只维护 `docs/接口文档.md` 和契约真源，README 只维护链接与导航。
 
 需求中出现“后续再做”的能力，必须进入对应完整 PRD 的路线图或明确列为非目标，不在当前迭代偷偷实现半成品入口。文档、代码和测试完成后，交付前必须做一次整体校审，确认术语、路径、状态机、接口和事实来源前后一致。
+
+## Agent skills
+
+### Issue tracker
+
+涉及问题跟踪时，使用 HHHhhhfff/SesRAG 的 GitHub Issues；先读取 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+进行问题分诊或修改处理状态时，使用五个默认状态标签；先读取 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+采用 single-context 布局；术语真源为 `CONTEXT.md`，架构决策位于 `docs/adr/`。探索相关领域前读取 `docs/agents/domain.md`。

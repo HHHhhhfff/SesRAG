@@ -1,0 +1,9 @@
+FROM node:20-alpine
+
+# 仅用于准备阶段：将项目内已经校验的公开npm内容缓存预热到同名BuildKit缓存。
+# npm_public_cache必须显式指向suite/.cache/npm/_cacache，不能传入用户配置或整个主目录。
+# bind内容不复制进镜像层；cacheonly输出不创建运行容器或专有镜像tag。
+RUN --mount=type=bind,from=npm_public_cache,source=.,target=/seed,readonly \
+    --mount=type=cache,id=sesrag-frontend-npm,target=/root/.npm \
+    mkdir -p /root/.npm/_cacache \
+    && cp -a /seed/content-v2 /seed/index-v5 /root/.npm/_cacache/

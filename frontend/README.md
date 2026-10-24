@@ -23,8 +23,12 @@ Document 每 2 秒读取非终态，最多 30 次请求（约 1 分钟，另加�
 
 ## 开发与同源配置
 
+Node 支持 `^20.19.0 || ^22.13.0 || >=24`；本机验收工具使用 Node 24。依赖由本模块 `package-lock.json` 锁定。以下命令均从仓库根执行；npm 缓存限定在测试工程，避免使用不可写的全局缓存。
+
+`docker/frontend/Dockerfile`使用BuildKit缓存公开npm tarball并执行`npm ci`，锁文件不一致即失败；下载限制5个连接、每请求120秒并最多重试3次，不无限重试、不换包源。该缓存不会进入镜像，也不包含数据库/模型凭据；属于Docker共享构建缓存，测试资源清理不做全局prune。首次下载受网络影响仍可能失败，须保留失败报告并按总入口重试。
+
 ```powershell
-npm ci --prefix frontend
+npm ci --prefix frontend --cache tests/sesrag-persistent-session-workspace-test/.cache/npm
 npm run dev --prefix frontend
 ```
 
@@ -41,11 +45,13 @@ npm run generate:api --prefix frontend
 npm run check:api --prefix frontend
 npm run typecheck --prefix frontend
 npm run build --prefix frontend
-npm ci --prefix tests/demo-smoke
-npm run unit:frontend --prefix tests/demo-smoke
 npm run lint --prefix frontend
+npm run test:toolchain --prefix frontend
+npm run test:unit --prefix frontend
 ```
 
-Lint 与组件测试依赖 `tests/demo-smoke/package-lock.json` 的项目工具，不依赖全局 Vitest/ESLint。`lint` 真正检查前端源文件，不等同于类型检查。Vue 的 `no-v-html` 保留一条提示，因为清洗后的 Markdown 必须渲染 HTML；安全组件回归断言 script/onerror 不进入 DOM。
+Lint 与组件测试由前端自有 ESLint、Vitest、Vue Test Utils、jsdom 及锁文件提供，不读取旧验收目录或全局工具。`eslint.config.mjs` 检查 `src/`、`scripts/`、`tests/` 和配置文件；`vitest.config.ts` 使用独立 Vue/jsdom 环境，不加载开发代理配置。没有测试文件时命令失败。
+
+`tests/toolchain.test.ts` 与 `tests/fixtures/ToolchainProbe.vue` 是三项工具能力自检：Vue/TypeScript SFC、DOM 事件/MutationObserver、可控定时器。它们只证明后续组件脚本的工具前置，不能作为工作台产品验收；实际产品组件用例留待后续增加。`test:unit` 运行本模块全部 `tests/**/*.test.ts`，`test:toolchain` 仅运行工具探针。Vue 的 `no-v-html` 保留一条警告，因为清洗后的 Markdown 必须渲染 HTML；警告不等于 XSS 验证通过，后续仍需真实恶意输入与 DOM 断言。
 
 契约必须先更新再生成。`citation_v1.json` 联合完整新 Evidence 和无批次/位置字段的历史引用；不重写历史 Message/Journal，也不为历史假造批次/基础位置。HTTP 全状态矩阵、Event payload 和漂移负哨兵由 ADR-002 Task5d 验证；组件传输替身通过不等同于真实 Compose/浏览器验收。

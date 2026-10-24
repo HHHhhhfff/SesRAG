@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "categories": [
+    {
+      "category": "session",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/session-tests.mjs",
+      "timeout_seconds": 900,
+      "case_ids": [
+        "SES_001",
+        "SES_002",
+        "SES_003",
+        "SES_004",
+        "SES_005",
+        "SES_006",
+        "SES_007",
+        "SES_008",
+        "SES_009",
+        "SES_010",
+        "SES_011",
+        "SES_012",
+        "SES_013",
+        "SES_014",
+        "SES_015",
+        "SES_016",
+        "SES_017",
+        "SES_018"
+      ],
+      "requirements": [
+        "FR-TH-01",
+        "FR-TH-02",
+        "FR-BR-01"
+      ]
+    },
+    {
+      "category": "context",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/context-tests.mjs",
+      "timeout_seconds": 900,
+      "case_ids": [
+        "CTX_001",
+        "CTX_002",
+        "CTX_003",
+        "CTX_004",
+        "CTX_005",
+        "CTX_006",
+        "CTX_007",
+        "CTX_008",
+        "CTX_009",
+        "CTX_010",
+        "CTX_011",
+        "CTX_012",
+        "CTX_013"
+      ],
+      "requirements": [
+        "FR-MEM-01",
+        "FR-CTX-01",
+        "FR-CTX-02",
+        "FR-RAG-01"
+      ]
+    },
+    {
+      "category": "model",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/model-tests.mjs",
+      "timeout_seconds": 900,
+      "case_ids": [
+        "MOD_001",
+        "MOD_002",
+        "MOD_003",
+        "MOD_004",
+        "MOD_005",
+        "MOD_006",
+        "MOD_007",
+        "MOD_008"
+      ],
+      "requirements": [
+        "FR-MOD-01",
+        "FR-MOD-02"
+      ]
+    },
+    {
+      "category": "run",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/run-tests.mjs",
+      "timeout_seconds": 1800,
+      "case_ids": [
+        "RUN_001",
+        "RUN_002",
+        "RUN_003",
+        "RUN_004",
+        "RUN_005",
+        "RUN_006",
+        "RUN_007",
+        "RUN_008",
+        "RUN_009",
+        "RUN_010",
+        "RUN_011",
+        "RUN_012",
+        "RUN_013",
+        "RUN_014",
+        "RUN_015",
+        "RUN_016",
+        "RUN_017",
+        "RUN_018",
+        "RUN_019",
+        "RUN_020",
+        "RUN_021",
+        "RUN_022",
+        "RUN_023",
+        "RUN_024",
+        "RUN_025",
+        "RUN_026",
+        "RUN_027",
+        "RUN_028",
+        "RUN_029",
+        "RUN_030"
+      ],
+      "requirements": [
+        "FR-BR-02",
+        "FR-STR-01",
+        "FR-STR-02",
+        "FR-REC-02",
+        "FR-RUN-01",
+        "FR-ERR-01"
+      ]
+    },
+    {
+      "category": "workspace",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/workspace-tests.mjs",
+      "timeout_seconds": 1800,
+      "case_ids": [
+        "UI_001",
+        "UI_002",
+        "UI_003",
+        "UI_004",
+        "UI_005",
+        "UI_006",
+        "UI_007",
+        "UI_008",
+        "UI_009",
+        "UI_010",
+        "UI_011",
+        "UI_012",
+        "UI_013",
+        "UI_014"
+      ],
+      "requirements": [
+        "FR-REC-01",
+        "FR-OBS-01",
+        "FR-MD-01"
+      ]
+    },
+    {
+      "category": "compatibility",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/compatibility-tests.mjs",
+      "timeout_seconds": 900,
+      "case_ids": [
+        "COMP_001",
+        "COMP_002",
+        "COMP_003",
+        "COMP_004",
+        "COMP_005",
+        "COMP_006",
+        "COMP_007",
+        "COMP_008",
+        "COMP_009",
+        "COMP_010",
+        "COMP_011",
+        "COMP_012",
+        "COMP_013"
+      ],
+      "requirements": [
+        "NFR-MIG-01",
+        "NFR-DEP-01"
+      ]
+    },
+    {
+      "category": "performance",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/performance-tests.mjs",
+      "timeout_seconds": 1800,
+      "case_ids": [
+        "PERF_001",
+        "PERF_002"
+      ],
+      "requirements": [
+        "NFR-PERF-01",
+        "NFR-CAP-01"
+      ]
+    },
+    {
+      "category": "quality",
+      "required": true,
+      "status": "ready",
+      "script": "specific_test_script/quality-tests.mjs",
+      "timeout_seconds": 1800,
+      "case_ids": [
+        "QLT_001",
+        "QLT_002",
+        "QLT_003",
+        "QLT_004",
+        "QLT_005",
+        "QLT_006"
+      ],
+      "requirements": [
+        "NFR-TEST-01",
+        "NFR-SEC-01",
+        "NFR-SEC-02",
+        "NFR-ISO-01",
+        "NFR-REL-01",
+        "NFR-REL-02",
+        "NFR-OBS-01"
+      ]
+    }
+  ]
+}

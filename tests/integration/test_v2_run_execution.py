@@ -571,9 +571,10 @@ async def test_summary_extraction_failure_publishes_trim_only_and_safe_log(
 
 
 async def test_worker_real_http_uses_frozen_model_and_planned_history(
-    workspace, provider_server, monkeypatch
+    workspace, monkeypatch, request
 ):
-    url, observed = provider_server
+    # 通过pytest取同一fixture，兼容工具镜像Ruff对导入fixture/同名形参的旧版F811检查。
+    url, observed = request.getfixturevalue("provider_server")
     settings, factory, *_ = workspace
     first = await submit(workspace, "history sentinel")
     assert await runtime(workspace).run_once()
@@ -638,10 +639,10 @@ async def test_worker_real_http_uses_frozen_model_and_planned_history(
 
 
 async def test_worker_embedding_rebuild_uses_frozen_endpoint_and_kind(
-    workspace, provider_server, monkeypatch
+    workspace, monkeypatch, request
 ):
     # 生成Profile独立于Embedding；重启后改Settings不能改变旧Run的检索向量来源。
-    url, observed = provider_server
+    url, observed = request.getfixturevalue("provider_server")
     settings, *_ = workspace
     settings.mock_provider = False
     settings.model_base_url = url

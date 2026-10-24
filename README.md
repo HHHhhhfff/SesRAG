@@ -1,5 +1,9 @@
 # SesRAG Demo
 
+v0.2 当前代码的详细落地、文件变动、需求核对与后续测试关注点见 [PR-002 实施结果调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)。本轮及后续 PRD 的本机验收独立组织；下文残留的旧 `tests/demo-smoke` 入口与003编号链接不能作为当前可执行验收入口，具体差异见调研§9～10。
+
+v0.2 当前[TEST-002正式测试实施方案](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)已建立独立的本机Compose测试环境、总入口、工具/素材和报告清理流程，入口及职责见[测试套件说明](tests/sesrag-persistent-session-workspace-test/README.md)，实际演练结果见[环境实施与验证记录](tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)。独立[测试点矩阵](tests/sesrag-persistent-session-workspace-test/测试点设计与需求覆盖矩阵.md)与[104例用例设计](tests/sesrag-persistent-session-workspace-test/test-cases.md)已完成；任务1～2的工具前置和总入口核验见[准备记录](tests/sesrag-persistent-session-workspace-test/测试准备与总入口核验记录.md)。任务3～4已接入8类104例脚本，真实试跑及修订证据见[脚本校审记录](tests/sesrag-persistent-session-workspace-test/测试脚本实施与试跑校审记录.md)；任务5～6现已完成同源两轮All，各104通过、0失败/受限/未运行/工程错误，清理通过；结果及真实命令见[测试报告](tests/sesrag-persistent-session-workspace-test/测试报告.md)，归档呈现等4项补充发现见[缺陷报告](tests/sesrag-persistent-session-workspace-test/缺陷报告.md)，用例执行字段已回填。
+
 SesRAG 是一个前后端分离、Docker Compose 部署的持久会话 RAG 应用。v0.2 在保留文本文档索引/pgvector 与 v1 文档 API 的同时，已增加持久 Thread/Branch、Run/Context/Event Journal、Profile 选择与冻结快照、重试/重新生成/取消和 Vue 对话工作台。Worker 仍以 PostgreSQL 持久任务和有限 lease 执行。
 
 ADR-002纳入修复已完成冻结后两轮正式all复验，具体纳入检查、暂缓/平台blocked及资源审计见[复测和验收报告](tests/demo-smoke/复测和验收报告.md)。严格all因blocked保留非零；本机Mock、单Worker有限样本不外推检索效果/生产SLO。最终独立交付审批与剩余限制以报告为准。
@@ -12,7 +16,7 @@ frontend/      Vue 3 + TypeScript 单页工作台；模块与生成入口见fron
 migrations/    Alembic 数据库迁移
 contracts/     Thread/Message/Run/Document/Health、响应/引用和 Run Event 版本化 JSON Schema
 tests/         单元、API 和集成测试
-tests/demo-smoke/ 本机隔离临时测试、21个v0.1回归分类+5个v0.2分类、总入口、报告/清理和测试点/用例
+tests/sesrag-persistent-session-workspace-test/ 本轮独立环境、统一入口、工具、接入规范和按run_id保存的证据
 docker/        API/Worker 与前端镜像定义
 docs/prd/      Demo、v0.2 与完整项目 PRD
 docs/adr/      实施方案和架构决策
@@ -28,16 +32,18 @@ AGENTS.md      仓库级 AI 开发约束
 - 产品目标：[`docs/prd/`](docs/prd/)，当前 Demo 为 [`001-SesRAG-项目Demo-PRD.md`](docs/prd/001-SesRAG-项目Demo-PRD.md)，v0.2 持久化会话与对话工作台为 [`002-SesRAG-持久化会话与对话工作台-PRD.md`](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)，完整目标为 [`SesRAG-完整项目-PRD.md`](docs/prd/SesRAG-完整项目-PRD.md)。
 - 测试后 Demo 缺陷修复实施方案 / ADR：[002-SesRAG-Demo-缺陷修复-plan.md](docs/adr/002-SesRAG-Demo-缺陷修复-plan.md)。正式两轮结果、范围限制和已清理资源见[复测和验收报告](tests/demo-smoke/复测和验收报告.md)，不能以方案状态代替测试结果。
 - 实施方案与架构决策：[`docs/adr/`](docs/adr/)。
-- v0.2 持久化会话与对话工作台实施方案：[ADR-003](docs/adr/003-sesrag-persistent-session-workspace-implementation-plan.md)；功能已实施，五个分类有通过证据，但正式同源 `all` 两轮未完全通过（第二轮1项失败，两轮各18项blocked），详见 [TEST-002](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)。
-- v0.2 实施记录：[PR-003](docs/pr/003-SesRAG-持久化会话与对话工作台-PR.md)；正式验收计划与两轮结果：[TEST-002](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)。
+- v0.2 持久化会话与对话工作台实施方案：[ADR-002](docs/adr/002-sesrag-persistent-session-workspace-implementation-plan.md)；实际代码和剩余验证缺口见 [PR-002调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)。
+- v0.2 [简要实施记录](docs/pr/002-SesRAG-持久化会话与对话工作台-PR.md)保留当时专项及两轮历史结果；新的独立 [TEST-002方案](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)与[环境验证记录](tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)分别记录本轮环境设计及真实结果，不复用旧历史结果。
+- PRD-002 测试点与需求覆盖：[测试点设计与需求覆盖矩阵](tests/sesrag-persistent-session-workspace-test/测试点设计与需求覆盖矩阵.md)已设计；[本轮测试目录说明](tests/sesrag-persistent-session-workspace-test/README.md)列出当前文档、环境和脚本状态。测试点“可验证”不等于测试已执行或通过。
 - ADR-002实际变更和当前证据边界：[缺陷修复实施记录](docs/pr/002-SesRAG-Demo-缺陷修复-PR.md)；含实际文件用途与正式两轮证据，退出及独立审批以复测报告为准。
 - 开发结果与测试验收：[`docs/pr/`](docs/pr/)、[`docs/test/`](docs/test/)。Demo 正式测试实施方案见 [`docs/test/001-SesRAG-项目Demo-test-plan.md`](docs/test/001-SesRAG-项目Demo-test-plan.md)，历史验收结果见 [`docs/test/001-SesRAG-项目Demo-test.md`](docs/test/001-SesRAG-项目Demo-test.md)。
 - Demo 测试点与需求覆盖：[`tests/demo-smoke/测试点设计与需求覆盖矩阵.md`](tests/demo-smoke/测试点设计与需求覆盖矩阵.md)；本机隔离环境、26分类脚本映射、总入口、报告及资源清理见 [`tests/demo-smoke/README.md`](tests/demo-smoke/README.md)。v0.2验收范围、FR/NFR映射和命令见[TEST-002](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)。分类执行及条件不足分别报告，不代表产品全部验收通过。
 - Demo 中文测试用例：[`tests/demo-smoke/test-cases.md`](tests/demo-smoke/test-cases.md)，149个设计用例逐项关联191个测试点；已按两轮正式all回填实际结果，受限内容独立标记。
 - Demo 测试工具/数据策略/总入口复核：[`tests/demo-smoke/任务1-2准备与审批记录.md`](tests/demo-smoke/任务1-2准备与审批记录.md)，工具安装与重装见[`tooling/README.md`](tests/demo-smoke/tooling/README.md)；不代表产品用例已执行。
-- Demo 分类实施、试跑与校审：[`tests/demo-smoke/任务3-4实施与审批记录.md`](tests/demo-smoke/任务3-4实施与审批记录.md)；2026-10-07 原正式两轮结果见[`测试报告`](tests/demo-smoke/测试报告.md)、[`缺陷报告`](tests/demo-smoke/缺陷报告.md)及[`执行审批`](tests/demo-smoke/任务5-6执行与审批记录.md)。这些是 v0.1 Demo 历史记录，不替代 PRD-002 的 TEST-002 验收结果。
+- Demo 分类实施、试跑与校审：[`tests/demo-smoke/任务3-4实施与审批记录.md`](tests/demo-smoke/任务3-4实施与审批记录.md)；2026-10-07 原正式两轮结果见[`测试报告`](tests/demo-smoke/测试报告.md)、[`缺陷报告`](tests/demo-smoke/缺陷报告.md)及[`执行审批`](tests/demo-smoke/任务5-6执行与审批记录.md)。这些旧路径已退出当前分支，历史文件从上一版本/测试分支查阅；不替代 PRD-002 后续独立验收。
 - 部署、故障和验收流程：[`docs/runbooks/`](docs/runbooks/)；代码修改规范见 [`docs/项目开发和修改的通用执行规范.md`](docs/项目开发和修改的通用执行规范.md)。
 - 接口唯一说明：[`docs/接口文档.md`](docs/接口文档.md)；稳定术语见 [`CONTEXT.md`](CONTEXT.md)；仓库级 AI 规则见 [`AGENTS.md`](AGENTS.md)。
+- 工程技能配置：`docs/agents/` 保存 [GitHub Issues 工作流](docs/agents/issue-tracker.md)、[分诊标签映射](docs/agents/triage-labels.md)和[领域文档读取规则](docs/agents/domain.md)；使用现有 `CONTEXT.md` 和 `docs/adr/`。
 
 ## 快速启动
 
@@ -96,7 +102,7 @@ Worker 写回在最后一次 flush 后、commit 前复查保存的授权时间�
 
 Run 创建时冻结非 Secret 的模型/检索配置，后续修改默认配置不改变已有 Run。旧版 Mock 快照按旧协议固定 384 维和持久 Thread owner 恢复；无法恢复的快照明确失败为 `INVALID_RUN_SNAPSHOT`，不会猜测或切换模型。执行保护目前使用单步骤 60 秒、模型流总计 120 秒、4096 个增量和 1,000,000 字符硬上限，另受任务 deadline 约束。同步线程中的调用无法被强杀，这不等同于进程隔离或外部副作用撤销。
 
-ADR-003 的 v2 后端与前端工作台已接线 Thread/Branch、Run/Context/Event/SSE、Profile快照、取消、显式重试及重新生成。`backend/application/session_runs.py` 管理 v2 原子创建和用户操作，`session_execution.py` 管理冻结策略下的 RAG、计划、ModelRequest 与独立定时 delta 发布。五个 v0.2 分类有通过证据；两轮同源完整 Compose/真实 PostgreSQL验收已经执行，但存在1项失败和18项blocked，未达到完整验收通过。细节以 [TEST-002](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md) 和 [PR-003](docs/pr/003-SesRAG-持久化会话与对话工作台-PR.md) 为准。接口与恢复约定见 [正式接口文档](docs/接口文档.md)。
+ADR-002 的 v2 后端与前端工作台已接线 Thread/Branch、Run/Context/Event/SSE、Profile快照、取消、显式重试及重新生成。`backend/application/session_runs.py` 管理 v2 原子创建和用户操作，`session_execution.py` 管理冻结策略下的 RAG、计划、ModelRequest 与独立定时 delta 发布。历史专项和两轮结果保留于[简要实施记录](docs/pr/002-SesRAG-持久化会话与对话工作台-PR.md)，当前实现及验证缺口见[实施结果调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)。新的 [TEST-002](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md) 已建立独立环境与接入协议，产品分类和同源两轮正式执行已完成，当前结论见[测试报告](tests/sesrag-persistent-session-workspace-test/测试报告.md)及[缺陷报告](tests/sesrag-persistent-session-workspace-test/缺陷报告.md)，不承载旧结果。接口与恢复约定见 [正式接口文档](docs/接口文档.md)。
 
 v2 Profile 元数据由迁移 seed 两个 Mock 选项。真实 Profile 使用显式 JSON 导入：`.venv/Scripts/python.exe -m backend.tools.sync_model_profiles docker/model-profiles.example.json`（按需替换为本地受控配置文件）；运行时只从配置中的 `env:MODEL_API_KEY` 读取 Secret，配置文件和数据库都不得保存 Key。Profile JSON 的 `base_url` 不得包含认证信息、query 或 fragment；真实 Tokenizer 的 `tokenizer_config` 除预算字段 `safety_margin_tokens`、`summary_max_tokens` 外，必须显式提供受支持的 `encoding_name`、每条消息开销 `message_overhead_tokens`、整次请求开销 `request_overhead_tokens` 和非空校准版本 `calibration_version`。计数器从冻结的 Profile 配置构建，真实计数器版本以 36 字符稳定摘要标识 encoding、包版本、框架开销、校准版本及 Profile tokenizer 版本，完整配置保留在冻结的 Profile 中；配置须按目标服务校准，不保证适用于所有兼容服务。真实模型需在 API/Worker 运行环境设置 `MODEL_API_KEY`，该变量不返回给浏览器、不落入 Run Snapshot 或日志。Embedding 模型仍使用固定 384 维检索空间，不能随生成模型切换。
 
@@ -137,17 +143,9 @@ npm run typecheck
 npm run build
 ```
 
-前端模块职责、同源代理、类型生成和完整质量命令见 [`frontend/README.md`](frontend/README.md)。宿主 Vite 使用本机 API 地址；根 Compose 的浏览器 HTTP/SSE/health 都走同源代理。根 `.env` 不由宿主 Vite 自动加载，可用进程环境或 `frontend/.env.local` 配置代理目标。单页原生组件保留 DOMPurify，不额外引入 Router/UI 库。类型由版本化 Schema 通过 `npm run generate:api --prefix frontend` 生成，`check:api` 检查漂移；组件与真正 ESLint 工具使用 `tests/demo-smoke` 的项目依赖。
+前端模块职责、同源代理、类型生成和质量命令见 [`frontend/README.md`](frontend/README.md)。宿主 Vite 使用本机 API 地址；根 Compose 的浏览器 HTTP/SSE/health 都走同源代理。根 `.env` 不由宿主 Vite 自动加载，可用进程环境或 `frontend/.env.local` 配置代理目标。单页原生组件保留 DOMPurify，不额外引入 Router/UI 库。类型由版本化 Schema 通过 `npm run generate:api --prefix frontend` 生成，`check:api` 检查漂移；当前已配置独立ESLint/Vitest/Vue Test Utils/jsdom及组件断言，质量工具不再依赖旧验收目录。实际命令结果与负例门禁见[脚本校审记录](tests/sesrag-persistent-session-workspace-test/测试脚本实施与试跑校审记录.md)，安装完成不等于质量通过。
 
-本机隔离环境（推荐用于后续正式测试，不复用开发容器/卷）：
-
-```powershell
-pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1
-# 如需手工检查，就绪后等待Enter，结束仍自动清理：
-pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1 -Interactive
-```
-
-要求PowerShell 7.4+、Docker Desktop Linux Engine、Compose 2.24.4+；分类工具使用本目录Node24/Python3.12环境，日志/报告在`tests/demo-smoke/artifacts/<run_id>/`。当前总入口包含21个旧 Demo 回归分类和5个v0.2分类；v0.2独立用例在`v2-test-cases.md`，旧149用例继续独立维护。覆盖声明不代表行为验收通过，failed/blocked子项不能报通过。本目录独立准备Playwright/Chromium及组件/Lint工具；映射、工具、资源清理详见[测试环境README](tests/demo-smoke/README.md)与[Runbook](docs/runbooks/demo-smoke-environment.md)。本次临时容器、网络、数据卷、镜像tag和runtime/tmp自动清理；共享缓存及脱敏历史报告有意保留。
+本轮本机隔离测试环境按[TEST-002](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)在 `tests/sesrag-persistent-session-workspace-test/` 独立准备。Windows/Linux统一使用PowerShell 7入口，配有独立Compose、动态回环端口、每分类专属子环境和报告/清理恢复流程。准备及执行命令见[套件README](tests/sesrag-persistent-session-workspace-test/README.md)，环境历史见[环境记录](tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)，本轮工具及总入口证据见[准备记录](tests/sesrag-persistent-session-workspace-test/测试准备与总入口核验记录.md)。104例分类脚本已接入，脚本—用例对应及试跑结果分别见套件README和[脚本校审记录](tests/sesrag-persistent-session-workspace-test/测试脚本实施与试跑校审记录.md)；正式两轮各104通过、结果已回填，完整证据及保留差异见[测试报告](tests/sesrag-persistent-session-workspace-test/测试报告.md)和[缺陷报告](tests/sesrag-persistent-session-workspace-test/缺陷报告.md)，不以环境验证替代产品验收。旧 `tests/demo-smoke` 已退出本分支，不再作为当前推荐的可执行入口。
 
 开发Compose的基础检查（不等于完整隔离测试验收）：
 

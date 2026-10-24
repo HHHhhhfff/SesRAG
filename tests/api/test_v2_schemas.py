@@ -150,11 +150,41 @@ def test_event_response_validates_version_and_exact_payload():
 
 
 def test_json_contract_samples_also_validate_backend_dtos():
+    # QLT_002工具前置：字面样本属于开发测试，不能依赖已删除的旧PRD验收工程。
     samples = json.loads(
-        (Path(__file__).parents[1] / "demo-smoke/tooling/v2-contract-samples.json").read_text(
+        (Path(__file__).parent / "fixtures/v2-contract-samples.json").read_text(
             encoding="utf-8"
         )
     )
+    from urllib.parse import urljoin
+
+    from jsonschema import Draft202012Validator, FormatChecker
+    from referencing import Registry, Resource
+
+    contracts = Path(__file__).parents[2] / "contracts"
+    resources = [json.loads(item.read_text(encoding="utf-8")) for item in contracts.glob("*.json")]
+    registry = Registry().with_resources(
+        (urljoin("https://sesrag.local/contracts/", item["$id"]), Resource.from_contents(item))
+        for item in resources
+    )
+
+    def contract(ref):
+        return Draft202012Validator(
+            {"$ref": "https://sesrag.local/contracts/" + ref},
+            registry=registry,
+            format_checker=FormatChecker(),
+        )
+
+    sample_contracts = {
+        "thread": "thread_v2.json",
+        "branch": "branch_v2.json",
+        "message": "message_v2.json",
+        "context_plan": "context_plan_v2.json",
+        "context_summary": "context_plan_v2.json#/$defs/ContextPlanSummary",
+        "summary": "context_plan_v2.json#/$defs/SummaryMetadata",
+        "run": "run_v2.json",
+        "legacy_run": "run_v2.json",
+    }
     for module, name, key in [
         ("threads", "ThreadSummary", "thread"),
         ("threads", "Branch", "branch"),
@@ -163,22 +193,31 @@ def test_json_contract_samples_also_validate_backend_dtos():
         ("context", "ContextPlanSummary", "context_summary"),
         ("context", "SummaryMetadata", "summary"),
         ("runs", "RunResponse", "run"),
+        ("runs", "RunResponse", "legacy_run"),
     ]:
         model = schema(module, name)
         assert model.model_validate(samples[key])
+        validator = contract(sample_contracts[key])
+        validator.validate(samples[key])
+        assert not validator.is_valid(samples[key] | {"secret": "sentinel"})
         with pytest.raises(ValidationError):
             model.model_validate(samples[key] | {"secret": "sentinel"})
     model = schema("runs", "EventResponse")
+    assert set(samples["event_payloads"]) == set(schema("runs", "EVENT_DATA_V2"))
+    validator = contract("run_event_v2.json")
     for seq, (event_type, data) in enumerate(samples["event_payloads"].items(), 1):
         event = {
             "schema_version": 2,
-            "event_id": "event",
-            "run_id": "run",
+            "event_id": "10000000-0000-4000-8000-000000000099",
+            "run_id": samples["run"]["run_id"],
             "seq": seq,
             "type": event_type,
             "occurred_at": "2026-10-19T00:00:00Z",
             "data": data,
         }
         assert model.model_validate(event).data == data
+        validator.validate(event)
+        assert not validator.is_valid(event | {"data": data | {"secret": "sentinel"}})
+        assert not validator.is_valid(event | {"occurred_at": "invalid-date-time"})
         with pytest.raises(ValidationError):
             model.model_validate(event | {"data": data | {"secret": "sentinel"}})

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/schemas/run-summary.schema.json",
+  "title": "SesRAG workspace run summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "mode", "started_at", "finished_at", "environment_status", "product_acceptance", "cleanup_status", "source_unchanged", "frozen_build", "quality_prerequisites", "selected_categories", "required_categories", "counts", "original_exit_code", "final_exit_code", "not_run_reasons"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "run_id": { "type": "string", "pattern": "^ws-[0-9]{8}t[0-9]{6}z-[a-f0-9]{8}$" },
+    "mode": { "enum": ["Environment", "Selected", "All", "Cleanup"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "environment_status": { "enum": ["passed", "failed", "blocked", "incomplete", "not_run"] },
+    "product_acceptance": { "enum": ["not_run", "partial", "passed", "failed", "incomplete"] },
+    "cleanup_status": { "enum": ["passed", "failed", "unknown", "not_required"] },
+    "source_unchanged": { "type": ["boolean", "null"] },
+    "frozen_build": { "type": ["string", "null"] },
+    "quality_prerequisites": { "enum": ["pending", "ready", "blocked"] },
+    "selected_categories": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "required_categories": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "failed", "blocked", "not_run", "harness_error"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 },
+        "not_run": { "type": "integer", "minimum": 0 },
+        "harness_error": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "original_exit_code": { "type": ["integer", "null"] },
+    "final_exit_code": { "type": "integer" },
+    "not_run_reasons": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}
