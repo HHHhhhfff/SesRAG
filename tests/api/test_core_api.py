@@ -1,7 +1,19 @@
+import tomllib
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from backend.app import create_app
 from backend.config import Settings
+
+
+def test_openapi_version_matches_release_metadata():
+    # WS-DEF-002：应用发布版本独立于HTTP与Event契约版本。
+    root = Path(__file__).resolve().parents[2]
+    expected = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"][
+        "version"
+    ]
+    assert create_app().openapi()["info"]["version"] == expected
 
 
 def test_thread_message_run_and_event_flow(tmp_path):
@@ -19,10 +31,6 @@ def test_thread_message_run_and_event_flow(tmp_path):
         assert thread.status_code == 201
         thread_id = thread.json()["thread_id"]
 
-        archived = client.post(f"/api/v1/threads/{thread_id}/archive")
-        assert archived.status_code == 200
-        assert archived.json()["archived"] is True
-
         message = client.post(
             f"/api/v1/threads/{thread_id}/messages",
             headers={"Idempotency-Key": "message-1"},
@@ -31,6 +39,13 @@ def test_thread_message_run_and_event_flow(tmp_path):
         assert message.status_code == 201
         run_id = message.json()["run_id"]
         assert message.json()["status"] == "queued"
+
+        archived = client.post(f"/api/v1/threads/{thread_id}/archive")
+        assert archived.status_code == 200
+        assert archived.json()["archived"] is True
+        blocked = client.post(f"/api/v1/threads/{thread_id}/messages", json={"content": "new"})
+        assert blocked.status_code == 409
+        assert blocked.json()["code"] == "THREAD_ARCHIVED"
 
         duplicate = client.post(
             f"/api/v1/threads/{thread_id}/messages",

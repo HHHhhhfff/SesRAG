@@ -22,6 +22,7 @@ from backend.infrastructure.providers.factory import providers_for_snapshot
 from backend.infrastructure.providers.mock import MockEmbeddingProvider
 from backend.infrastructure.providers.openai_compatible import OpenAICompatibleProvider
 from backend.infrastructure.queue.adapter import PostgresQueue
+from backend.infrastructure.queue.postgres_queue import acknowledge_cancellation
 from backend.infrastructure.rag.parsers import SubprocessParser
 from backend.infrastructure.rag.pgvector_store import PgVectorStore
 from backend.workers.handlers.index_handler import process_index_task
@@ -238,6 +239,7 @@ class WorkerRuntime:
                 stop_sensitive=True,
             )
             if not running:
+                await self._ack_cancel(task)
                 self.log("reject", task, "LEASE_LOST")
                 return True
         except ExecutionStopped:
@@ -259,6 +261,7 @@ class WorkerRuntime:
             await execution
             self.log("success", task)
         except (ExecutionStopped, asyncio.CancelledError):
+            await self._ack_cancel(task)
             self.log("reject", task, "EXECUTION_STOPPED")
         except Exception as exc:
             code = (
@@ -281,6 +284,18 @@ class WorkerRuntime:
         finally:
             await self._cancel_tasks(lease, stop, execution)
         return True
+
+    async def _ack_cancel(self, task):
+        if task.kind != "run":
+            return
+        try:
+            await self._database(
+                lambda session: acknowledge_cancellation(
+                    session, task.task_id, task.worker_id, task.generation
+                )
+            )
+        except Exception:
+            self.log("reject", task, "CANCEL_ACK_UNAVAILABLE")
 
     async def _lease_heartbeat(self, task, execution):
         while True:

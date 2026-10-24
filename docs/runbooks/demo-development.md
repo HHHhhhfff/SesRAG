@@ -187,7 +187,41 @@ curl --fail --silent --show-error http://localhost:8000/health/live
 curl --fail --silent --show-error http://localhost:8000/health/ready
 ```
 
-浏览器访问前端 `http://localhost:5173`，API 文档为 `http://localhost:8000/docs`。Compose 使用 PostgreSQL `pgvector/pgvector:pg16`、Redis、一次性迁移服务、API、Worker 和前端；数据库数据保存在 `postgres_data`，上传文件保存在 `uploads` named volume。
+浏览器访问前端 `http://localhost:5173`，API 文档为 `http://localhost:8000/docs`。Compose 使用 PostgreSQL `pgvector/pgvector:pg16`、Redis、一次性迁移服务、API、Worker 和前端；数据库数据保存在 `postgres_data`，上传文件保存在 `uploads` named volume。v0.2 工作台通过 v2 会话接口提供 Thread/Branch/Model/Run/Context 行为，文本文档上传和索引继续使用 v1 接口。迁移会创建 `mock-default` 与 `mock-small` 两个 Mock ModelProfile，离线对话无需外部凭据。
+
+### 可选：导入自定义 ModelProfile
+
+只有需要真实 OpenAI-compatible Provider 或自定义预算时才需要此步骤。先准备一份本机未跟踪的 Profile JSON 数组；字段格式可参考 `docker/model-profiles.example.json`，并为目标 Provider 设置 `provider_kind`、模型/预算、Tokenizer 参数及受信 `config_ref`，例如 `env:MODEL_API_KEY`。JSON 中只能写环境变量别名，不能写 API Key。真实 Key 放在被 Git 忽略的 `.env` 中 `MODEL_API_KEY` 字段。
+
+Windows PowerShell 7.4+：
+
+```powershell
+$apiId = docker compose ps -q api
+if (-not $apiId) { throw 'API 容器未运行' }
+docker cp .\my-model-profiles.json "${apiId}:/tmp/my-model-profiles.json"
+if ($LASTEXITCODE -ne 0) { throw '复制 Profile 文件失败' }
+docker compose exec -T api python -m backend.tools.sync_model_profiles /tmp/my-model-profiles.json
+if ($LASTEXITCODE -ne 0) { throw 'Profile 导入失败；检查版本冲突和配置字段' }
+docker compose exec -T api rm -f /tmp/my-model-profiles.json
+if ($LASTEXITCODE -ne 0) { throw '临时 Profile 文件未能删除' }
+```
+
+Linux Bash：
+
+```bash
+set -euo pipefail
+api_id="$(docker compose ps -q api)"
+test -n "$api_id" || { echo 'API 容器未运行' >&2; exit 1; }
+docker cp ./my-model-profiles.json "$api_id:/tmp/my-model-profiles.json"
+docker compose exec -T api python -m backend.tools.sync_model_profiles /tmp/my-model-profiles.json
+docker compose exec -T api rm -f /tmp/my-model-profiles.json
+```
+
+同一 `profile_id + version` 的相同配置可重放；同版本配置变化会被拒绝，须提升版本。若新增或修改 `.env` 中的运行时Secret，Compose `restart` 不会重新注入容器环境变量；应执行 `docker compose up -d --no-deps --force-recreate api worker`，同时更新API的Profile可用性检查与Worker的运行期凭据。已创建Run仍使用冻结的非Secret参数，不冻结Key值。不要将Secret写入Profile JSON、RunSnapshot、Event、浏览器状态或日志。
+
+v2的生成模型由数据库ModelProfile选择；`MOCK_PROVIDER`仍决定文档索引/检索的固定Embedding模式和legacy生成配置。仅新增真实生成Profile时，可以保留`MOCK_PROVIDER=true`与现有Mock Embedding空间，只向API/Worker注入该Profile引用的Key。不要为了切换生成模型同时更换Embedding空间；真实Embedding必须保持与已建索引相同的模型/384维配置，其地址、模型、kind和Secret alias在新Run的retrieval快照中固定。现有知识库更换Embedding空间并重建索引不在本轮范围。
+
+当前镜像明确预备的真实tokenizer为`cl100k_base`。其他encoding即使SDK认识，也不自动视为本项目镜像已支持；缺失/损坏缓存或未支持的encoding会使Profile不可用，API/Worker不会现场下载词表。宿主开发工具安装后可在准备阶段显式执行`.\.venv\Scripts\python.exe -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"`预热；容器由Dockerfile构建步骤预热，缺资产时应修复/重建镜像，而非在会话执行期间下载。
 
 ## 主流程验收
 
@@ -223,7 +257,7 @@ docker compose down -v
 
 ## 数据库升级和安全回退
 
-当前迁移链为 `0001_initial_demo -> 0002_demo_integrity -> 0003_chunk_locations`；以仓库的 `migrations/versions/` 为准。数据库升级必须在维护窗口执行，顺序为：记录当前 revision、停止会写数据库的 API/Worker（并停止前端入口）、确认服务已停止、创建并校验备份、执行迁移、核对 revision 和健康状态。**不要在 API/Worker 仍运行时创建本次升级用的备份**，否则备份期间仍可能继续提交新事实。数据库备份包含业务表数据，但不包含 `uploads` named volume 中的原始文件；它不是完整应用备份。备份文件放在仓库外并按敏感数据保护。
+当前迁移链为 `0001_initial_demo -> 0002_demo_integrity -> 0003_chunk_locations -> 0004_v2_session_branches -> 0005_v2_profiles_context -> 0006_v2_run_guards`；以仓库 `migrations/versions/` 和 `alembic heads` 的实际输出为准。数据库升级必须在维护窗口执行，顺序为：记录当前 revision、停止会写数据库的 API/Worker（并停止前端入口）、确认服务已停止、创建并校验备份、执行迁移、核对 revision 和健康状态。**不要在 API/Worker 仍运行时创建本次升级用的备份**，否则备份期间仍可能继续提交新事实。数据库备份包含业务表数据，但不包含 `uploads` named volume 中的原始文件；它不是完整应用备份。备份文件放在仓库外并按敏感数据保护。
 
 ### 开始维护窗口并停止写入
 
@@ -325,7 +359,7 @@ docker compose logs --tail=100 migrate api worker
 
 `upgrade head` 失败时保留日志和备份，不要启动新 API/Worker 或手工改 `alembic_version`。检查失败原因及数据冲突后决定修复数据、回退代码或恢复备份。`docker compose run --rm` 执行的是一次性迁移容器；之后的 `up -d --build` 可能因镜像变化再次运行 Compose 的 `migrate` 服务，Alembic 已在 head 时再次执行 `upgrade head` 是幂等的。最终以迁移容器退出码、`alembic current` 和服务健康状态为准。
 
-当前仓库的预期 head 是 `0003_chunk_locations`；以后新增 revision 时，应以 `docker compose run --rm migrate alembic heads` 的实际输出核对。再次 `upgrade head` 不应重复改动已在 head 的数据库。
+当前仓库的预期 head 是 `0006_v2_run_guards`，迁移链包含 `0004_v2_session_branches`、`0005_v2_profiles_context` 和 `0006_v2_run_guards`；以后新增 revision 时，应以 `docker compose run --rm migrate alembic heads` 的实际输出核对。再次 `upgrade head` 不应重复改动已在 head 的数据库。
 
 ### 回退迁移和应用代码
 
@@ -341,7 +375,7 @@ docker compose build migrate
 if ($LASTEXITCODE -ne 0) { throw '构建当前迁移镜像失败；不要继续回退' }
 docker compose run --rm migrate alembic current
 if ($LASTEXITCODE -ne 0) { throw '无法确认当前 revision；不要继续回退' }
-docker compose run --rm migrate alembic downgrade 0002_demo_integrity
+docker compose run --rm migrate alembic downgrade 0003_chunk_locations
 if ($LASTEXITCODE -ne 0) {
     docker compose logs --no-color migrate
     throw '迁移降级失败；保持业务服务停止并检查日志'
@@ -357,7 +391,7 @@ set -euo pipefail
 docker compose stop api worker frontend
 docker compose build migrate
 docker compose run --rm migrate alembic current
-if ! docker compose run --rm migrate alembic downgrade 0002_demo_integrity; then
+if ! docker compose run --rm migrate alembic downgrade 0003_chunk_locations; then
     docker compose logs --no-color migrate
     echo '迁移降级失败；保持业务服务停止并检查日志' >&2
     exit 1
@@ -372,7 +406,7 @@ docker compose up -d --build
 docker compose ps -a
 ```
 
-本迁移链中 `0003_chunk_locations` 的 downgrade 保留 `locations_json` 列和已有证据位置；`0002_demo_integrity` 的 downgrade 移除约束并将来源列改为可空，但保留来源值。降级不会恢复被新应用语义修改的数据。降到 `base` 会触发 `0001_initial_demo` 删除业务表；当前迁移会拒绝非空库，不能用它做常规回退。
+本例只回到 v0.1 兼容 head `0003_chunk_locations`，保留 `locations_json` 列和已有证据位置。v2 迁移会在发现 v2 Thread/Run/Branch/SessionOperation、多 Run 输入、非默认自定义 Profile 等不可逆事实时于破坏前拒绝 downgrade；此时应向前修复或恢复备份，不能手工删除事实绕过保护。更早的 `0002_demo_integrity` downgrade 会移除约束并将来源列改为可空，但保留来源值；降到 `base` 会触发 `0001_initial_demo` 删除业务表，不能用作常规回退。
 
 ### 从备份恢复数据库
 

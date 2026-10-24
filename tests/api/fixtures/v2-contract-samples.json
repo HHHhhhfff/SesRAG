@@ -1,0 +1,425 @@
+{
+  "fixture_version": "api-v2-contract-samples-v1",
+  "thread": {
+    "thread_id": "10000000-0000-4000-8000-000000000001",
+    "owner_id": "contract-fixture-owner",
+    "title": "合成契约样本",
+    "default_branch_id": "10000000-0000-4000-8000-000000000002",
+    "conversation_version": 2,
+    "archived_at": null,
+    "created_at": "2026-10-22T00:00:00Z",
+    "updated_at": "2026-10-22T00:00:00Z"
+  },
+  "branch": {
+    "branch_id": "10000000-0000-4000-8000-000000000002",
+    "thread_id": "10000000-0000-4000-8000-000000000001",
+    "parent_branch_id": null,
+    "fork_message_id": null,
+    "name": "默认分支",
+    "is_default": true,
+    "head_message_id": "10000000-0000-4000-8000-000000000003",
+    "version": 1,
+    "created_at": "2026-10-22T00:00:00Z",
+    "updated_at": "2026-10-22T00:00:00Z"
+  },
+  "message": {
+    "message_id": "10000000-0000-4000-8000-000000000003",
+    "thread_id": "10000000-0000-4000-8000-000000000001",
+    "branch_id": "10000000-0000-4000-8000-000000000002",
+    "seq": 3,
+    "role": "user",
+    "source": "user_input",
+    "content": "当前合成问题",
+    "status": "completed",
+    "run_id": "10000000-0000-4000-8000-000000000005",
+    "citations": [],
+    "created_at": "2026-10-22T00:00:00Z"
+  },
+  "summary": {
+    "summary_id": "10000000-0000-4000-8000-000000000007",
+    "thread_id": "10000000-0000-4000-8000-000000000001",
+    "branch_id": "10000000-0000-4000-8000-000000000002",
+    "covered_message_ids": [
+      "10000000-0000-4000-8000-000000000004"
+    ],
+    "from_seq": 1,
+    "to_seq": 1,
+    "source_hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    "source_segments": [
+      {
+        "message_id": "10000000-0000-4000-8000-000000000004",
+        "start_offset": 0,
+        "end_offset": 3
+      }
+    ],
+    "summary_policy_version": "trim_then_extract_v1",
+    "source_run_id": "10000000-0000-4000-8000-000000000013",
+    "created_at": "2026-10-22T00:00:00Z"
+  },
+  "context_summary": {
+    "context_plan_id": "10000000-0000-4000-8000-000000000008",
+    "generation": 1,
+    "attempt": 1,
+    "status": "ready",
+    "estimated_input_tokens": 128,
+    "reserved_output_tokens": 1024,
+    "safety_margin_tokens": 128,
+    "context_window_tokens": 8192,
+    "selected_message_count": 1,
+    "omitted_message_count": 1,
+    "summary_count": 1
+  },
+  "context_plan": {
+    "context_plan_id": "10000000-0000-4000-8000-000000000008",
+    "run_id": "10000000-0000-4000-8000-000000000005",
+    "task_id": "10000000-0000-4000-8000-000000000006",
+    "generation": 1,
+    "attempt": 1,
+    "thread_id": "10000000-0000-4000-8000-000000000001",
+    "branch_id": "10000000-0000-4000-8000-000000000002",
+    "anchor_message_id": "10000000-0000-4000-8000-000000000003",
+    "selected_message_ids": [
+      "10000000-0000-4000-8000-000000000003"
+    ],
+    "omitted_messages": [
+      {
+        "message_id": "10000000-0000-4000-8000-000000000004",
+        "reason": "summarized"
+      }
+    ],
+    "omitted_ranges": [
+      {
+        "from_seq": 1,
+        "to_seq": 1,
+        "count": 1,
+        "reason": "summarized"
+      }
+    ],
+    "summaries": [
+      {
+        "summary_id": "10000000-0000-4000-8000-000000000007",
+        "thread_id": "10000000-0000-4000-8000-000000000001",
+        "branch_id": "10000000-0000-4000-8000-000000000002",
+        "covered_message_ids": [
+          "10000000-0000-4000-8000-000000000004"
+        ],
+        "from_seq": 1,
+        "to_seq": 1,
+        "source_hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "source_segments": [
+          {
+            "message_id": "10000000-0000-4000-8000-000000000004",
+            "start_offset": 0,
+            "end_offset": 3
+          }
+        ],
+        "summary_policy_version": "trim_then_extract_v1",
+        "source_run_id": "10000000-0000-4000-8000-000000000013",
+        "created_at": "2026-10-22T00:00:00Z"
+      }
+    ],
+    "selected_evidence": [
+      {
+        "document_id": "10000000-0000-4000-8000-000000000009",
+        "chunk_id": "10000000-0000-4000-8000-000000000010",
+        "index_batch_id": "10000000-0000-4000-8000-000000000011",
+        "locations": [
+          {
+            "kind": "line",
+            "number": 1,
+            "start_offset": 0,
+            "end_offset": 3
+          }
+        ],
+        "start_offset": 0,
+        "end_offset": 3,
+        "score": 0.75,
+        "content_hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+      }
+    ],
+    "trim_policy_version": "trim_then_extract_v1",
+    "counter_version": "fixture-counter-v1",
+    "status": "ready",
+    "estimated_input_tokens": 128,
+    "reserved_output_tokens": 1024,
+    "safety_margin_tokens": 128,
+    "context_window_tokens": 8192,
+    "created_at": "2026-10-22T00:00:00Z"
+  },
+  "run": {
+    "run_id": "10000000-0000-4000-8000-000000000005",
+    "thread_id": "10000000-0000-4000-8000-000000000001",
+    "branch_id": "10000000-0000-4000-8000-000000000002",
+    "user_message_id": "10000000-0000-4000-8000-000000000003",
+    "assistant_message_id": null,
+    "parent_run_id": null,
+    "operation_kind": "initial",
+    "execution_schema_version": 2,
+    "status": "running",
+    "created_at": "2026-10-22T00:00:00Z",
+    "updated_at": "2026-10-22T00:00:00Z",
+    "legacy": false,
+    "model_profile_id": "mock-default",
+    "model_profile_version": 1,
+    "model": {
+      "profile_id": "mock-default",
+      "version": 1,
+      "display_name": "Mock 普通上下文",
+      "provider_kind": "mock",
+      "model_name": "mock",
+      "context_window_tokens": 8192,
+      "max_output_tokens": 1024
+    },
+    "snapshot": {
+      "schema_version": 2,
+      "prompt_version": "fixture-prompt-v2",
+      "context_policy_version": "trim_then_extract_v1",
+      "summary_policy_version": "trim_then_extract_v1",
+      "counter_version": "fixture-counter-v1",
+      "context_window_tokens": 8192,
+      "reserved_output_tokens": 1024,
+      "safety_margin_tokens": 128,
+      "retrieval_enabled": true,
+      "retrieval_top_k": 5,
+      "embedding_dimensions": 384
+    },
+    "context_plan": {
+      "context_plan_id": "10000000-0000-4000-8000-000000000008",
+      "generation": 1,
+      "attempt": 1,
+      "status": "ready",
+      "estimated_input_tokens": 128,
+      "reserved_output_tokens": 1024,
+      "safety_margin_tokens": 128,
+      "context_window_tokens": 8192,
+      "selected_message_count": 1,
+      "omitted_message_count": 1,
+      "summary_count": 1
+    },
+    "task": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "kind": "run",
+      "state": "running",
+      "attempt": 1,
+      "worker_id": "fixture-worker",
+      "generation": 1,
+      "lease_expires_at": "2026-10-22T00:00:30Z",
+      "last_error_code": null
+    },
+    "last_error_code": null,
+    "cancel_requested_at": null
+  },
+  "legacy_run": {
+    "run_id": "10000000-0000-4000-8000-000000000005",
+    "thread_id": "10000000-0000-4000-8000-000000000001",
+    "branch_id": "10000000-0000-4000-8000-000000000002",
+    "user_message_id": "10000000-0000-4000-8000-000000000003",
+    "assistant_message_id": null,
+    "parent_run_id": null,
+    "operation_kind": "initial",
+    "execution_schema_version": 1,
+    "status": "running",
+    "created_at": "2026-10-22T00:00:00Z",
+    "updated_at": "2026-10-22T00:00:00Z",
+    "legacy": true,
+    "model_profile_id": null,
+    "model_profile_version": null,
+    "model": null,
+    "snapshot": null,
+    "context_plan": null,
+    "task": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "kind": "run",
+      "state": "running",
+      "attempt": 1,
+      "worker_id": "fixture-worker",
+      "generation": 1,
+      "lease_expires_at": "2026-10-22T00:00:30Z",
+      "last_error_code": null
+    },
+    "last_error_code": null,
+    "cancel_requested_at": null
+  },
+  "event_payloads": {
+    "run.created": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 0,
+      "generation": 0,
+      "message_id": "10000000-0000-4000-8000-000000000003",
+      "branch_id": "10000000-0000-4000-8000-000000000002",
+      "operation_kind": "initial"
+    },
+    "task.queued": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 0,
+      "generation": 0
+    },
+    "task.leased": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "worker_id": "fixture-worker"
+    },
+    "run.started": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1
+    },
+    "retrieval.completed": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "count": 1,
+      "items": [
+        {
+          "document_id": "10000000-0000-4000-8000-000000000009",
+          "chunk_id": "10000000-0000-4000-8000-000000000010",
+          "index_batch_id": "10000000-0000-4000-8000-000000000011",
+          "locations": [
+            {
+              "kind": "line",
+              "number": 1,
+              "start_offset": 0,
+              "end_offset": 3
+            }
+          ],
+          "start_offset": 0,
+          "end_offset": 3,
+          "score": 0.75
+        }
+      ]
+    },
+    "answer.delta": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "text": "合成增量"
+    },
+    "task.retry_scheduled": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "error_code": "PROVIDER_TIMEOUT"
+    },
+    "message.completed": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "message_id": "10000000-0000-4000-8000-000000000012",
+      "citations": [
+        {
+          "document_id": "10000000-0000-4000-8000-000000000009",
+          "chunk_id": "10000000-0000-4000-8000-000000000010",
+          "index_batch_id": "10000000-0000-4000-8000-000000000011",
+          "locations": [
+            {
+              "kind": "line",
+              "number": 1,
+              "start_offset": 0,
+              "end_offset": 3
+            }
+          ],
+          "start_offset": 0,
+          "end_offset": 3,
+          "score": 0.75,
+          "filename": "fixture.txt"
+        }
+      ]
+    },
+    "run.succeeded": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "message_id": "10000000-0000-4000-8000-000000000012"
+    },
+    "run.failed": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 0,
+      "generation": 0,
+      "error_code": "MODEL_STREAM_INVALID"
+    },
+    "run.cancelled": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 0,
+      "generation": 0,
+      "reason": "user_requested"
+    },
+    "context.planned": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "plan": {
+        "context_plan_id": "10000000-0000-4000-8000-000000000008",
+        "generation": 1,
+        "attempt": 1,
+        "status": "ready",
+        "estimated_input_tokens": 128,
+        "reserved_output_tokens": 1024,
+        "safety_margin_tokens": 128,
+        "context_window_tokens": 8192,
+        "selected_message_count": 1,
+        "omitted_message_count": 1,
+        "summary_count": 1
+      },
+      "omitted_ranges": [
+        {
+          "from_seq": 1,
+          "to_seq": 1,
+          "count": 1,
+          "reason": "summarized"
+        }
+      ],
+      "summary_ids": [
+        "10000000-0000-4000-8000-000000000007"
+      ]
+    },
+    "context.compacted": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 1,
+      "generation": 1,
+      "summary": {
+        "summary_id": "10000000-0000-4000-8000-000000000007",
+        "thread_id": "10000000-0000-4000-8000-000000000001",
+        "branch_id": "10000000-0000-4000-8000-000000000002",
+        "covered_message_ids": [
+          "10000000-0000-4000-8000-000000000004"
+        ],
+        "from_seq": 1,
+        "to_seq": 1,
+        "source_hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "source_segments": [
+          {
+            "message_id": "10000000-0000-4000-8000-000000000004",
+            "start_offset": 0,
+            "end_offset": 3
+          }
+        ],
+        "summary_policy_version": "trim_then_extract_v1",
+        "source_run_id": "10000000-0000-4000-8000-000000000013",
+        "created_at": "2026-10-22T00:00:00Z"
+      }
+    },
+    "run.cancelling": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 0,
+      "generation": 0,
+      "reason": "user_requested"
+    },
+    "run.retry_created": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 0,
+      "generation": 0,
+      "parent_run_id": "10000000-0000-4000-8000-000000000013",
+      "branch_id": "10000000-0000-4000-8000-000000000002",
+      "user_message_id": "10000000-0000-4000-8000-000000000003"
+    },
+    "run.regenerated": {
+      "task_id": "10000000-0000-4000-8000-000000000006",
+      "attempt": 0,
+      "generation": 0,
+      "parent_run_id": "10000000-0000-4000-8000-000000000013",
+      "branch_id": "10000000-0000-4000-8000-000000000002",
+      "user_message_id": "10000000-0000-4000-8000-000000000003"
+    }
+  }
+}

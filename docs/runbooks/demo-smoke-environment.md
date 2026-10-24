@@ -10,7 +10,7 @@
 pwsh -NoProfile -File tests/demo-smoke/run-demo-smoke.ps1
 ```
 
-入口构建、等待就绪、按21分类manifest执行、收集报告、销毁资源。当前产品缺陷会failed，未满足完整条件的子项会blocked（顶层enabled分类归failed），不可改退出码强行通过。报告在artifacts/run_id，密码只在runtime且正常结束删除；脚本映射/限制和试跑证据见[任务3～4记录](../../tests/demo-smoke/任务3-4实施与审批记录.md)。
+入口构建、等待就绪、按26分类manifest（21个v0.1回归类及5个v0.2类）执行、收集报告、销毁资源。当前产品缺陷会failed，未满足完整条件的子项会blocked（顶层enabled分类归failed），不可改退出码强行通过。报告在artifacts/run_id，密码只在runtime且正常结束删除；脚本映射/限制和试跑证据见[测试环境README](../../tests/demo-smoke/README.md)及[TEST-002](../test/002-SesRAG-持久化会话与对话工作台-test-plan.md)。
 
 2026-10-07已复核工具与总入口，见[任务1～任务2记录](../../tests/demo-smoke/任务1-2准备与审批记录.md)。当前分类执行和中文详细摘要均需要本机Node24.15+的24.x或26+（不支持25），Python工具用项目.venv/Python3.12；产品frontend容器仍Node20。任务1～2历史记录的仅环境启动条件不能替代当前完整入口依赖。重装及工具探针见[tooling](../../tests/demo-smoke/tooling/README.md)。当前没有需要导入的全局业务SQL，Schema与空库由迁移准备；各用例经API独立创建数据。
 
@@ -47,6 +47,6 @@ ADR002 Task5d增加`process-resources.json`、`frontend-resources.json`和`execu
 
 固定故障`compose-config-failure`、`migration-failure`、`real-db-probe-failure`、`worker-readiness-timeout`、`frontend-readiness-timeout`、`redis-strict`必须阻断分类；`redis-cold`专用降级仍要求PG/head/vector/API/前端及真实Run完成，健康Worker unknown/0不被伪改ready。`cleanup-failure`/`cleanup-share-read`使用本次runtime真实None/Read共享锁；可读不代表可删除。删除前原子保存`runtime/<run_id>-recovery.json`固定白名单恢复胶囊，删除失败保留并恢复缺失材料，最后胶囊删除失败也非零；它含凭据，不得复制到artifact/日志。CleanupRunId严格校验并可恢复仅剩胶囊的情况。`hard-kill-recovery`在真实浏览器/SSE/Worker屏障后终止父runner树，随后独立CleanupRunId；硬杀没有自动finally，Windows可捕获Ctrl+C当前仍无可靠注入工具，独立保留blocked。
 
-主入口必须由shell=false包装记录实际child close码与summary一致（硬杀没有summary应明确记录）。LIFE机器可读逐项预算15000秒含特殊nested-recovery420及失败finally，21分类合计59070秒；独立QLT21600包括缺报告时真实调用17220秒依赖分类上限，普通all已有完整分类时QLT消费本run报告。默认部署/常规主清理额外3600秒的分解见工具README；最坏16个遗留nested恢复再加3840秒，默认包装59070+7440=66510秒，自定义build/wait/session增加差额。此为有限操作/工程预留，不声称覆盖无上限资源数或磁盘阻塞；具体冻结预算由最终验收负责人设置，不使用无限wait。
+主入口必须由shell=false包装记录实际child close码与summary一致（硬杀没有summary应明确记录）。LIFE机器可读逐项预算15000秒含特殊nested-recovery420及失败finally；26分类manifest timeout 合计74070秒。独立QLT上限30000秒，缺报告时最多串行补跑旧分类17220秒和五个v2分类6600秒；普通all已有完整分类报告时QLT消费本run证据。默认部署/常规主清理额外3600秒的分解见工具README；最坏16个遗留nested恢复再加3840秒，默认包装74070+7440=81510秒，自定义build/wait/session增加差额。此为有限操作/工程预留，不声称覆盖无上限资源数或磁盘阻塞；不使用无限wait。
 
 每次容器写层、容器日志、PG/uploads/Redis匿名卷及运行tmp/runtime都应释放，本次唯一镜像tag也应消失。共享基础镜像、BuildKit缓存、Playwright安装和默认保留的脱敏artifact不是本次业务数据残留；长期由用户按需要管理这些缓存/报告，不自动全局删除。Docker虚拟磁盘文件未立即变小不能单独判残留，先核对Docker资源和项目目录证据。

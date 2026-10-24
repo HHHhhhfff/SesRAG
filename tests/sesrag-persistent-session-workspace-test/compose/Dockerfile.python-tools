@@ -1,0 +1,11 @@
+ARG APP_IMAGE
+FROM ${APP_IMAGE}
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app:/suite
+WORKDIR /suite
+
+COPY tests/sesrag-persistent-session-workspace-test/requirements-tools.txt /suite/requirements-tools.txt
+RUN pip install --no-cache-dir -r /suite/requirements-tools.txt
+COPY tests/sesrag-persistent-session-workspace-test /suite
+
+CMD ["python", "-m", "http.server", "8080"]

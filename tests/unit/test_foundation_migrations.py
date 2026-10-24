@@ -96,6 +96,7 @@ def test_downgraded_old_writer_can_create_message_and_reupgrade_source():
                 "CURRENT_TIMESTAMP)"
             )
         )
+        connection.execute(text("UPDATE threads SET next_message_seq=2 WHERE thread_id='thread'"))
         migrate(connection, "upgrade", "head")
         assert (
             connection.execute(

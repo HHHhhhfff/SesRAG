@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/branch_v2.json",
+  "title": "Branch",
+  "type": "object",
+  "required": ["branch_id", "thread_id", "parent_branch_id", "fork_message_id", "name", "is_default", "head_message_id", "version", "created_at", "updated_at"],
+  "properties": {
+    "branch_id": {"type": "string", "minLength": 1},
+    "thread_id": {"type": "string", "minLength": 1},
+    "parent_branch_id": {"type": ["string", "null"], "minLength": 1},
+    "fork_message_id": {"type": ["string", "null"], "minLength": 1},
+    "name": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+    "is_default": {"type": "boolean"},
+    "head_message_id": {"type": ["string", "null"], "minLength": 1},
+    "version": {"type": "integer", "minimum": 0},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "if": {"properties": {"parent_branch_id": {"type": "null"}}},
+  "then": {"properties": {"fork_message_id": {"type": "null"}}},
+  "else": {"properties": {"fork_message_id": {"type": "string"}}},
+  "additionalProperties": false
+}

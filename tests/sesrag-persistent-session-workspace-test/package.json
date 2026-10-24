@@ -1,0 +1,19 @@
+{
+  "name": "sesrag-persistent-session-workspace-test",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test tooling/*.test.mjs",
+    "preflight": "node tooling/preflight.mjs",
+    "browser:self-test": "node tooling/preflight.mjs --browser-self-test"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "playwright": "1.64.1"
+  }
+}

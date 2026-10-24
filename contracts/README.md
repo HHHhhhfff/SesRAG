@@ -12,5 +12,11 @@
 
 前端类型生成入口为 `frontend/scripts/generate-api-types.mjs`，使用项目 Node 标准库：`npm run generate:api --prefix frontend` 生成，`npm run check:api --prefix frontend` 只读比较并在漂移时非零退出。不得手工维护 `frontend/src/types/api.ts` 第二套字段。生成器支持仓库使用的引用、定义、联合、对象、数组与标量，未知结构失败；数值范围、format 等运行时约束仍由 JSON Schema 动态验证，TypeScript 不替代该门禁。
 
-ADR-002 Task5d 接入所有 HTTP route/status 动态矩阵、Event payload 联合和生成漂移负哨兵；retrieval 的身份 DTO 不等于完整带 filename 的 Citation。请求校验 422 保留 detail 数组，每项仅允许安全 type/loc 和固定 msg="请求参数校验失败"，禁止 input/ctx/url 和原始输入值；前端只展示稳定错误码和固定摘要。业务 ApplicationError 保留 ErrorResponse。
+Demo基础修复（历史ADR-001）Task5d 接入所有 HTTP route/status 动态矩阵、Event payload 联合和生成漂移负哨兵；retrieval 的身份 DTO 不等于完整带 filename 的 Citation。请求校验 422 保留 detail 数组，每项仅允许安全 type/loc 和固定 msg="请求参数校验失败"，禁止 input/ctx/url 和原始输入值；前端只展示稳定错误码和固定摘要。业务 ApplicationError 保留 ErrorResponse。
+
+ADR-002 Task1 新增八份独立 v2 契约：`thread_v2`（协议代际和默认分支）、`branch_v2`（父/分叉/head/version）、`message_v2`（不可变创建分支/Run）、`run_v2`（输入复用/来源/安全快照与计划摘要）、`model_profile_v2`（安全模型选项/版本）、`context_plan_v2`（有界上下文和摘要来源元数据）、`run_event_v2`（schema1直接引用+严格schema2联合）、`api_responses_v2`（请求、分页包装及复用的错误）。完整字段、15条v2路由与状态见 [正式接口文档 §7](../docs/接口文档.md#7-adr-002-v2-契约基线)。业务已接线；当前验收结果见本轮测试报告，契约静态校验不替代动态验收。
+
+默认 generate/check 同时维护 `frontend/src/types/api.ts` 和 `api-v2.ts`。原 `--output <path>` 仍只生成 v1 临时产物；`--version v2 --output <path>` 生成 v2，`--version v1|v2 --check` 可分代只读检查。CRLF/LF归一化后比较，真实字段差异失败。v2 显式 import/别名复用 v1 Citation、RetrievalItem、TaskSummary和LegacyRunEvent；v1 JSON及公开导出冻结。
+
+聚焦验证（仓库根，先按Runbook安装项目dev依赖）：`.venv/Scripts/python.exe -m pytest tests/api/test_v2_schemas.py -q`；Windows以外使用`.venv/bin/python`。独立字面样本为 `tests/api/fixtures/v2-contract-samples.json`，覆盖schema2事件及legacy分支；消费测试为 `tests/api/test_v2_schemas.py`。本轮完整质量命令由 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories quality` 执行；不得调用已删除的旧Demo工具。
 

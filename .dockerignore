@@ -20,3 +20,9 @@ tests/demo-smoke/tmp
 tests/demo-smoke/node_modules
 tests/demo-smoke/.cache
 tests/demo-smoke/compose/.env.demo-smoke.local
+tests/sesrag-persistent-session-workspace-test/runtime
+tests/sesrag-persistent-session-workspace-test/artifacts
+tests/sesrag-persistent-session-workspace-test/tmp
+tests/sesrag-persistent-session-workspace-test/node_modules
+tests/sesrag-persistent-session-workspace-test/.cache
+tests/sesrag-persistent-session-workspace-test/compose/.env.workspace-test.local

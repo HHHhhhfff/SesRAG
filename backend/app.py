@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from importlib.metadata import version
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -7,6 +8,9 @@ from sqlalchemy.exc import InterfaceError, OperationalError
 from sqlalchemy.exc import TimeoutError as DatabaseTimeoutError
 
 from backend.api.routes import documents, health, runs, threads
+from backend.api.routes.v2 import models as models_v2
+from backend.api.routes.v2 import runs as runs_v2
+from backend.api.routes.v2 import threads as threads_v2
 from backend.application.errors import ApplicationError
 from backend.config import Settings
 from backend.db.base import Base
@@ -33,7 +37,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await notifier.close()
             await engine.dispose()
 
-    app = FastAPI(title="SesRAG", version="0.1.0", lifespan=lifespan)
+    # 发布版本从安装包元数据读取；不与HTTP路径或Event schema版本混用。
+    app = FastAPI(title="SesRAG", version=version("sesrag"), lifespan=lifespan)
     app.state.settings = app_settings
     app.state.engine = engine
     app.state.session_factory = session_factory
@@ -104,6 +109,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(threads.router)
+    app.include_router(threads_v2.router)
+    app.include_router(models_v2.router)
+    app.include_router(runs_v2.router)
     app.include_router(runs.router)
     app.include_router(documents.router)
     return app

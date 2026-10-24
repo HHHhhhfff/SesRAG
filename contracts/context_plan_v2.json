@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/context_plan_v2.json",
+  "title": "ContextPlan",
+  "$defs": {
+    "MessageRange": {
+      "type": "object", "required": ["from_seq", "to_seq", "count", "reason"],
+      "properties": {
+        "from_seq": {"type": "integer", "minimum": 1}, "to_seq": {"type": "integer", "minimum": 1},
+        "count": {"type": "integer", "minimum": 1},
+        "reason": {"enum": ["outside_candidate_window", "budget_trimmed", "summarized"]}
+      }, "additionalProperties": false
+    },
+    "OmittedMessage": {
+      "type": "object", "required": ["message_id", "reason"],
+      "properties": {"message_id": {"type": "string", "minLength": 1}, "reason": {"enum": ["budget_trimmed", "summarized", "incomplete_turn"]}},
+      "additionalProperties": false
+    },
+    "SourceSegment": {
+      "type": "object", "required": ["message_id", "start_offset", "end_offset"],
+      "properties": {"message_id": {"type": "string", "minLength": 1}, "start_offset": {"type": "integer", "minimum": 0}, "end_offset": {"type": "integer", "minimum": 0}},
+      "additionalProperties": false
+    },
+    "SummaryMetadata": {
+      "type": "object", "required": ["summary_id", "thread_id", "branch_id", "covered_message_ids", "from_seq", "to_seq", "source_hash", "source_segments", "summary_policy_version", "source_run_id", "created_at"],
+      "properties": {
+        "summary_id": {"type": "string", "minLength": 1}, "thread_id": {"type": "string", "minLength": 1}, "branch_id": {"type": "string", "minLength": 1},
+        "covered_message_ids": {"type": "array", "maxItems": 200, "items": {"type": "string", "minLength": 1}},
+        "from_seq": {"type": "integer", "minimum": 1}, "to_seq": {"type": "integer", "minimum": 1},
+        "source_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "source_segments": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/SourceSegment"}},
+        "summary_policy_version": {"type": "string", "minLength": 1},
+        "source_run_id": {"type": "string", "minLength": 1}, "created_at": {"type": "string", "format": "date-time"}
+      }, "additionalProperties": false
+    },
+    "SelectedEvidence": {
+      "type": "object", "required": ["document_id", "chunk_id", "index_batch_id", "locations", "start_offset", "end_offset", "score", "content_hash"],
+      "properties": {
+        "document_id": {"type": "string"}, "chunk_id": {"type": "string"}, "index_batch_id": {"type": "string"},
+        "locations": {"type": "array", "items": {"$ref": "evidence_v1.json#/properties/locations/items"}},
+        "start_offset": {"type": "integer", "minimum": 0}, "end_offset": {"type": "integer", "minimum": 0}, "score": {"type": "number"},
+        "content_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }, "additionalProperties": false
+    },
+    "ContextPlanSummary": {
+      "type": "object", "required": ["context_plan_id", "generation", "attempt", "status", "estimated_input_tokens", "reserved_output_tokens", "safety_margin_tokens", "context_window_tokens", "selected_message_count", "omitted_message_count", "summary_count"],
+      "properties": {
+        "context_plan_id": {"type": "string", "minLength": 1}, "generation": {"type": "integer", "minimum": 1}, "attempt": {"type": "integer", "minimum": 1},
+        "status": {"enum": ["ready", "budget_exceeded"]},
+        "estimated_input_tokens": {"type": "integer", "minimum": 0}, "reserved_output_tokens": {"type": "integer", "minimum": 1},
+        "safety_margin_tokens": {"type": "integer", "minimum": 0}, "context_window_tokens": {"type": "integer", "minimum": 1},
+        "selected_message_count": {"type": "integer", "minimum": 0}, "omitted_message_count": {"type": "integer", "minimum": 0}, "summary_count": {"type": "integer", "minimum": 0}
+      }, "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": ["context_plan_id", "run_id", "task_id", "generation", "attempt", "thread_id", "branch_id", "anchor_message_id", "selected_message_ids", "omitted_messages", "omitted_ranges", "summaries", "selected_evidence", "trim_policy_version", "counter_version", "estimated_input_tokens", "reserved_output_tokens", "safety_margin_tokens", "context_window_tokens", "status", "created_at"],
+  "properties": {
+    "context_plan_id": {"type": "string", "minLength": 1}, "run_id": {"type": "string", "minLength": 1}, "task_id": {"type": "string", "minLength": 1},
+    "generation": {"type": "integer", "minimum": 1}, "attempt": {"type": "integer", "minimum": 1},
+    "thread_id": {"type": "string", "minLength": 1}, "branch_id": {"type": "string", "minLength": 1}, "anchor_message_id": {"type": "string", "minLength": 1},
+    "selected_message_ids": {"type": "array", "maxItems": 200, "items": {"type": "string", "minLength": 1}},
+    "omitted_messages": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/OmittedMessage"}},
+    "omitted_ranges": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/MessageRange"}},
+    "summaries": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/SummaryMetadata"}},
+    "selected_evidence": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/SelectedEvidence"}},
+    "trim_policy_version": {"type": "string", "minLength": 1}, "counter_version": {"type": "string", "minLength": 1},
+    "estimated_input_tokens": {"type": "integer", "minimum": 0}, "reserved_output_tokens": {"type": "integer", "minimum": 1},
+    "safety_margin_tokens": {"type": "integer", "minimum": 0}, "context_window_tokens": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["ready", "budget_exceeded"]}, "created_at": {"type": "string", "format": "date-time"}
+  }, "additionalProperties": false
+}

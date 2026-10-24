@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/schemas/run-context.schema.json",
+  "title": "SesRAG workspace test context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "environment_id", "category", "api_base_url", "frontend_base_url", "provider_control_url", "artifact_dir", "tmp_dir", "fixture_version", "expected_case_ids", "resource_helper"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "run_id": { "type": "string", "pattern": "^ws-[0-9]{8}t[0-9]{6}z-[a-f0-9]{8}$" },
+    "environment_id": { "type": "string", "minLength": 1 },
+    "category": { "type": "string", "minLength": 1 },
+    "api_base_url": { "type": "string", "format": "uri" },
+    "frontend_base_url": { "type": "string", "format": "uri" },
+    "provider_control_url": { "type": "string", "format": "uri" },
+    "artifact_dir": { "type": "string", "pattern": "^artifacts/[^/]+/" },
+    "tmp_dir": { "type": "string", "pattern": "^tmp/[^/]+/" },
+    "fixture_version": { "type": "string", "minLength": 1 },
+    "resource_helper": { "const": "tooling/orchestrator.mjs" },
+    "expected_case_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  }
+}

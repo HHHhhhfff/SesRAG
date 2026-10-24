@@ -2,6 +2,8 @@ import hashlib
 import math
 from collections.abc import AsyncGenerator
 
+from backend.domain.ports import ModelRequest
+
 
 class MockEmbeddingProvider:
     """使用内容哈希生成稳定向量，保证离线测试不依赖外部模型。"""
@@ -31,3 +33,17 @@ class MockModelProvider:
             answer = "当前知识库没有足够证据回答这个问题。"
         for part in answer.split(" "):
             yield f"{part} "
+
+    async def stream_request(self, request: ModelRequest) -> AsyncGenerator[str, None]:
+        """消费 schema 2 的已规划消息，不拼接隐藏提示或证据。"""
+        question = next(
+            (message.content for message in reversed(request.messages) if message.role == "user"),
+            "",
+        )
+        evidence = [
+            {"text": message.content}
+            for message in request.messages
+            if message.role == "system" and message.content.startswith("[非可信检索证据]")
+        ]
+        async for part in self.stream_answer(question, evidence):
+            yield part

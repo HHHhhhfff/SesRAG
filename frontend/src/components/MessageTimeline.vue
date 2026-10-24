@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import DOMPurify from 'dompurify'
-import { marked } from 'marked'
 import { ref } from 'vue'
-import type { Message } from '../types/api'
+import { renderMarkdown } from '../markdown/render'
+import type { Message } from '../types/api-v2'
 
-defineProps<{ messages: Message[] }>()
+defineProps<{ messages: Message[]; readonly?: boolean; hasMore?: boolean }>()
 const expanded = ref(new Set<string>())
+const emit = defineEmits<{ fork: [string]; older: [] }>()
 
 function toggle(key: string) {
   if (expanded.value.has(key)) expanded.value.delete(key)
   else expanded.value.add(key)
 }
 
-function renderMarkdown(value: string) {
-  return DOMPurify.sanitize(marked.parse(value) as string)
-}
 </script>
 
 <template>
   <div class="message-list">
+    <button
+      v-if="hasMore"
+      class="secondary-button"
+      type="button"
+      @click="emit('older')"
+    >
+      加载更早消息
+    </button>
     <article
       v-for="message in messages"
       :key="message.message_id"
@@ -27,6 +32,14 @@ function renderMarkdown(value: string) {
     >
       <div class="message-meta">
         {{ message.role === 'user' ? '你' : 'SesRAG' }}
+        <button
+          v-if="!readonly && !message.message_id.startsWith('projection-')"
+          class="text-action"
+          type="button"
+          @click="emit('fork', message.message_id)"
+        >
+          从此处分支
+        </button>
       </div>
       <div
         class="message-content"

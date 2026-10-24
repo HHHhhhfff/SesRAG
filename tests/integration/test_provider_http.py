@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 
 from backend.application.errors import ApplicationError
+from backend.domain.ports import ModelRequest, ModelRequestMessage
 from backend.infrastructure.providers import openai_compatible as module
 
 
@@ -36,7 +37,13 @@ def provider_server():
                 except (BrokenPipeError, ConnectionResetError):
                     pass
                 return
-            status = int(model[4:]) if model.startswith("http") else 200
+            status = (
+                int(model[4:])
+                if model.startswith("http")
+                else 400
+                if model in {"context", "large-error", "slow-error"}
+                else 200
+            )
             self.send_response(status)
             self.send_header(
                 "Content-Type",
@@ -44,7 +51,18 @@ def provider_server():
             )
             self.end_headers()
             try:
-                if status != 200:
+                if model == "context":
+                    self.wfile.write(
+                        b'{"error":{"code":"context_length_exceeded",'
+                        b'"message":"secret prompt /private"}}'
+                    )
+                elif model == "large-error":
+                    self.wfile.write(b"x" * 1024)
+                elif model == "slow-error":
+                    self.wfile.flush()
+                    stop.wait(2)
+                    self.wfile.write(b"error")
+                elif status != 200:
                     self.wfile.write(b"secret upstream body /host/path")
                 elif model == "broken":
                     self.wfile.write(b"not json\n")
@@ -90,6 +108,26 @@ async def test_real_local_http_stream_and_embedding(provider_server):
 
 
 @pytest.mark.asyncio
+async def test_model_request_sends_only_planned_roles_model_and_output_limit(provider_server):
+    url, observed = provider_server
+    provider = module.OpenAICompatibleProvider(url, "private-key", "selected-model", "embedding")
+    request = ModelRequest(
+        messages=(ModelRequestMessage("system", "safe"), ModelRequestMessage("user", "question")),
+        max_output_tokens=77,
+        selected_evidence=(("doc-1", "chunk-1"),),
+        generation_params={"temperature": 0.2},
+    )
+    assert [part async for part in provider.stream_request(request)] == ["one", "two", "three"]
+    payload = observed[0]
+    assert payload["model"] == "selected-model"
+    assert payload["messages"] == [
+        {"role": "system", "content": "safe"},
+        {"role": "user", "content": "question"},
+    ]
+    assert payload["max_tokens"] == 77 and payload["temperature"] == 0.2
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "model,code,retryable",
     [
@@ -105,7 +143,7 @@ async def test_real_local_http_stream_and_embedding(provider_server):
 )
 async def test_local_http_protocol_failures(provider_server, monkeypatch, model, code, retryable):
     url, _ = provider_server
-    monkeypatch.setattr(module, "PROVIDER_TIMEOUT", 0.15)
+    monkeypatch.setattr(module, "PROVIDER_TIMEOUT", 0.75)
     provider = module.OpenAICompatibleProvider(url, "private-key", model, model)
     with pytest.raises(ApplicationError) as error:
         _ = [part async for part in provider.stream_answer("private-question", [])]
@@ -124,3 +162,31 @@ async def test_total_budget_covers_incremental_response_headers(provider_server,
         await provider.embed("question")
     assert error.value.code == "PROVIDER_TIMEOUT"
     assert asyncio.get_running_loop().time() - started < 0.5
+
+
+@pytest.mark.asyncio
+async def test_upstream_context_limit_is_safe_permanent_context_error(provider_server):
+    url, _ = provider_server
+    provider = module.OpenAICompatibleProvider(url, "private-key", "context", "embedding")
+    with pytest.raises(ApplicationError) as error:
+        _ = [part async for part in provider.stream_answer("private-question", [])]
+    assert error.value.code == "CONTEXT_TOO_LARGE" and not error.value.retryable
+    assert "private" not in str(error.value) and "secret prompt" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "model,code", [("large-error", "PROVIDER_RESPONSE_LIMIT"), ("slow-error", "PROVIDER_TIMEOUT")]
+)
+async def test_error_response_body_obeys_same_size_and_absolute_deadline(
+    provider_server, monkeypatch, model, code
+):
+    # 错误HTTP响应也不得先aread完整正文，再做体积和总时长限制。
+    url, _ = provider_server
+    monkeypatch.setattr(module, "MAX_RESPONSE_BYTES", 128)
+    monkeypatch.setattr(module, "PROVIDER_TIMEOUT", 0.2)
+    provider = module.OpenAICompatibleProvider(url, "private-key", model, model)
+    started = asyncio.get_running_loop().time()
+    with pytest.raises(ApplicationError) as error:
+        await provider.embed("question")
+    assert error.value.code == code
+    assert asyncio.get_running_loop().time() - started < 1

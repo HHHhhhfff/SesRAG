@@ -1,6 +1,0 @@
-{
-  "schema_version": 1,
-  "categories": [
-    { "name": "life-missing-script", "script": "life-absent.mjs", "status": "enabled", "timeout_seconds": 10 }
-  ]
-}

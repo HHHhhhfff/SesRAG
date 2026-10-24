@@ -55,6 +55,22 @@ async def process_run_task(
     vector_store_factory,
 ):
     async with session_factory() as session:
+        _, initial_run = await lock_execution(session, task_id, worker_id, generation)
+        schema = initial_run.execution_schema_version
+    if schema == 2:
+        from backend.application.session_execution import process_session_run
+
+        return await process_session_run(
+            session_factory,
+            settings,
+            task_id,
+            worker_id,
+            generation,
+            embedding_provider=embedding_provider,
+            model_provider=model_provider,
+            vector_store_factory=vector_store_factory,
+        )
+    async with session_factory() as session:
         task, run = await lock_execution(session, task_id, worker_id, generation)
         assert run is not None
         message = await session.get(MessageModel, run.user_message_id)

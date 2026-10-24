@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     task_deadline: int = Field(default=600, gt=0)
     worker_shutdown_grace: int = Field(default=20, gt=0)
     queue_poll_interval: float = Field(default=1.0, gt=0, allow_inf_nan=False)
-    sse_poll_interval: float = Field(default=1.0, gt=0, allow_inf_nan=False)
+    sse_poll_interval: float = Field(default=0.2, gt=0, allow_inf_nan=False)
     health_probe_timeout: float = Field(default=2.0, gt=0, allow_inf_nan=False)
     rag_top_k: int = Field(default=5, gt=0)
     chunk_size: int = Field(default=800, gt=0)

@@ -17,3 +17,12 @@
 ```
 
 容器运行当前工作区时，必须同时只读挂载仓库、指定工作目录并设置 `PYTHONPATH=/work`，防止镜像内旧代码覆盖当前模块。运行证据与精确清理命令见 Task 2 阶段报告。
+
+`test_v2_run_execution.py` 实际运行 v2 创建/Queue/Worker/Context/Journal/终态事务；覆盖历史与分支隔离、实际选择的引用、真实本地 HTTP ModelRequest、取消确认/回收、每尝试计划、独立定时 flush、冻结资源额度、无效空流和最终 flush 跨授权回滚。SQLite 用于状态与事务回归，不证明 PostgreSQL 行锁。
+
+`session_pg_probe.py` 必须使用操作者新建的空库 `sesrag_session_probe_*`，且仅从显式 `SESSION_PG_PROBE_URL` 读取连接；拒绝非空库及其他命名空间，不创建/删除库或修改开发数据库。它先运行正式迁移，再用独立连接、Asyncio Barrier 和 `pg_blocking_pids` 等待图验证取消/成功两种锁序、并发幂等/不同 Branch 创建、来源 Task 无反锁、旧代数拒绝、最终 flush 跨授权回滚和取消优先回收。时间边界使用测试时钟，锁竞争使用真实 PostgreSQL；保留测试库便于审计，清理由操作者显式执行。
+
+```powershell
+# 安全注入专属空库 SESSION_PG_PROBE_URL 后，在仓库根目录运行：
+.venv/Scripts/python.exe -m tests.integration.session_pg_probe
+```

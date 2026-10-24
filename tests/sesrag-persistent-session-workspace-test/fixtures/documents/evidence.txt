@@ -1,0 +1,5 @@
+fixture-version: workspace-fixtures-v1
+document-name: evidence-fixture
+line-3: EVIDENCE-SENTINEL-SES RAG-002
+line-4: 合成证据指出，虚构批次标识为 BATCH-TEST-042。
+line-5: 此文件不含真实业务或个人信息。

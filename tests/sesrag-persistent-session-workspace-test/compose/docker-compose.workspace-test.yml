@@ -1,0 +1,259 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    environment:
+      POSTGRES_DB: ${WS_TEST_POSTGRES_DB:?database required}
+      POSTGRES_USER: ${WS_TEST_POSTGRES_USER:?user required}
+      POSTGRES_PASSWORD: ${WS_TEST_POSTGRES_PASSWORD:?password required}
+    # 数据库辅助工具同时核验服务端 cluster_name 和 system_identifier。
+    command: ["postgres", "-c", "cluster_name=${WS_TEST_PROJECT:?project required}"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  redis:
+    image: redis:7-alpine
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  provider:
+    image: ${WS_TEST_TOOLS_IMAGE:?tools image required}
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    command: ["python", "/suite/fixtures/provider/server.py"]
+    environment:
+      PROVIDER_CONTROL_TOKEN: ${WS_TEST_PROVIDER_CONTROL_TOKEN:?control token required}
+      MODEL_API_KEY: ${WS_TEST_MODEL_API_KEY:?fake model key required}
+      PROVIDER_INSTANCE_ID: ${WS_TEST_RUN_ID:?run id required}
+      PROVIDER_OBSERVATION_LIMIT: "2000"
+    ports:
+      - target: 8081
+        published: ${WS_TEST_PROVIDER_CONTROL_PORT:-0}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    stop_grace_period: 10s
+
+  migrate:
+    image: ${WS_TEST_APP_IMAGE:?application image required}
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    environment: &application_environment
+      DATABASE_URL: ${WS_TEST_DATABASE_URL:?database URL required}
+      REDIS_URL: ${WS_TEST_REDIS_URL:-redis://redis:6379/0}
+      REDIS_ENABLED: "true"
+      AUTO_CREATE_SCHEMA: "false"
+      UPLOAD_DIR: /data/uploads
+      OWNER_ID: workspace-test-owner
+      MOCK_PROVIDER: "false"
+      MODEL_BASE_URL: http://provider:8080/v1
+      MODEL_API_KEY: ${WS_TEST_MODEL_API_KEY:?fake model key required}
+      MODEL_NAME: ws-http-a
+      EMBEDDING_MODEL_NAME: ws-embedding-384
+      VECTOR_DIMENSION: "384"
+      RAG_TOP_K: "5"
+      CHUNK_SIZE: "800"
+      CHUNK_OVERLAP: "120"
+      TASK_LEASE_TTL: "30"
+      TASK_HEARTBEAT_INTERVAL: "10"
+      TASK_MAX_ATTEMPTS: "3"
+      TASK_RETRY_BASE_DELAY: ${WS_TEST_RETRY_BASE_DELAY:-2}
+      TASK_DEADLINE: "600"
+      WORKER_SHUTDOWN_GRACE: "20"
+      QUEUE_POLL_INTERVAL: "1"
+      SSE_POLL_INTERVAL: "0.2"
+      HEALTH_PROBE_TIMEOUT: "2"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  profile-init:
+    image: ${WS_TEST_APP_IMAGE:?application image required}
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    environment: *application_environment
+    volumes:
+      - ${WS_TEST_REPO_ROOT}/tests/sesrag-persistent-session-workspace-test/fixtures/model-profiles.json:/suite/fixtures/model-profiles.json:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      provider:
+        condition: service_healthy
+    command: ["python", "-m", "backend.tools.sync_model_profiles", "/suite/fixtures/model-profiles.json"]
+
+  api:
+    image: ${WS_TEST_APP_IMAGE:?application image required}
+    build:
+      context: ${WS_TEST_REPO_ROOT:?repository root required}
+      dockerfile: docker/api/Dockerfile
+      labels:
+        io.sesrag.test.suite: workspace-test
+        io.sesrag.test.source: ${WS_TEST_SOURCE_DIGEST:?source fingerprint required}
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    environment: *application_environment
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      profile-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      provider:
+        condition: service_healthy
+    ports:
+      - target: 8000
+        published: ${WS_TEST_API_PORT:-0}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    stop_grace_period: 30s
+    command: ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  worker:
+    image: ${WS_TEST_APP_IMAGE:?application image required}
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    environment: *application_environment
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      profile-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      provider:
+        condition: service_healthy
+    # 进程 running 不等于可领取任务；独占 Redis 中必须出现 Worker readiness。
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json,urllib.request; d=json.load(urllib.request.urlopen('http://api:8000/health/ready', timeout=2)); assert d['database']=='ready' and d['redis']=='ready' and d['worker_count']>=1"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    stop_grace_period: 30s
+    command: ["python", "-m", "backend.workers.main"]
+
+  frontend:
+    image: ${WS_TEST_FRONTEND_IMAGE:?frontend image required}
+    build:
+      context: ${WS_TEST_REPO_ROOT:?repository root required}
+      dockerfile: docker/frontend/Dockerfile
+      labels:
+        io.sesrag.test.suite: workspace-test
+        io.sesrag.test.source: ${WS_TEST_SOURCE_DIGEST:?source fingerprint required}
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    environment:
+      VITE_API_BASE_URL: ""
+      API_PROXY_TARGET: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - target: 5173
+        published: ${WS_TEST_FRONTEND_PORT:-0}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    stop_grace_period: 10s
+
+  tools:
+    image: ${WS_TEST_TOOLS_IMAGE:?tools image required}
+    build:
+      context: ${WS_TEST_REPO_ROOT:?repository root required}
+      dockerfile: tests/sesrag-persistent-session-workspace-test/compose/Dockerfile.python-tools
+      labels:
+        io.sesrag.test.suite: workspace-test
+        io.sesrag.test.source: ${WS_TEST_SOURCE_DIGEST:?source fingerprint required}
+      args:
+        APP_IMAGE: ${WS_TEST_APP_IMAGE:?application image required}
+    profiles: ["tools"]
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+      io.sesrag.test.category: ${WS_TEST_CATEGORY:-env}
+    environment:
+      <<: *application_environment
+      WS_TEST_RUN_ID: ${WS_TEST_RUN_ID}
+      PROVIDER_CONTROL_TOKEN: ${WS_TEST_PROVIDER_CONTROL_TOKEN}
+      PYTHONPATH: /work:/suite
+    working_dir: /work
+    volumes:
+      - ${WS_TEST_REPO_ROOT}/backend:/work/backend:ro
+      - ${WS_TEST_REPO_ROOT}/migrations:/work/migrations:ro
+      - ${WS_TEST_REPO_ROOT}/contracts:/work/contracts:ro
+      - ${WS_TEST_REPO_ROOT}/tests/unit:/work/tests/unit:ro
+      - ${WS_TEST_REPO_ROOT}/tests/api:/work/tests/api:ro
+      - ${WS_TEST_REPO_ROOT}/tests/integration:/work/tests/integration:ro
+      - ${WS_TEST_REPO_ROOT}/pyproject.toml:/work/pyproject.toml:ro
+      - ${WS_TEST_REPO_ROOT}/alembic.ini:/work/alembic.ini:ro
+      - ${WS_TEST_TMP_DIR:?temporary directory required}:/outputs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      provider:
+        condition: service_healthy
+    entrypoint: ["python"]
+    command: ["/suite/tooling/environment_probe.py"]
+
+volumes:
+  postgres_data:
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+  uploads:
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
+
+networks:
+  default:
+    labels:
+      io.sesrag.test.run_id: ${WS_TEST_RUN_ID:?run id required}
+      io.sesrag.test.owner: ${WS_TEST_OWNER_TOKEN:?owner token required}
