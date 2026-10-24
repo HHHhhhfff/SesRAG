@@ -10,9 +10,16 @@ import { isExpectedToolExit, finalizeLifecycleCase } from './orchestrator.mjs';
 import { validateManifest } from './preflight.mjs';
 import { latencyInterval, nearestRank } from '../specific_test_script/performance-tests.mjs';
 
-test('八分类登记104例且逐例需求映射非空，范围表达式正确展开', () => {
+test('WS-DEF-004：扫描观察明确写合计次数，不能冒充公开证据份数', async () => {
+  const { secretAuditObservation } = await import('../specific_test_script/quality-tests.mjs');
+  const text = secretAuditObservation(25, 11, { files_scanned: 34 });
+  assert.match(text, /artifact、Git跟踪文件及frontend\/dist合计扫描34次/);
+  assert.doesNotMatch(text, /34份当轮公开证据/);
+});
+
+test('八分类登记108例且逐例需求映射非空，范围表达式正确展开', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('../specific_test_script/manifest.json', import.meta.url)));
-  const summary = validateManifest(manifest, suiteRoot); assert.equal(summary.case_count, 104);
+  const summary = validateManifest(manifest, suiteRoot); assert.equal(summary.case_count, 108);
   for (const category of manifest.categories) assert.deepEqual(parseCases(category.category).map((item) => item.case_id), category.case_ids);
   assert.ok(parseCases('session').find((item) => item.case_id === 'SES_002').requirements.includes('FR-TH-01'));
 });

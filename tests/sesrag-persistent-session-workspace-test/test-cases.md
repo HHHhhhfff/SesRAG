@@ -1,12 +1,12 @@
 # PRD-002 持久化会话与对话工作台测试用例
 
 - **编号**：TEST-CASE-002
-- **版本**：v1.3（任务5～6同源两轮正式All及104例执行记录回填）
-- **状态**：8类104例已完成两轮正式执行，两轮各104通过、0失败/受限/未运行/工程错误，清理通过；归档呈现等补充问题另见缺陷报告，不宣称PRD零差异
-- **日期**：2026-10-23
+- **版本**：v1.5（WS-DEF-001～004最小修复；108例最新真实结果回填，原R1/R2历史保留）
+- **状态**：最终修复回归108例全部通过，环境/清理通过、退出0；首次修复轮2项工程失败及处理单列见§1.4，不称为同源两轮。
+- **日期**：2026-10-24；原正式两轮执行日为2026-10-23。
 - **适用范围**：v0.2 / `sesrag_v0.2`；本机 Docker Compose 隔离环境
 - **产品依据**：[PRD-002](../../docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)
-- **实施依据**：[会话工作台实施方案](../../docs/adr/002-sesrag-persistent-session-workspace-implementation-plan.md)（文件编号 002，正文沿用 ADR-003）
+- **实施依据**：[会话工作台实施方案](../../docs/adr/002-sesrag-persistent-session-workspace-implementation-plan.md)（编号已统一002）
 - **调研依据**：[实施结果调研](../../docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)、[实施摘要](../../docs/pr/002-SesRAG-持久化会话与对话工作台-PR.md)
 - **验收工程依据**：[TEST-002](../../docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)、[测试点矩阵](测试点设计与需求覆盖矩阵.md)、[分类接入计划](test-plan.md)、[脚本接入规范](specific_test_script/README.md)
 - **接口依据**：[接口文档第 7 节](../../docs/接口文档.md)、`contracts/*_v2.json`、实际路由与 DTO
@@ -14,7 +14,7 @@
 
 ## 1. 目的、边界与判定
 
-本文将测试点转为自动化实现的流程、数据和判据，覆盖全部84个测试点及接口兼容、关键UI交互补充。任务1～2的工具前置见[准备核验记录](测试准备与总入口核验记录.md)，任务3～4的脚本与调试见[脚本校审记录](测试脚本实施与试跑校审记录.md)。任务5～6现已完成同源码/依赖/镜像的两轮All，并据真实逐例结果回填三个执行字段；汇总见[测试报告](测试报告.md)，实现差异与补充问题见[缺陷报告](缺陷报告.md)。下文“设计可验证状态”、前置和设计交接中的“待脚本/执行”等表述保留设计历史，不是当前执行结论；当前状态以本段、§1.3和每例执行字段为准。没有为通过而修改产品或降低预期。
+本文将测试点转为自动化实现的流程、数据和判据，覆盖当前88个测试点（原84点及本次4点）及接口兼容、关键UI交互补充。任务1～2的工具前置见[准备核验记录](测试准备与总入口核验记录.md)，任务3～4的脚本与调试见[脚本校审记录](测试脚本实施与试跑校审记录.md)。任务5～6现已完成同源码/依赖/镜像的两轮All，并据真实逐例结果回填三个执行字段；汇总见[测试报告](测试报告.md)，实现差异与补充问题见[缺陷报告](缺陷报告.md)。本次小修最新108例结果见§1.4及各执行字段，原R1/R2明确保留为历史；下文“设计可验证状态”、前置和设计交接中的“待脚本/执行”等表述保留设计历史，不是当前执行结论；当前状态以本段、§1.3和每例执行字段为准。没有为通过而修改产品或降低预期。
 
 不以 Mock/受控 Provider 证明真实模型效果、生产性能、知识库多租户隔离或隐藏思维。当前单 owner 场景的归属校验不是生产认证/RBAC。真实工具执行、跨会话语义记忆和知识库发布生命周期不在本轮范围。
 
@@ -53,6 +53,23 @@ pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspa
 两轮源码摘要均为`684a5e22b94598517bcaeb25fe8a4ab750c758e34acdf0c6b70f97faafec3de7`，运行前后均未变化。逐例R1/R2链接指向当轮原始单例观察，完整状态/关联节点和证据路径见同目录result.json；QLT_005最终判定还须看outer_finalization及cleanup。UI_001通过仍保留归档列表呈现差异；QLT_006计数名称按报告解释，未覆写原始日志。
 
 各例的Selected命令是后续定向复现方式，运行整类，不表示本次曾单独逐例运行Selected。执行后按新run_id读取对应case/result，等待总入口清理结束。**本文回填使当前工作区源码指纹变化**：当前树复测应不带旧FrozenBuild重新冻结；原验收输入（含空结果版用例文档）及镜像归档已保留，精确复现条件见[测试报告§2](测试报告.md#2-两轮执行基线与证据)，不得跳过指纹校验或覆盖开发工作区。
+
+### 1.4 本次最小修复回归（最新执行结果）
+
+2026-10-24新增TP-THR-09～12/UI_015～018，当前为88点、108例。先修产品与测试工程，再完整重测；各例最新RFIX执行字段以最终轮为准，原R1/R2文字与原始artifact保留为历史，不能拿旧混排判据证明本次需求已满足。
+
+| 轮次 | run_id | UTC开始～结束 | 最终判定 |
+| --- | --- | --- | --- |
+| 首次修复回归，工程问题暴露 | `ws-20261024t124613z-19acdc55` | 12:46:13.454～13:46:06.887 | 106通过、2失败；COMP_002/QLT_002同因后端单测读取未挂载的frontend/package.json；清理通过，退出1。 |
+| RFIX最终完整重测 | `ws-20261024t134914z-7d2ecc20` | 13:49:14.367～14:46:54.952 | 108通过，其余0；环境/质量前置/正常与故障清理通过，退出0，运行期源码不变。 |
+
+两次实际均从仓库根执行：
+
+```powershell
+pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All
+```
+
+第二次仅修正后端版本单测对前端目录的错误依赖，跨前后端版本仍由QLT_002请求真实API验证；冻结输入相比首轮只变`tests/api/test_core_api.py`，因此不能称两轮完全同源。原失败证据不覆写，详细原因、输入归档及最终清理见[修复回归报告](小缺陷修复与回归验收报告.md)。本次完成后回填本文又改变源码指纹；不能直接拿旧FrozenBuild套用当前树。
 
 ## 2. 公共前置、数据与隔离
 
@@ -116,9 +133,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/契约/原子性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。正式创建得到唯一Thread与唯一默认Branch，归属/版本/空历史一致。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。正式创建得到唯一Thread与唯一默认Branch，归属/版本/空历史一致。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。正式创建得到唯一Thread与唯一默认Branch，归属/版本/空历史一致。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_002 列表在稳定快照下排序分页不重不漏
 
@@ -133,9 +150,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：功能/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。正式列表每页2项读取6个Thread，排序稳定且无重漏；快照期间未并发更新。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。正式列表每页2项读取6个Thread，排序稳定且无重漏；快照期间未并发更新。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。正式列表每页2项读取6个Thread，排序稳定且无重漏；快照期间未并发更新。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_003 Thread列表拒绝非法游标和越界分页
 
@@ -150,9 +167,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：异常/边界/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。非法/损坏游标及分页边界共7组均安全422。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_003.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_003.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。非法/损坏游标及分页边界共7组均安全422。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_003.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。非法/损坏游标及分页边界共7组均安全422。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_003.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_003.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_004 详情和历史分页返回指定分支的持久事实
 
@@ -167,9 +184,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/恢复/分页
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。两轮真实Worker问答按历史分页重建，身份/角色/正文/seq与完整服务端历史一致。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_004.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_004.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。两轮真实Worker问答按历史分页重建，身份/角色/正文/seq与完整服务端历史一致。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_004.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。两轮真实Worker问答按历史分页重建，身份/角色/正文/seq与完整服务端历史一致。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_004.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_004.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_005 新建和重命名使用相同标题边界
 
@@ -184,9 +201,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：功能/边界/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。新建/重命名1与200字符及trim合法；空白/201字符均422，失败后旧标题不变。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_005.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_005.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。新建/重命名1与200字符及trim合法；空白/201字符均422，失败后旧标题不变。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_005.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。新建/重命名1与200字符及trim合法；空白/201字符均422，失败后旧标题不变。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_005.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_005.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_006 归档只改变可用性且历史可读
 
@@ -201,9 +218,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。归档仅改变归档标记，已完成Message/Run仍保持原身份原文可读。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_006.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_006.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。归档仅改变归档标记，已完成Message/Run仍保持原身份原文可读。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_006.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。归档仅改变归档标记，已完成Message/Run仍保持原身份原文可读。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_006.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_006.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_007 归档后拒绝新操作但重放既有幂等结果
 
@@ -218,9 +235,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：状态边界/幂等/异常
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。归档后新消息/分支/retry/regenerate均拒绝；既有同键同体优先返回原身份，无新消息。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_007.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_007.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。归档后新消息/分支/retry/regenerate均拒绝；既有同键同体优先返回原身份，无新消息。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_007.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。归档后新消息/分支/retry/regenerate均拒绝；既有同键同体优先返回原身份，无新消息。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_007.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_007.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_008 取消归档恢复继续对话资格
 
@@ -235,9 +252,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：功能/状态转换
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。取消归档后普通列表资格及继续写入恢复，旧Run/历史仍可读。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_008.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_008.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。取消归档后普通列表资格及继续写入恢复，旧Run/历史仍可读。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_008.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。取消归档后普通列表资格及继续写入恢复，旧Run/历史仍可读。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_008.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_008.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_009 从合法用户或assistant锚点创建子分支
 
@@ -252,9 +269,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。持久用户/assistant两种锚点均建立独立子Branch，父子归属及锚点正确，未复制祖先消息。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_009.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_009.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。持久用户/assistant两种锚点均建立独立子Branch，父子归属及锚点正确，未复制祖先消息。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_009.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。持久用户/assistant两种锚点均建立独立子Branch，父子归属及锚点正确，未复制祖先消息。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_009.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_009.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_010 子分支共同前缀共享事实而不复制
 
@@ -269,9 +286,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：事实可靠性/隔离
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。分叉前后共同前缀身份保持，父子新后缀互不进入另一条路径且祖先不复制。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_010.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_010.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。分叉前后共同前缀身份保持，父子新后缀互不进入另一条路径且祖先不复制。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_010.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。分叉前后共同前缀身份保持，父子新后缀互不进入另一条路径且祖先不复制。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_010.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_010.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_011 兄弟及嵌套分支路径和执行上下文隔离
 
@@ -286,9 +303,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：隔离/功能
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。同Thread兄弟与嵌套路径分别读取，祖先只一份且兄弟/未来后缀隔离；执行实收隔离另由指定Worker断言共同核验。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_011.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_011.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。同Thread兄弟与嵌套路径分别读取，祖先只一份且兄弟/未来后缀隔离；执行实收隔离另由指定Worker断言共同核验。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_011.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。同Thread兄弟与嵌套路径分别读取，祖先只一份且兄弟/未来后缀隔离；执行实收隔离另由指定Worker断言共同核验。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_011.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_011.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_012 非法锚点和跨Thread归属安全拒绝
 
@@ -303,9 +320,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：权限/异常/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。不存在/跨Thread对象404；null/空白/81字符名称422；无部分Branch。不可见同Thread锚点由指定路径断言覆盖。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_012.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_012.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。不存在/跨Thread对象404；null/空白/81字符名称422；无部分Branch。不可见同Thread锚点由指定路径断言覆盖。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_012.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。不存在/跨Thread对象404；null/空白/81字符名称422；无部分Branch。不可见同Thread锚点由指定路径断言覆盖。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_012.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_012.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_013 分支数量和嵌套深度到限后拒绝
 
@@ -320,9 +337,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：边界/容量
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。正式API达到100个Branch/32层深度并接受80字符名；下一项均BRANCH_LIMIT_EXCEEDED且不产生部分分支。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_013.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_013.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。正式API达到100个Branch/32层深度并接受80字符名；下一项均BRANCH_LIMIT_EXCEEDED且不产生部分分支。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_013.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。正式API达到100个Branch/32层深度并接受80字符名；下一项均BRANCH_LIMIT_EXCEEDED且不产生部分分支。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_013.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_013.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_014 过期Head版本不能推进分支
 
@@ -337,9 +354,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：边界/并发前置
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。过期expected_version安全409且原Head/Message不变；当前版本请求成功推进。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_014.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_014.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_014.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。过期expected_version安全409且原Head/Message不变；当前版本请求成功推进。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_014.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。过期expected_version安全409且原Head/Message不变；当前版本请求成功推进。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_014.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_014.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_014.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_015 活动分支拒绝冲突写入且不阻塞独立分支
 
@@ -354,9 +371,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：状态边界/隔离
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。活动Branch新消息BRANCH_BUSY，活动输入锚点INVALID_BRANCH_PATH；早期合法分叉与同Thread独立Branch正常推进。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_015.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_015.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_015.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。活动Branch新消息BRANCH_BUSY，活动输入锚点INVALID_BRANCH_PATH；早期合法分叉与同Thread独立Branch正常推进。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_015.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。活动Branch新消息BRANCH_BUSY，活动输入锚点INVALID_BRANCH_PATH；早期合法分叉与同Thread独立Branch正常推进。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_015.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_015.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_015.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_016 真实PG多连接创建遵循Head锁序
 
@@ -371,9 +388,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：并发/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：0个pytest节点及2组真实PG场景；@pg::creation_probe；@pg::creation_edges。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_016.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_016.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_016.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：0个pytest节点及2组真实PG场景；@pg::creation_probe；@pg::creation_edges 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_016.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：0个pytest节点及2组真实PG场景；@pg::creation_probe；@pg::creation_edges。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_016.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_016.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_016.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_017 对象归属校验先于版本或状态提示
 
@@ -388,9 +405,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：权限/安全
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：3个pytest节点；@case::test_SES_017_owner_all_v2_endpoints；api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse；api/test_v2_run_api.py::test_canonical_omitted_profile_and_owner_first_and_stale_head。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_017.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_017.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_017.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：3个pytest节点；@case::test_SES_017_owner_all_v2_endpoints；api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse；api/test_v2_run_api.py::test_canonical_omitted_profile_and_owner_first_and_stale_head 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_017.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：3个pytest节点；@case::test_SES_017_owner_all_v2_endpoints；api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse；api/test_v2_run_api.py::test_canonical_omitted_profile_and_owner_first_and_stale_head。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_017.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_017.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_017.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### SES_018 新消息输入和幂等头严格校验
 
@@ -405,9 +422,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：边界/契约/安全
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。输入/幂等头11组非法边界均安全422且无消息；1/20000字符及合法原始空白按原文保存。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_018.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_018.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'session'`；等待入口退出，再查新run_id的`categories/session/SES_018.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。输入/幂等头11组非法边界均安全422且无消息；1/20000字符及合法原始空白按原文保存。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/SES_018.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/session/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。输入/幂等头11组非法边界均安全422且无消息；1/20000字符及合法原始空白按原文保存。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/session/SES_018.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/session/SES_018.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'session'`（执行整类）；等入口清理结束后查看新run_id的`categories/session/SES_018.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 ### 3.2 context：历史、预算、摘要和证据
 
@@ -424,9 +441,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。第二轮实际HTTP请求末三条依次为旧用户/旧assistant/当前用户，角色与原文hash一一对应，锚点和选中Message身份正确。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。第二轮实际HTTP请求末三条依次为旧用户/旧assistant/当前用户，角色与原文hash一一对应，锚点和选中Message身份正确。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。第二轮实际HTTP请求末三条依次为旧用户/旧assistant/当前用户，角色与原文hash一一对应，锚点和选中Message身份正确。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_002 两个Thread交替执行不串历史或摘要
 
@@ -441,9 +458,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：隔离/安全
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_002_007_summary_scope_and_reuse。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_002_007_summary_scope_and_reuse 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_002_007_summary_scope_and_reuse。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_003 mandatory预算到界和超界在检索前判定
 
@@ -458,9 +475,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：边界/容量/异常
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：5个pytest节点；unit/test_context_planning.py::test_mandatory_budget_check_counts_only_system_and_current_input；unit/test_context_planning.py::test_mandatory_over_budget_fails_before_candidate_or_evidence_use；integration/test_v2_run_execution.py::test_mandatory_budget_fails_before_embedding_and_publishes_plan；@case::test_CTX_003_exact_mandatory_boundary。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_003.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_003.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：5个pytest节点；unit/test_context_planning.py::test_mandatory_budget_check_counts_only_system_and_current_input；unit/test_context_planning.py::test_mandatory_over_budget_fails_before_candidate_or_evidence_use；integration/test_v2_run_execution.py::test_mandatory_budget_fails_before_embedding_and_publishes_plan；@case::test_CTX_003_exact_mandatory_boundary 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_003.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：5个pytest节点；unit/test_context_planning.py::test_mandatory_budget_check_counts_only_system_and_current_input；unit/test_context_planning.py::test_mandatory_over_budget_fails_before_candidate_or_evidence_use；integration/test_v2_run_execution.py::test_mandatory_budget_fails_before_embedding_and_publishes_plan；@case::test_CTX_003_exact_mandatory_boundary。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_003.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_003.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_004 预算收缩按最旧完整轮次裁剪
 
@@ -475,9 +492,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点；unit/test_context_planning.py::test_history_trimming_removes_whole_old_turns_and_prunes_low_score_evidence_first。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_004.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_004.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点；unit/test_context_planning.py::test_history_trimming_removes_whole_old_turns_and_prunes_low_score_evidence_first 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_004.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点；unit/test_context_planning.py::test_history_trimming_removes_whole_old_turns_and_prunes_low_score_evidence_first。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_004.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_004.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_005 不可变计划与最终发送请求逐项一致
 
@@ -492,9 +509,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：事实可靠性/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：8个pytest节点；@case::test_CTX_005_006_plan_variants；integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history；integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_005.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_005.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：8个pytest节点；@case::test_CTX_005_006_plan_variants；integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history；integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_005.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：8个pytest节点；@case::test_CTX_005_006_plan_variants；integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history；integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_005.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_005.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_006 摘要保留来源切片并可在同路径复用
 
@@ -509,9 +526,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：功能/派生事实
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：6个pytest节点；@case::test_CTX_005_006_plan_variants；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event；unit/test_context_planning.py::test_summary_records_only_extracted_source_segments_and_hash。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_006.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_006.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：6个pytest节点；@case::test_CTX_005_006_plan_variants；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event；unit/test_context_planning.py::test_summary_records_only_extracted_source_segments_and_hash 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_006.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：6个pytest节点；@case::test_CTX_005_006_plan_variants；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event；unit/test_context_planning.py::test_summary_records_only_extracted_source_segments_and_hash。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_006.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_006.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_007 摘要不跨兄弟或父子分支直接复用
 
@@ -526,9 +543,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：隔离/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_002_007_summary_scope_and_reuse。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_007.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_007.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_002_007_summary_scope_and_reuse 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_007.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_002_007_summary_scope_and_reuse。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_007.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_007.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_008 摘要构造失败明确回退而不吞计数器错误
 
@@ -543,9 +560,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/恢复
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_summary_extraction_failure_publishes_trim_only_and_safe_log；unit/test_context_planning.py::test_summary_counter_failure_is_not_hidden_as_extraction_fallback。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_008.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_008.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_summary_extraction_failure_publishes_trim_only_and_safe_log；unit/test_context_planning.py::test_summary_counter_failure_is_not_hidden_as_extraction_fallback 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_008.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_summary_extraction_failure_publishes_trim_only_and_safe_log；unit/test_context_planning.py::test_summary_counter_failure_is_not_hidden_as_extraction_fallback。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_008.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_008.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_009 候选消息数和字符上限不丢当前输入
 
@@ -560,9 +577,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：容量/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：3个pytest节点；unit/test_context_planning.py::test_candidate_message_window_keeps_exactly_latest_200_facts；unit/test_context_planning.py::test_candidate_character_limit_accepts_200000_and_trims_at_200001；unit/test_context_planning.py::test_candidate_window_omissions_are_reported_as_compact_ranges。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_009.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_009.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：3个pytest节点；unit/test_context_planning.py::test_candidate_message_window_keeps_exactly_latest_200_facts；unit/test_context_planning.py::test_candidate_character_limit_accepts_200000_and_trims_at_200001；unit/test_context_planning.py::test_candidate_window_omissions_are_reported_as_compact_ranges 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_009.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：3个pytest节点；unit/test_context_planning.py::test_candidate_message_window_keeps_exactly_latest_200_facts；unit/test_context_planning.py::test_candidate_character_limit_accepts_200000_and_trims_at_200001；unit/test_context_planning.py::test_candidate_window_omissions_are_reported_as_compact_ranges。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_009.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_009.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_010 Evidence先按低分和确定身份顺序淘汰
 
@@ -577,9 +594,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；unit/test_context_planning.py::test_tied_lowest_evidence_eviction_uses_ascending_document_chunk_identity；unit/test_context_planning.py::test_low_score_evidence_is_removed_before_higher_score_evidence。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_010.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_010.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；unit/test_context_planning.py::test_tied_lowest_evidence_eviction_uses_ascending_document_chunk_identity；unit/test_context_planning.py::test_low_score_evidence_is_removed_before_higher_score_evidence 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_010.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；unit/test_context_planning.py::test_tied_lowest_evidence_eviction_uses_ascending_document_chunk_identity；unit/test_context_planning.py::test_low_score_evidence_is_removed_before_higher_score_evidence。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_010.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_010.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_011 最终引用仅来自本Run选中证据
 
@@ -594,9 +611,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：功能/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。三个合成文档经正式上传/真实PG向量索引；最终每个引用均精确对应本Run选中Evidence的document/chunk/批次/位置/hash身份，不包含未选证据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_011.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_011.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。三个合成文档经正式上传/真实PG向量索引；最终每个引用均精确对应本Run选中Evidence的document/chunk/批次/位置/hash身份，不包含未选证据。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_011.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。三个合成文档经正式上传/真实PG向量索引；最终每个引用均精确对应本Run选中Evidence的document/chunk/批次/位置/hash身份，不包含未选证据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_011.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_011.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_012 空召回和检索链故障有不同语义
 
@@ -611,9 +628,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/错误语义
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：4个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_012_empty_vs_infrastructure。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_012.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_012.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：4个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_012_empty_vs_infrastructure 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_012.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：4个pytest节点；integration/test_v2_run_execution.py::test_real_worker_model_request_history_isolation_selected_evidence；@case::test_CTX_012_empty_vs_infrastructure。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_012.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_012.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### CTX_013 Context公开摘要有预算身份而无正文
 
@@ -628,9 +645,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：可观察性/安全
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_013.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'context'`；等待入口退出，再查新run_id的`categories/context/CTX_013.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/CTX_013.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/context/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_persisted_summary_has_exact_sources_safe_projection_and_compacted_event。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/context/CTX_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/context/CTX_013.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'context'`（执行整类）；等入口清理结束后查看新run_id的`categories/context/CTX_013.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 ### 3.3 model：模型选择、快照和凭据
 
@@ -647,9 +664,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。四Profile均可区分且唯一默认；HTTP A/B各自真实成功执行，快照ID/version与显式选择一致。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。四Profile均可区分且唯一默认；HTTP A/B各自真实成功执行，快照ID/version与显式选择一致。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。四Profile均可区分且唯一默认；HTTP A/B各自真实成功执行，快照ID/version与显式选择一致。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### MOD_002 禁用或配置不完整Profile拒绝用于新Run
 
@@ -664,9 +681,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/安全/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：4个pytest节点；@case::test_MOD_002_unavailable_profiles；unit/test_model_profiles.py::test_model_list_exposes_no_secret_fields_and_marks_missing_credential；api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable；unit/test_model_profiles.py::test_real_provider_cannot_use_mock_token_counter。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：4个pytest节点；@case::test_MOD_002_unavailable_profiles；unit/test_model_profiles.py::test_model_list_exposes_no_secret_fields_and_marks_missing_credential；api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable；unit/test_model_profiles.py::test_real_provider_cannot_use_mock_token_counter 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：4个pytest节点；@case::test_MOD_002_unavailable_profiles；unit/test_model_profiles.py::test_model_list_exposes_no_secret_fields_and_marks_missing_credential；api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable；unit/test_model_profiles.py::test_real_provider_cannot_use_mock_token_counter。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### MOD_003 旧Run执行与恢复使用冻结模型而非当前默认
 
@@ -681,9 +698,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/恢复/快照
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：3个pytest节点；@case::test_MOD_003_default_change_between_attempts；integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history；unit/test_model_profiles.py::test_snapshot_profile_freezes_nonsecret_version_and_registry_rebuilds_mock。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_003.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_003.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：3个pytest节点；@case::test_MOD_003_default_change_between_attempts；integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history；unit/test_model_profiles.py::test_snapshot_profile_freezes_nonsecret_version_and_registry_rebuilds_mock 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_003.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：3个pytest节点；@case::test_MOD_003_default_change_between_attempts；integration/test_v2_run_execution.py::test_worker_real_http_uses_frozen_model_and_planned_history；unit/test_model_profiles.py::test_snapshot_profile_freezes_nonsecret_version_and_registry_rebuilds_mock。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_003.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_003.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### MOD_004 同ID版本生成配置不可覆盖
 
@@ -698,9 +715,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：边界/配置不变量
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：7个pytest节点；unit/test_model_profiles.py::test_same_version_profile_model_change_is_rejected；@case::test_MOD_004_immutable_fields。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_004.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_004.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：7个pytest节点；unit/test_model_profiles.py::test_same_version_profile_model_change_is_rejected；@case::test_MOD_004_immutable_fields 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_004.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：7个pytest节点；unit/test_model_profiles.py::test_same_version_profile_model_change_is_rejected；@case::test_MOD_004_immutable_fields。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_004.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_004.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### MOD_005 运行凭据撤销使旧Run明确失败而不切换
 
@@ -715,9 +732,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/恢复
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；unit/test_model_profiles.py::test_missing_runtime_credential_is_reported_without_disclosing_secret；@case::test_MOD_005_revoked_runtime_key。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_005.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_005.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；unit/test_model_profiles.py::test_missing_runtime_credential_is_reported_without_disclosing_secret；@case::test_MOD_005_revoked_runtime_key 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_005.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；unit/test_model_profiles.py::test_missing_runtime_credential_is_reported_without_disclosing_secret；@case::test_MOD_005_revoked_runtime_key。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_005.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_005.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### MOD_006 运行凭据在事实和所有公开面均不泄露
 
@@ -732,9 +749,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：安全/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。实际认证HTTP执行后，6类PG事实字段、原始默认服务日志、API公开响应及真实浏览器20项网络观察/Storage均未发现运行凭据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_006.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_006.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。实际认证HTTP执行后，6类PG事实字段、原始默认服务日志、API公开响应及真实浏览器20项网络观察/Storage均未发现运行凭据。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_006.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。实际认证HTTP执行后，6类PG事实字段、原始默认服务日志、API公开响应及真实浏览器20项网络观察/Storage均未发现运行凭据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_006.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_006.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### MOD_007 Profile拒绝藏凭据的URL及未支持参数
 
@@ -749,9 +766,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：安全/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：7个pytest节点；unit/test_model_profiles.py::test_profile_rejects_url_credentials_and_unknown_generation_parameters；unit/test_model_profiles.py::test_snapshot_rejects_incomplete_or_out_of_bounds_nested_policy；unit/test_model_profiles.py::test_profile_requires_explicit_tiktoken_framing_and_calibration_settings。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_007.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_007.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：7个pytest节点；unit/test_model_profiles.py::test_profile_rejects_url_credentials_and_unknown_generation_parameters；unit/test_model_profiles.py::test_snapshot_rejects_incomplete_or_out_of_bounds_nested_policy；unit/test_model_profiles.py::test_profile_requires_explicit_tiktoken_framing_and_calibration_settings 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_007.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：7个pytest节点；unit/test_model_profiles.py::test_profile_rejects_url_credentials_and_unknown_generation_parameters；unit/test_model_profiles.py::test_snapshot_rejects_incomplete_or_out_of_bounds_nested_policy；unit/test_model_profiles.py::test_profile_requires_explicit_tiktoken_framing_and_calibration_settings。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_007.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_007.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### MOD_008 恢复检索沿用冻结Embedding空间
 
@@ -766,9 +783,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：快照/恢复/检索边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_worker_embedding_rebuild_uses_frozen_endpoint_and_kind；integration/test_v2_run_execution.py::test_mock_embedding_mode_does_not_depend_on_embedding_model_label。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_008.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'model'`；等待入口退出，再查新run_id的`categories/model/MOD_008.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_worker_embedding_rebuild_uses_frozen_endpoint_and_kind；integration/test_v2_run_execution.py::test_mock_embedding_mode_does_not_depend_on_embedding_model_label 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/MOD_008.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/model/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_worker_embedding_rebuild_uses_frozen_endpoint_and_kind；integration/test_v2_run_execution.py::test_mock_embedding_mode_does_not_depend_on_embedding_model_label。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/model/MOD_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/model/MOD_008.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'model'`（执行整类）；等入口清理结束后查看新run_id的`categories/model/MOD_008.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 ### 3.4 run：执行、事件、恢复、取消和错误
 
@@ -785,9 +802,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/幂等/原子性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点；api/test_v2_run_api.py::test_create_snapshot_replay_before_archive_and_no_external_calls。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点；api/test_v2_run_api.py::test_create_snapshot_replay_before_archive_and_no_external_calls 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点；api/test_v2_run_api.py::test_create_snapshot_replay_before_archive_and_no_external_calls。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_002 运行中delta仅为草稿而非最终Message
 
@@ -802,9 +819,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_first_delta_flushes_while_provider_stalls；@case::test_RUN_002_draft_is_not_message。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_first_delta_flushes_while_provider_stalls；@case::test_RUN_002_draft_is_not_message 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_first_delta_flushes_while_provider_stalls；@case::test_RUN_002_draft_is_not_message。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_003 最终发布事务全部提交或全部回滚
 
@@ -819,9 +836,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：原子性/异常/并发
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点及2组真实PG场景；@pg::stale_and_publication_probe；@pg::commit_failure；integration/test_v2_run_execution.py::test_v2_final_publication_expiry_rolls_back_message_events_and_head。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_003.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_003.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点及2组真实PG场景；@pg::stale_and_publication_probe；@pg::commit_failure；integration/test_v2_run_execution.py::test_v2_final_publication_expiry_rolls_back_message_events_and_head 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_003.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点及2组真实PG场景；@pg::stale_and_publication_probe；@pg::commit_failure；integration/test_v2_run_execution.py::test_v2_final_publication_expiry_rolls_back_message_events_and_head。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_003.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_003.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_004 自动重试沿用同一身份并隔离失败增量
 
@@ -836,9 +853,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/恢复/事实语义
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_004.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_004.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_004.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_004.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_004.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_005 用户retry新建Run并按来源Head选择分支
 
@@ -853,9 +870,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/恢复/分支
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version；integration/test_v2_run_execution.py::test_successful_explicit_retry_turn_survives_failed_creator_context。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_005.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_005.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version；integration/test_v2_run_execution.py::test_successful_explicit_retry_turn_survives_failed_creator_context 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_005.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version；integration/test_v2_run_execution.py::test_successful_explicit_retry_turn_survives_failed_creator_context。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_005.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_005.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_006 regenerate始终新建路径且排除旧答及未来历史
 
@@ -870,9 +887,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/隔离/历史保留
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_regenerate_distinct_children_exclude_old_answer_reuse_input；integration/test_v2_run_execution.py::test_regenerate_worker_sees_input_prefix_without_old_answer_or_future。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_006.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_006.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_regenerate_distinct_children_exclude_old_answer_reuse_input；integration/test_v2_run_execution.py::test_regenerate_worker_sees_input_prefix_without_old_answer_or_future 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_006.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_regenerate_distinct_children_exclude_old_answer_reuse_input；integration/test_v2_run_execution.py::test_regenerate_worker_sees_input_prefix_without_old_answer_or_future。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_006.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_006.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_007 关联操作重放与状态限制不改变来源
 
@@ -887,9 +904,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：幂等/状态边界/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version；api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_007.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_007.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version；api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_007.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；api/test_v2_run_api.py::test_retry_reuses_input_and_immutable_creator_and_head_version；api/test_v2_run_api.py::test_retry_optional_body_and_profile_replay_before_unavailable。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_007.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_007.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_008 Run Journal跨重试单调追加且历史不改写
 
@@ -904,9 +921,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：契约/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_008.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_008.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_008.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_008.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_008.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_009 阶段事件来自真实状态且只投影安全白名单
 
@@ -921,9 +938,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/安全/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。成功检索、自动重试、永久失败、取消四组真实Run：独立PG只读事务、REST、SSE事件身份/payload逐项一致；终态/assistant与Task事实一致，额外敏感字段契约拒绝。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_009.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_009.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。成功检索、自动重试、永久失败、取消四组真实Run：独立PG只读事务、REST、SSE事件身份/payload逐项一致；终态/assistant与Task事实一致，额外敏感字段契约拒绝。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_009.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。成功检索、自动重试、永久失败、取消四组真实Run：独立PG只读事务、REST、SSE事件身份/payload逐项一致；终态/assistant与Task事实一致，额外敏感字段契约拒绝。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_009.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_009.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_010 首delta在Provider继续停顿时独立可见
 
@@ -938,9 +955,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：时序/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。Provider真实屏障仍挂起时，独立PG READ COMMITTED事务及SSE均已见FIRST_CHUNK，Run running且无最终assistant；释放后正文顺序正确。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_010.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_010.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。Provider真实屏障仍挂起时，独立PG READ COMMITTED事务及SSE均已见FIRST_CHUNK，Run running且无最终assistant；释放后正文顺序正确。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_010.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。Provider真实屏障仍挂起时，独立PG READ COMMITTED事务及SSE均已见FIRST_CHUNK，Run running且无最终assistant；释放后正文顺序正确。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_010.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_010.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_011 REST与SSE交叠补放不丢事件
 
@@ -955,9 +972,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：恢复/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。持续Run真实断点后SSE补放与REST小页一致；从0/断点/末尾/越界完整补放，真实客户端归并器对重排和重复事件只保留原始唯一seq。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_011.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_011.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。持续Run真实断点后SSE补放与REST小页一致；从0/断点/末尾/越界完整补放，真实客户端归并器对重排和重复事件只保留原始唯一seq。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_011.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。持续Run真实断点后SSE补放与REST小页一致；从0/断点/末尾/越界完整补放，真实客户端归并器对重排和重复事件只保留原始唯一seq。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_011.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_011.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_012 REST和SSE分别遵守自身游标规则
 
@@ -972,9 +989,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：边界/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。REST非法参数422；SSE独立Header优先级/坏值回0；默认上限与末尾有限关闭均经实际请求验证。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_012.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_012.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。REST非法参数422；SSE独立Header优先级/坏值回0；默认上限与末尾有限关闭均经实际请求验证。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_012.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。REST非法参数422；SSE独立Header优先级/坏值回0；默认上限与末尾有限关闭均经实际请求验证。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_012.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_012.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_013 断开观察不取消或重启业务执行
 
@@ -989,9 +1006,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：恢复/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。SSE读取后主动断开；同一Run继续成功结算，未发出cancel/retry请求。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_013.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_013.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。SSE读取后主动断开；同一Run继续成功结算，未发出cancel/retry请求。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_013.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。SSE读取后主动断开；同一Run继续成功结算，未发出cancel/retry请求。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_013.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_013.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_014 API容器重启后持久历史和运行观察恢复
 
@@ -1006,9 +1023,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：恢复/部署
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。完成态/运行态两组API真实重启均重新就绪；历史、Snapshot、Run/Task身份和Journal前缀保持，断点后可补齐终态。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_014.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_014.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_014.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。完成态/运行态两组API真实重启均重新就绪；历史、Snapshot、Run/Task身份和Journal前缀保持，断点后可补齐终态。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_014.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。完成态/运行态两组API真实重启均重新就绪；历史、Snapshot、Run/Task身份和Journal前缀保持，断点后可补齐终态。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_014.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_014.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_014.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_015 Worker停止及失租恢复不重复创建Run
 
@@ -1023,9 +1040,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：恢复/异常/租约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。优雅stop和SIGKILL失租两组真实恢复：停服期间新Task保持queued，恢复沿用Run/Task/input/Snapshot，generation递增且唯一最终回答。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_015.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_015.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_015.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。优雅stop和SIGKILL失租两组真实恢复：停服期间新Task保持queued，恢复沿用Run/Task/input/Snapshot，generation递增且唯一最终回答。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_015.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。优雅stop和SIGKILL失租两组真实恢复：停服期间新Task保持queued，恢复沿用Run/Task/input/Snapshot，generation递增且唯一最终回答。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_015.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_015.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_015.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_016 旧generation迟到计划或写回全部被拒绝
 
@@ -1040,9 +1057,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：并发/恢复/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点及2组真实PG场景；@pg::stale_and_publication_probe；@pg::stale_all_writes；integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_016.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_016.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_016.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点及2组真实PG场景；@pg::stale_and_publication_probe；@pg::stale_all_writes；integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_016.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点及2组真实PG场景；@pg::stale_and_publication_probe；@pg::stale_all_writes；integration/test_v2_run_execution.py::test_plan_publication_after_last_flush_lease_expiry_rolls_back。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_016.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_016.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_016.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_017 无执行者queued和retry_waiting可直接取消
 
@@ -1057,9 +1074,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/状态边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：4个pytest节点；integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_017.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_017.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_017.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：4个pytest节点；integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_017.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：4个pytest节点；integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_017.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_017.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_017.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_018 leased或running取消先cancelling后确认
 
@@ -1074,9 +1091,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：状态机/恢复
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：5个pytest节点；integration/test_v2_run_execution.py::test_worker_observes_cancel_and_acknowledges_without_requeue；integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_018.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_018.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_018.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：5个pytest节点；integration/test_v2_run_execution.py::test_worker_observes_cancel_and_acknowledges_without_requeue；integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_018.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：5个pytest节点；integration/test_v2_run_execution.py::test_worker_observes_cancel_and_acknowledges_without_requeue；integration/test_v2_run_execution.py::test_cancellation_task_state_ack_and_reclaim_priority。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_018.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_018.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_018.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_019 取消先提交时成功事务不能反向获胜
 
@@ -1091,9 +1108,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：并发/原子性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：0个pytest节点及1组真实PG场景；@pg::cancel_success_probe。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_019.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_019.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_019.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：0个pytest节点及1组真实PG场景；@pg::cancel_success_probe 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_019.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：0个pytest节点及1组真实PG场景；@pg::cancel_success_probe。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_019.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_019.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_019.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_020 成功先提交时后续取消仅读成功事实
 
@@ -1108,9 +1125,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：并发/状态边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：0个pytest节点及1组真实PG场景；@pg::cancel_success_probe。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_020.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_020.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_020.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：0个pytest节点及1组真实PG场景；@pg::cancel_success_probe 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_020.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：0个pytest节点及1组真实PG场景；@pg::cancel_success_probe。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_020.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_020.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_020.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_021 取消后迟到结果或过期回收不能翻转终态
 
@@ -1125,9 +1142,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：并发/异常/恢复
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点及2组真实PG场景；@pg::cancellation_reclaim_probe；@pg::cancellation_skip_locked；integration/test_v2_run_execution.py::test_expired_cancellation_ack_rejected_reclaimer_cancels_not_fails。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_021.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_021.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_021.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点及2组真实PG场景；@pg::cancellation_reclaim_probe；@pg::cancellation_skip_locked；integration/test_v2_run_execution.py::test_expired_cancellation_ack_rejected_reclaimer_cancels_not_fails 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_021.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点及2组真实PG场景；@pg::cancellation_reclaim_probe；@pg::cancellation_skip_locked；integration/test_v2_run_execution.py::test_expired_cancellation_ack_rejected_reclaimer_cancels_not_fails。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_021.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_021.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_021.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_022 HTTP故障映射区分永久与可重试
 
@@ -1142,9 +1159,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/错误语义
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。8组真实HTTP错误分别结算：401/403/400/404仅1尝试，408/429/500/503有界3尝试；无最终assistant或上游正文泄露。网络/超时的适配器断言另附JUnit。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_022.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_022.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_022.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。8组真实HTTP错误分别结算：401/403/400/404仅1尝试，408/429/500/503有界3尝试；无最终assistant或上游正文泄露。网络/超时的适配器断言另附JUnit。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_022.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。8组真实HTTP错误分别结算：401/403/400/404仅1尝试，408/429/500/503有界3尝试；无最终assistant或上游正文泄露。网络/超时的适配器断言另附JUnit。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_022.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_022.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_022.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_023 空流和破损协议不产生成功回答
 
@@ -1159,9 +1176,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/协议
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：24个pytest节点；@case::test_RUN_023_protocol_worker_terminal；integration/test_v2_run_execution.py::test_empty_or_invalid_provider_stream_cannot_succeed；integration/test_provider_http.py。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_023.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_023.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_023.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：24个pytest节点；@case::test_RUN_023_protocol_worker_terminal；integration/test_v2_run_execution.py::test_empty_or_invalid_provider_stream_cannot_succeed；integration/test_provider_http.py 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_023.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：24个pytest节点；@case::test_RUN_023_protocol_worker_terminal；integration/test_v2_run_execution.py::test_empty_or_invalid_provider_stream_cannot_succeed；integration/test_provider_http.py。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_023.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_023.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_023.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_024 PG不可用和Redis通知降级不伪装空知识
 
@@ -1176,9 +1193,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/恢复/事实来源
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。Redis通知降级仍按PG执行；PG读取/提交/执行三阶段真实中断均无假成功，恢复后原输入/Run/Task/Snapshot可追溯且无重复最终回答。服务均已恢复。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_024.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_024.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_024.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。Redis通知降级仍按PG执行；PG读取/提交/执行三阶段真实中断均无假成功，恢复后原输入/Run/Task/Snapshot可追溯且无重复最终回答。服务均已恢复。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_024.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。Redis通知降级仍按PG执行；PG读取/提交/执行三阶段真实中断均无假成功，恢复后原输入/Run/Task/Snapshot可追溯且无重复最终回答。服务均已恢复。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_024.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_024.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_024.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_025 持续错误耗尽重试预算后有界结算
 
@@ -1193,9 +1210,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/容量
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans；@case::test_RUN_025_exhaustion。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_025.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_025.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_025.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans；@case::test_RUN_025_exhaustion 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_025.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；integration/test_v2_run_execution.py::test_automatic_retry_keeps_run_task_input_and_attempt_plans；@case::test_RUN_025_exhaustion。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_025.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_025.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_025.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_026 输出字符、原始增量和缓冲字节到限受控
 
@@ -1210,9 +1227,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：容量/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：12个pytest节点；integration/test_v2_run_execution.py::test_frozen_resource_limits_fail_with_reserved_terminal；@case::test_RUN_026_frozen_boundaries。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_026.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_026.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_026.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：12个pytest节点；integration/test_v2_run_execution.py::test_frozen_resource_limits_fail_with_reserved_terminal；@case::test_RUN_026_frozen_boundaries 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_026.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：12个pytest节点；integration/test_v2_run_execution.py::test_frozen_resource_limits_fail_with_reserved_terminal；@case::test_RUN_026_frozen_boundaries。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_026.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_026.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_026.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_027 常规事件预算耗尽仍保留失败结算能力
 
@@ -1227,9 +1244,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：容量/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：3个pytest节点；@case::test_RUN_027_regular_events_boundary；integration/test_v2_run_execution.py::test_event_limit_during_retry_becomes_failure_not_stuck_lease。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_027.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_027.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_027.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：3个pytest节点；@case::test_RUN_027_regular_events_boundary；integration/test_v2_run_execution.py::test_event_limit_during_retry_becomes_failure_not_stuck_lease 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_027.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：3个pytest节点；@case::test_RUN_027_regular_events_boundary；integration/test_v2_run_execution.py::test_event_limit_during_retry_becomes_failure_not_stuck_lease。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_027.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_027.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_027.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_028 deadline及步骤/流超时阻止无限执行
 
@@ -1244,9 +1261,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/时间边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：5个pytest节点；@case::test_RUN_028_deadline_exact_and_cancel_priority；integration/test_v2_run_execution.py::test_frozen_timeout_closes_stream_and_never_publishes_success；integration/test_lease_recovery.py。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_028.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_028.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_028.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：5个pytest节点；@case::test_RUN_028_deadline_exact_and_cancel_priority；integration/test_v2_run_execution.py::test_frozen_timeout_closes_stream_and_never_publishes_success；integration/test_lease_recovery.py 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_028.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：5个pytest节点；@case::test_RUN_028_deadline_exact_and_cancel_priority；integration/test_v2_run_execution.py::test_frozen_timeout_closes_stream_and_never_publishes_success；integration/test_lease_recovery.py。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_028.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_028.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_028.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_029 对象关联可追溯且不混淆输入创建者
 
@@ -1261,9 +1278,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：可观察性/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。正常、自动retry、用户regenerate三组PG/API/计划/Event/结构化日志身份完整关联；自动代数不新建Run，用户新Run复用输入但Message.run_id仍为原创建者。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_029.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_029.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_029.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。正常、自动retry、用户regenerate三组PG/API/计划/Event/结构化日志身份完整关联；自动代数不新建Run，用户新Run复用输入但Message.run_id仍为原创建者。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_029.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。正常、自动retry、用户regenerate三组PG/API/计划/Event/结构化日志身份完整关联；自动代数不新建Run，用户新Run复用输入但Message.run_id仍为原创建者。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_029.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_029.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_029.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### RUN_030 校验和运行错误只返回安全诊断
 
@@ -1278,9 +1295,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：安全/异常
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：10个pytest节点；api/test_validation_safety.py。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_030.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_030.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'run'`；等待入口退出，再查新run_id的`categories/run/RUN_030.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：10个pytest节点；api/test_validation_safety.py 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/RUN_030.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/run/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：10个pytest节点；api/test_validation_safety.py。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/run/RUN_030.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/run/RUN_030.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'run'`（执行整类）；等入口清理结束后查看新run_id的`categories/run/RUN_030.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 ### 3.5 workspace：浏览器恢复、投影和Markdown
 
@@ -1293,13 +1310,13 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 前置条件：P0-ENV；真实Chromium同源页；本例有一个归档和一个普通会话，均含历史。
 - 测试数据要求：无已存选择偏好、已存有效归档选择两组；独立浏览器context。
 - 测试流程：1）从页面归档并查看列表/历史/输入状态；2）无偏好重开；3）带归档偏好重开后取消归档。
-- 预期结果：归档可辨识和打开、历史可读且禁止新写；无偏好默认不选归档项；有效已存归档选择可恢复只读，取消归档后可继续。当前代码是混排并标“已归档”，无独立归档页；必须对照PRD“归档列表”记录呈现差异，不捏造筛选控件或直接宣称完全一致。
+- 预期结果：归档从普通列表移入已归档视图，历史可读且禁止新写；无偏好默认普通会话，有效归档偏好恢复已归档只读视图；取消归档回普通列表并可继续。2026-10-24补齐分栏，原R1/R2混排结果仅作历史记录，新判据待本次实测。
 - 优先级：P0
 - 用例类型：功能/恢复/产品差异
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。页面归档保留历史并禁写；无偏好未选归档项，有效归档偏好恢复只读；取消归档可继续。界面为混排标识，未提供独立归档筛选页；PRD归档列表呈现差异见[缺陷报告WS-DEF-001](缺陷报告.md#2-ws-def-001归档会话呈现未完全符合prd)，本例通过不表示该差异已修复。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。页面归档保留历史并禁写；无偏好默认普通视图，有效归档偏好恢复到归档只读视图；取消归档回普通视图并可继续。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。页面归档保留历史并禁写；无偏好未选归档项，有效归档偏好恢复只读；取消归档可继续。界面为混排标识，未提供独立归档筛选页；PRD归档列表呈现差异见[缺陷报告WS-DEF-001](缺陷报告.md#2-ws-def-001归档会话呈现未完全符合prd)，本例通过不表示该差异已修复。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_002 刷新按服务端重建已完成会话并处理失效偏好
 
@@ -1314,9 +1331,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：恢复/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。刷新后正文/Run来自服务端；不存在的Thread偏好回落有效会话；损坏模型偏好和不可写Storage未阻断页面。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。刷新后正文/Run来自服务端；不存在的Thread偏好回落有效会话；损坏模型偏好和不可写Storage未阻断页面。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。刷新后正文/Run来自服务端；不存在的Thread偏好回落有效会话；损坏模型偏好和不可写Storage未阻断页面。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_003 刷新活动Run补建草稿但不重复写入或取消
 
@@ -1331,9 +1348,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：恢复/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。queued/running/retry_waiting三个独立样本刷新均沿用原Run/Task/input；running草稿由Journal完整重建，无重复业务POST，每组最终唯一assistant。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_003.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_003.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。queued/running/retry_waiting三个独立样本刷新均沿用原Run/Task/input；running草稿由Journal完整重建，无重复业务POST，每组最终唯一assistant。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_003.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。queued/running/retry_waiting三个独立样本刷新均沿用原Run/Task/input；running草稿由Journal完整重建，无重复业务POST，每组最终唯一assistant。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_003.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_003.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_004 短断线重连按连续序去重并有人工恢复入口
 
@@ -1348,9 +1365,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：恢复/异步边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。真实Journal重排/重复/缺seq2的传输注入后游标停1并重连补齐；另组三次失败后人工恢复，seq/字符无重复；同一Run/Task仅执行一次。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_004.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_004.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。真实Journal重排/重复/缺seq2的传输注入后游标停1并重连补齐；另组三次失败后人工恢复，seq/字符无重复；同一Run/Task仅执行一次。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_004.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。真实Journal重排/重复/缺seq2的传输注入后游标停1并重连补齐；另组三次失败后人工恢复，seq/字符无重复；同一Run/Task仅执行一次。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_004.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_004.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_005 切换后旧HTTP和SSE迟到结果不污染新作用域
 
@@ -1365,9 +1382,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：隔离/异步竞态
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。跨Thread及同Thread兄弟路径两种作用域、五层接口、迟到成功/失败共20组网络屏障；B选择、消息、错误和身份均不被旧A响应覆盖。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_005.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_005.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。跨Thread及同Thread兄弟路径两种作用域、五层接口、迟到成功/失败共20组网络屏障；B选择、消息、错误和身份均不被旧A响应覆盖。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_005.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。跨Thread及同Thread兄弟路径两种作用域、五层接口、迟到成功/失败共20组网络屏障；B选择、消息、错误和身份均不被旧A响应覆盖。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_005.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_005.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_006 上下文处理提示与安全计划范围一致
 
@@ -1382,9 +1399,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：可观察性/安全
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。无裁剪/只裁剪/摘要/预算超限四组实际规划与刷新DOM逐项对应四预算、数量、来源范围和策略；提示未暴露历史/摘要/证据全文。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_006.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_006.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。无裁剪/只裁剪/摘要/预算超限四组实际规划与刷新DOM逐项对应四预算、数量、来源范围和策略；提示未暴露历史/摘要/证据全文。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_006.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。无裁剪/只裁剪/摘要/预算超限四组实际规划与刷新DOM逐项对应四预算、数量、来源范围和策略；提示未暴露历史/摘要/证据全文。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_006.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_006.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_007 时间线展示可追溯的真实阶段和操作状态
 
@@ -1399,9 +1416,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/可观察性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。成功/永久失败/自动重试/取消四组真实时间线全部按Run/seq对应Journal，attempt/generation和终态明确，切换后恢复正确；无隐藏思维或虚构工具。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_007.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_007.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。成功/永久失败/自动重试/取消四组真实时间线全部按Run/seq对应Journal，attempt/generation和终态明确，切换后恢复正确；无隐藏思维或虚构工具。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_007.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。成功/永久失败/自动重试/取消四组真实时间线全部按Run/seq对应Journal，attempt/generation和终态明确，切换后恢复正确；无隐藏思维或虚构工具。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_007.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_007.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_008 Markdown原文与流式及最终DOM分离
 
@@ -1416,9 +1433,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/边界/渲染
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。用户及assistant Markdown在真实DOM呈现标题/列表/链接/行内码/跨delta代码块；最终只有一条回答，持久层保留Markdown原文。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_008.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_008.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。用户及assistant Markdown在真实DOM呈现标题/列表/链接/行内码/跨delta代码块；最终只有一条回答，持久层保留Markdown原文。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_008.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。用户及assistant Markdown在真实DOM呈现标题/列表/链接/行内码/跨delta代码块；最终只有一条回答，持久层保留Markdown原文。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_008.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_008.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_009 不可信Markdown在真实DOM中不能执行
 
@@ -1433,9 +1450,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：安全/XSS
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。用户及assistant两方向恶意文本持久原文不变；真实流式/最终DOM无脚本、事件属性或危险协议，执行哨兵/弹窗均未触发。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_009.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_009.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。用户及assistant两方向恶意文本持久原文不变；真实流式/最终DOM无脚本、事件属性或危险协议，执行哨兵/弹窗均未触发。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_009.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。用户及assistant两方向恶意文本持久原文不变；真实流式/最终DOM无脚本、事件属性或危险协议，执行哨兵/弹窗均未触发。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_009.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_009.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_010 切换后不显示旧引用或旧草稿
 
@@ -1450,9 +1467,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：隔离/异步竞态
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。A真实草稿/引用切到无引用B后均不残留，再切C仅显示其实际Message引用集合；同owner合法共享检索不误判为缓存串线。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_010.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_010.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。A真实草稿/引用切到无引用B后均不残留，再切C仅显示其实际Message引用集合；同owner合法共享检索不误判为缓存串线。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_010.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。A真实草稿/引用切到无引用B后均不残留，再切C仅显示其实际Message引用集合；同owner合法共享检索不误判为缓存串线。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_010.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_010.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_011 页面模型选择、运行禁用和恢复偏好真实有效
 
@@ -1467,9 +1484,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/状态边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。B实际执行与运行禁用、终态换A新Run、有效/失效模型偏好及真实PG禁用Profile的页面不可选说明均已验证；未存凭据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_011.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_011.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。B实际执行与运行禁用、终态换A新Run、有效/失效模型偏好及真实PG禁用Profile的页面不可选说明均已验证；未存凭据。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_011.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。B实际执行与运行禁用、终态换A新Run、有效/失效模型偏好及真实PG禁用Profile的页面不可选说明均已验证；未存凭据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_011.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_011.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_012 Run动作按钮按真实状态发出唯一业务操作
 
@@ -1484,9 +1501,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/状态边界/幂等
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。succeeded/failed/cancelled/running四来源按钮实际执行；响应挂起时pending禁用阻止重复操作，默认沿源模型/手动切换生效；停止先cancelling，归档隐藏关联写动作。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_012.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_012.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。succeeded/failed/cancelled/running四来源按钮实际执行；响应挂起时pending禁用阻止重复操作，默认沿源模型/手动切换生效；停止先cancelling，归档隐藏关联写动作。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_012.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。succeeded/failed/cancelled/running四来源按钮实际执行；响应挂起时pending禁用阻止重复操作，默认沿源模型/手动切换生效；停止先cancelling，归档隐藏关联写动作。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_012.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_012.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_013 页面分叉与历史加载保留正确路径
 
@@ -1501,9 +1518,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：功能/分支/分页
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。真实页面以持久用户消息分叉，共同祖先只呈现一次，父未来后缀未进入子路径；刷新恢复所选分支。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_013.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_013.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。真实页面以持久用户消息分叉，共同祖先只呈现一次，父未来后缀未进入子路径；刷新恢复所选分支。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_013.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。真实页面以持久用户消息分叉，共同祖先只呈现一次，父未来后缀未进入子路径；刷新恢复所选分支。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_013.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_013.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### UI_014 提交结果未知时在当前页面重放原操作
 
@@ -1518,9 +1535,81 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：异常/幂等/交互恢复
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。message及retry/regenerate三类已接受响应丢失后均重放原键/规范请求；编辑正文或改模型不替换原操作，不重复创建业务身份。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_014.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_014.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'workspace'`；等待入口退出，再查新run_id的`categories/workspace/UI_014.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。message及retry/regenerate三类已接受响应丢失后均重放原键/规范请求；编辑正文或改模型不替换原操作，不重复创建业务身份。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_014.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。message及retry/regenerate三类已接受响应丢失后均重放原键/规范请求；编辑正文或改模型不替换原操作，不重复创建业务身份。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/workspace/UI_014.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/workspace/UI_014.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_014.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+
+#### UI_015 普通与归档列表互斥及取消归档迁移
+
+- 用例编号：UI_015
+- 对应测试点：TP-THR-09：普通与归档视图互斥呈现；TP-ERR-03：基础设施读取故障有可见安全结果（本例注入503验证页面投影，真实PG故障另由既有用例验证）
+- 用例标题：普通与归档列表互斥及取消归档迁移
+- 前置条件：P0-ENV就绪；workspace分类独立Compose和Chromium可用，每例自行建立数据；不依赖其他用例结果。
+- 测试数据要求：两个独立Thread，一普通、一归档；标题带本例唯一前缀。
+- 测试流程：从普通视图读取目标摘要；注入一次详情503并核对安全错误可见、禁写且恢复后能重选；切已归档视图并打开归档Thread；取消归档后观察目标视图、选中身份和输入状态，再回归档视图检查目标不存在。
+- 预期结果：普通视图不出现归档项，归档视图不出现普通项；归档只读，取消归档回普通视图且保持同Thread/Branch和历史，不新增替代会话。
+- 优先级：P1
+- 用例类型：功能/界面
+- 是否适合自动化：是，真实Chromium与正式API；脚本为specific_test_script/workspace-tests.mjs。
+- 设计可验证状态：V；本机Compose/Chromium已完成本次实际验证，最终结果与稳定性边界见本例执行字段。
+- 代码依据：frontend/src/stores/thread.ts::setListView/loadThreads/loadMoreThreads/addThread/setArchived；frontend/src/components/ThreadList.vue；frontend/src/pages/WorkspacePage.vue。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。普通/已归档视图按服务端事实互斥显示；切视图读取503明确显示且可恢复，归档可读禁写，取消归档移动回普通且当前身份不变。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_015.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_015.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。
+
+#### UI_016 归档空首屏分页及切视图迟到响应
+
+- 用例编号：UI_016
+- 对应测试点：TP-THR-10：归档视图共享游标与迟到分页隔离
+- 用例标题：归档空首屏分页及切视图迟到响应
+- 前置条件：P0-ENV就绪；workspace分类独立Compose和Chromium可用，每例自行建立数据；不依赖其他用例结果。
+- 测试数据要求：先归档目标Thread，再创建101个较新的普通Thread；确保首屏100项均普通；只延迟真实分页HTTP响应。
+- 测试流程：打开无偏好页面并进入归档视图；检查空首屏提示及输入禁用；发起加载更多并在真实响应挂起时切普通视图；释放响应后切回归档并重试分页，核对目标出现和身份去重。
+- 预期结果：空首屏且有后续页明确提示可加载更多；空视图不遗留可写详情；切视图后的迟到分页不能写入缓存/推进游标；新分页可找到旧归档，列表始终只显示归档且无重复。
+- 优先级：P1
+- 用例类型：边界/并发/恢复
+- 是否适合自动化：是，真实Chromium与正式API；脚本为specific_test_script/workspace-tests.mjs。
+- 设计可验证状态：V；本机Compose/Chromium已完成本次实际验证，最终结果与稳定性边界见本例执行字段。
+- 代码依据：frontend/src/stores/thread.ts::setListView/loadThreads/loadMoreThreads/addThread/setArchived；frontend/src/components/ThreadList.vue；frontend/src/pages/WorkspacePage.vue。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。100条普通项首屏不误报无归档，空视图禁写且可加载更多；切视图丢弃真实迟到分页，原游标可重试，加载后归档列表不混入普通项且无重复。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_016.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_016.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。
+
+#### UI_017 首屏外归档偏好刷新恢复
+
+- 用例编号：UI_017
+- 对应测试点：TP-THR-11：首屏外有效归档偏好恢复只读视图
+- 用例标题：首屏外归档偏好刷新恢复
+- 前置条件：P0-ENV就绪；workspace分类独立Compose和Chromium可用，每例自行建立数据；不依赖其他用例结果。
+- 测试数据要求：有成功Run和持久历史的归档Thread；其归档后创建101个普通Thread；浏览器仅存该Thread/Branch身份偏好。
+- 测试流程：先从正式列表确认目标不在首屏；用所存偏好打开工作台，检查归档视图、历史、Run和禁写；完整刷新再核对，最后读取服务端消息比较原始事实。
+- 预期结果：目标首屏之外仍被独立读取校验并显示在归档视图；刷新保持同Thread/Branch/Run和历史，输入只读；持久消息内容/身份完全不变。
+- 优先级：P1
+- 用例类型：恢复/界面/事实可靠性
+- 是否适合自动化：是，真实Chromium与正式API；脚本为specific_test_script/workspace-tests.mjs。
+- 设计可验证状态：V；本机Compose/Chromium已完成本次实际验证，最终结果与稳定性边界见本例执行字段。
+- 代码依据：frontend/src/stores/thread.ts::setListView/loadThreads/loadMoreThreads/addThread/setArchived；frontend/src/components/ThreadList.vue；frontend/src/pages/WorkspacePage.vue。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。有效归档偏好不在首屏时经服务端独立读取，自动进入归档只读视图；刷新恢复同Thread/Branch/Run和完整历史，事实不变。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_017.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_017.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。
+
+#### UI_018 归档视图中新建回到普通会话
+
+- 用例编号：UI_018
+- 对应测试点：TP-THR-12：归档视图中新建普通会话的选中语义
+- 用例标题：归档视图中新建回到普通会话
+- 前置条件：P0-ENV就绪；workspace分类独立Compose和Chromium可用，每例自行建立数据；不依赖其他用例结果。
+- 测试数据要求：独立归档来源Thread；全新浏览器上下文保存来源身份；新Thread由实际页面POST创建。
+- 测试流程：打开归档来源，在归档视图点击新建；观察实际创建响应、普通视图和选中项、输入可用性及浏览器偏好；读取原归档Thread核对状态。
+- 预期结果：进入普通视图并选中新创建的未归档Thread及默认Branch，输入可用且偏好指向新身份；原归档Thread不被取消归档、不出现在普通列表。
+- 优先级：P1
+- 用例类型：功能/界面
+- 是否适合自动化：是，真实Chromium与正式API；脚本为specific_test_script/workspace-tests.mjs。
+- 设计可验证状态：V；本机Compose/Chromium已完成本次实际验证，最终结果与稳定性边界见本例执行字段。
+- 代码依据：frontend/src/stores/thread.ts::setListView/loadThreads/loadMoreThreads/addThread/setArchived；frontend/src/components/ThreadList.vue；frontend/src/pages/WorkspacePage.vue。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。归档视图点击新建后回普通视图，选中新Thread/默认Branch且输入可用，来源归档事实不变。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/UI_018.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/workspace/result.json)。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'workspace'`（执行整类）；等入口清理结束后查看新run_id的`categories/workspace/UI_018.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。
 
 ### 3.6 compatibility：契约、旧数据和迁移
 
@@ -1537,9 +1626,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：契约/兼容/补充验收
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。v2十五类正式方法/路径均实际调用并通过当前JSON Schema；SSE逐事件校验版本，额外字段422。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。v2十五类正式方法/路径均实际调用并通过当前JSON Schema；SSE逐事件校验版本，额外字段422。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。v2十五类正式方法/路径均实际调用并通过当前JSON Schema；SSE逐事件校验版本，额外字段422。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_002 v1九个会话入口保留旧成功契约
 
@@ -1554,9 +1643,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：兼容/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。v1 Thread/消息/Run/Event/SSE/cancel/archive旧响应逐项校验，无新增必填v2字段；归档后的原键返回旧身份。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。v1 Thread/消息/Run/Event/SSE/cancel/archive旧响应逐项校验，无新增必填v2字段；归档后的原键返回旧身份。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。首轮修复测试因后端测试错误依赖前端目录而失败，已移除该工程依赖并在本轮重新完整验证，原因与原始失败见修复报告§3.2。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。v1 Thread/消息/Run/Event/SSE/cancel/archive旧响应逐项校验，无新增必填v2字段；归档后的原键返回旧身份。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_003 v1拒绝v2对象但不误封旧Run
 
@@ -1571,9 +1660,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：兼容/权限/版本
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点；api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_003.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_003.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点；api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_003.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点；api/test_v2_session_api.py::test_v1_all_run_endpoints_guard_schema_after_owner_before_sse。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_003.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_003.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_004 v2读取和取消legacy不虚构新模型计划
 
@@ -1588,9 +1677,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：兼容/事实保留
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。v2只读/取消legacy不升级Thread，模型快照/计划按契约为空，schema1事件原样补放且不改写。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_004.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_004.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。v2只读/取消legacy不升级Thread，模型快照/计划按契约为空，schema1事件原样补放且不改写。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_004.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。v2只读/取消legacy不升级Thread，模型快照/计划按契约为空，schema1事件原样补放且不改写。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_004.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_004.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_005 首次v2写旧Thread原子升级且失败不升级
 
@@ -1605,9 +1694,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：兼容/原子性/异常
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：7个pytest节点；@case::test_COMP_005_007_first_write_upgrade；api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation；api/test_v2_session_api.py::test_fork_identity_replay_before_archive_and_inherited_path。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_005.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_005.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：7个pytest节点；@case::test_COMP_005_007_first_write_upgrade；api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation；api/test_v2_session_api.py::test_fork_identity_replay_before_archive_and_inherited_path 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_005.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：7个pytest节点；@case::test_COMP_005_007_first_write_upgrade；api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation；api/test_v2_session_api.py::test_fork_identity_replay_before_archive_and_inherited_path。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_005.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_005.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_006 迁移旧标题读取与无关更新不做新写校验
 
@@ -1622,9 +1711,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：兼容/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：10个pytest节点；@case::test_COMP_006_legacy_titles；api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation；api/test_v2_schemas.py::test_thread_response_preserves_legacy_title_after_metadata_upgrade。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_006.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_006.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：10个pytest节点；@case::test_COMP_006_legacy_titles；api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation；api/test_v2_schemas.py::test_thread_response_preserves_legacy_title_after_metadata_upgrade 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_006.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：10个pytest节点；@case::test_COMP_006_legacy_titles；api/test_v2_session_api.py::test_legacy_read_no_upgrade_active_write_guard_and_title_preservation；api/test_v2_schemas.py::test_thread_response_preserves_legacy_title_after_metadata_upgrade。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_006.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_006.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_007 legacy关联操作必须显式提供Profile
 
@@ -1639,9 +1728,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：兼容/契约
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：6个pytest节点；@case::test_COMP_005_007_first_write_upgrade；api/test_v2_run_api.py::test_legacy_projection_cancel_never_upgrade_and_explicit_profile。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_007.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_007.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：6个pytest节点；@case::test_COMP_005_007_first_write_upgrade；api/test_v2_run_api.py::test_legacy_projection_cancel_never_upgrade_and_explicit_profile 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_007.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：6个pytest节点；@case::test_COMP_005_007_first_write_upgrade；api/test_v2_run_api.py::test_legacy_projection_cancel_never_upgrade_and_explicit_profile。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_007.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_007.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_007.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_008 旧Demo全状态事实升级至当前head不丢失
 
@@ -1656,9 +1745,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：迁移/事实可靠性
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：2个pytest节点；@migration::test_COMP_008_documents_chunks_roundtrip；unit/test_v2_session_migrations.py::test_mixed_legacy_states_preserve_full_fact_hash_and_counts。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_008.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_008.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：2个pytest节点；@migration::test_COMP_008_documents_chunks_roundtrip；unit/test_v2_session_migrations.py::test_mixed_legacy_states_preserve_full_fact_hash_and_counts 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_008.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：2个pytest节点；@migration::test_COMP_008_documents_chunks_roundtrip；unit/test_v2_session_migrations.py::test_mixed_legacy_states_preserve_full_fact_hash_and_counts。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_008.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_008.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_008.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_009 不兼容旧数据在迁移写入前被拒绝
 
@@ -1673,9 +1762,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：迁移/异常/风险
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：11个pytest节点；unit/test_v2_session_migrations.py::test_preflight_identifies_conflicts_without_rewriting_facts；unit/test_v2_session_migrations.py::test_preflight_rejects_duplicate_work_without_cancel_or_delete；unit/test_v2_session_migrations.py::test_upgrade_preflight_preserves_revision_and_original_facts。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_009.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_009.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：11个pytest节点；unit/test_v2_session_migrations.py::test_preflight_identifies_conflicts_without_rewriting_facts；unit/test_v2_session_migrations.py::test_preflight_rejects_duplicate_work_without_cancel_or_delete；unit/test_v2_session_migrations.py::test_upgrade_preflight_preserves_revision_and_original_facts 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_009.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：11个pytest节点；unit/test_v2_session_migrations.py::test_preflight_identifies_conflicts_without_rewriting_facts；unit/test_v2_session_migrations.py::test_preflight_rejects_duplicate_work_without_cancel_or_delete；unit/test_v2_session_migrations.py::test_upgrade_preflight_preserves_revision_and_original_facts。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_009.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_009.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_009.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_010 重复upgrade head不重复回填
 
@@ -1690,9 +1779,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：迁移/幂等
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：1个pytest节点；unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_010.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_010.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：1个pytest节点；unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_010.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：1个pytest节点；unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_010.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_010.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_010.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_011 无v2业务事实时受保护回退可安全往返
 
@@ -1707,9 +1796,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：迁移/回退/风险
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：3个pytest节点；unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip；unit/test_v2_session_migrations.py::test_custom_profile_downgrade_requires_explicit_export。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_011.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_011.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：3个pytest节点；unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip；unit/test_v2_session_migrations.py::test_custom_profile_downgrade_requires_explicit_export 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_011.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：3个pytest节点；unit/test_v2_session_migrations.py::test_legacy_backfill_repeat_and_safe_roundtrip；unit/test_v2_session_migrations.py::test_custom_profile_downgrade_requires_explicit_export。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_011.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_011.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_011.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_012 存在任何v2事实时拒绝有损回退
 
@@ -1724,9 +1813,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：迁移/数据安全
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。已执行：8个pytest节点；@migration::test_COMP_012_independent_context_facts_guard；unit/test_v2_session_migrations.py::test_downgrade_rejects_every_session_business_fact；unit/test_v2_session_migrations.py::test_v2_migration_chain_refuses_base_downgrade_even_empty。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_012.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_012.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。已执行：8个pytest节点；@migration::test_COMP_012_independent_context_facts_guard；unit/test_v2_session_migrations.py::test_downgrade_rejects_every_session_business_fact；unit/test_v2_session_migrations.py::test_v2_migration_chain_refuses_base_downgrade_even_empty 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_012.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。已执行：8个pytest节点；@migration::test_COMP_012_independent_context_facts_guard；unit/test_v2_session_migrations.py::test_downgrade_rejects_every_session_business_fact；unit/test_v2_session_migrations.py::test_v2_migration_chain_refuses_base_downgrade_even_empty。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_012.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_012.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_012.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### COMP_013 保留文档索引与健康入口而不新增平行聊天
 
@@ -1741,9 +1830,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：兼容/部署/范围
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。txt/md/docx经正式v1上传与Worker索引成功；旧index/health继续可用，路由未新增平行v2 documents/chat/health/archive。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_013.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'compatibility'`；等待入口退出，再查新run_id的`categories/compatibility/COMP_013.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。txt/md/docx经正式v1上传与Worker索引成功；旧index/health继续可用，路由未新增平行v2 documents/chat/health/archive。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/COMP_013.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/compatibility/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。txt/md/docx经正式v1上传与Worker索引成功；旧index/health继续可用，路由未新增平行v2 documents/chat/health/archive。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/compatibility/COMP_013.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/compatibility/COMP_013.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'compatibility'`（执行整类）；等入口清理结束后查看新run_id的`categories/compatibility/COMP_013.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 ### 3.7 performance：本机响应性
 
@@ -1760,9 +1849,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：性能/边界
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。完整30样本提交API p95=31.65ms；所有提交均返回合法身份；未删除慢样本；R1输出：完整30样本提交API p95=29.62ms；所有提交均返回合法身份；未删除慢样本。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/performance/PERF_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/performance/PERF_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'performance'`；等待入口退出，再查新run_id的`categories/performance/PERF_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。完整30样本提交API p95=31.40ms；所有提交均返回合法身份；未删除慢样本。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/performance/PERF_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/performance/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。完整30样本提交API p95=31.65ms；所有提交均返回合法身份；未删除慢样本；R1输出：完整30样本提交API p95=29.62ms；所有提交均返回合法身份；未删除慢样本。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/performance/PERF_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/performance/PERF_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'performance'`（执行整类）；等入口清理结束后查看新run_id的`categories/performance/PERF_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### PERF_002 首个持久delta到DOM延迟按保守区间判断
 
@@ -1777,9 +1866,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：性能/时序/测量风险
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。保留30个独立首delta区间：通过30、失败0、测量交叠受限0。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/performance/PERF_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/performance/PERF_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'performance'`；等待入口退出，再查新run_id的`categories/performance/PERF_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。保留30个独立首delta区间：通过30、失败0、测量交叠受限0。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/performance/PERF_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/performance/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。保留30个独立首delta区间：通过30、失败0、测量交叠受限0。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/performance/PERF_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/performance/PERF_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'performance'`（执行整类）；等入口清理结束后查看新run_id的`categories/performance/PERF_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 ### 3.8 quality：可测试性、部署和门禁
 
@@ -1796,9 +1885,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：可测试性/功能
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。8种场景均通过正式API/Worker实际调用并核对终态；stall屏障定向释放，安全实收观测未截断或泄露凭据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_001.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'quality'`；等待入口退出，再查新run_id的`categories/quality/QLT_001.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。8种场景均通过正式API/Worker实际调用并核对终态；stall屏障定向释放，安全实收观测未截断或泄露凭据。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/QLT_001.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。8种场景均通过正式API/Worker实际调用并核对终态；stall屏障定向释放，安全实收观测未截断或泄露凭据。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_001.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_001.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'quality'`（执行整类）；等入口清理结束后查看新run_id的`categories/quality/QLT_001.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### QLT_002 后端与契约质量门禁脱离旧验收目录
 
@@ -1813,9 +1902,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：可测试性/契约/质量门禁
 - 是否适合自动化：是（工具前置已补，待接入完整断言）
-- 实际测试结果：通过（R1/R2均passed）。ruff退出0；mypy退出0；pytest退出0；bad-contract-rejected退出0。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_002.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'quality'`；等待入口退出，再查新run_id的`categories/quality/QLT_002.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。ruff退出0；mypy退出0；pytest退出0；bad-contract-rejected退出0 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/QLT_002.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/result.json)。首轮修复测试因后端测试错误依赖前端目录而失败，已移除该工程依赖并在本轮重新完整验证，原因与原始失败见修复报告§3.2。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。ruff退出0；mypy退出0；pytest退出0；bad-contract-rejected退出0。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_002.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_002.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'quality'`（执行整类）；等入口清理结束后查看新run_id的`categories/quality/QLT_002.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### QLT_003 前端独立质量命令真实检查当前源码
 
@@ -1830,9 +1919,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：可测试性/质量门禁
 - 是否适合自动化：是（工具前置已补，待接入完整断言）
-- 实际测试结果：通过（R1/R2均passed）。check:api退出0；typecheck退出0；lint退出0；test:unit退出0；build:types退出0；build:vite退出0；negative-type-rejected退出0；negative-lint-rejected退出0；negative-component-rejected退出0。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_003.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'quality'`；等待入口退出，再查新run_id的`categories/quality/QLT_003.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。check:api退出0；typecheck退出0；lint退出0；test:unit退出0；build:types退出0；build:vite退出0；negative-type-rejected退出0；negative-lint-rejected退出0；negative-component-rejected退出0 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/QLT_003.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。check:api退出0；typecheck退出0；lint退出0；test:unit退出0；build:types退出0；build:vite退出0；negative-type-rejected退出0；negative-lint-rejected退出0；negative-component-rejected退出0。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_003.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_003.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'quality'`（执行整类）；等入口清理结束后查看新run_id的`categories/quality/QLT_003.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### QLT_004 离线计数器版本及词表损坏可重复诊断
 
@@ -1847,9 +1936,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：可测试性/边界/离线
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。离线TokenCounter/上下文固定节点退出0；缺失/损坏缓存负例包含禁止网络访问断言。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_004.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'quality'`；等待入口退出，再查新run_id的`categories/quality/QLT_004.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。离线TokenCounter/上下文固定节点退出0；缺失/损坏缓存负例包含禁止网络访问断言。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/QLT_004.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。离线TokenCounter/上下文固定节点退出0；缺失/损坏缓存负例包含禁止网络访问断言。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_004.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_004.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'quality'`（执行整类）；等入口清理结束后查看新run_id的`categories/quality/QLT_004.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### QLT_005 干净部署至采证清理形成独立闭环
 
@@ -1864,9 +1953,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P1
 - 用例类型：部署/恢复/资源
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。正常分类、全新环境分类主动失败、全新环境分类超时三条路径均采证并在finally清理；分类及全轮独立审计通过，容器/网络/卷/专有tag/runtime/tmp无残留，源码未变。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_005.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'quality'`；等待入口退出，再查新run_id的`categories/quality/QLT_005.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。正常分类、全新环境分类主动失败、全新环境分类超时三条路径均采证并在finally清理；分类及全轮独立审计通过，容器/网络/卷/专有tag/runtime/tmp无残留，源码未变。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/QLT_005.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/result.json)。清理最终结算另见本轮cleanup.json。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。正常分类、全新环境分类主动失败、全新环境分类超时三条路径均采证并在finally清理；分类及全轮独立审计通过，容器/网络/卷/专有tag/runtime/tmp无残留，源码未变。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_005.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_005.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'quality'`（执行整类）；等入口清理结束后查看新run_id的`categories/quality/QLT_005.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 #### QLT_006 Secret仅运行时注入而不进镜像或版本文件
 
@@ -1881,9 +1970,9 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 - 优先级：P0
 - 用例类型：部署/安全
 - 是否适合自动化：是
-- 实际测试结果：通过（R1/R2均passed）。镜像归档扫描25288个成员、Git跟踪文件311份，frontend/dist及公开artifact亦纳入扫描，凭据命中0；helper合计扫描504次（artifact+Git+dist，非504份公开证据）；R1输出：相同扫描边界的helper合计507次、凭据命中0；原日志计数标签问题见[WS-DEF-004](缺陷报告.md#5-ws-def-004秘密扫描日志的统计名称不准确)。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_006.json)，完整断言/关联日志见各轮同目录result.json。
-- 复现步骤：本次实际执行§1.3两条All命令；定向复现：`pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode Selected -Categories 'quality'`；等待入口退出，再查新run_id的`categories/quality/QLT_006.json`及result.json（执行整类，包含本例）。
-- 测试结果是否稳定出现：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
+- 实际测试结果：最终修复回归RFIX通过（2026-10-24）。扫描镜像归档25292个成员（Key/control/PG密码/DSN）、313个Git跟踪文件；helper对artifact、Git跟踪文件及frontend/dist合计扫描513次（不承诺去重），未发现运行凭据。 证据：[本轮观察](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/QLT_006.json)、[最终分类判定](artifacts/ws-20261024t134914z-7d2ecc20/categories/quality/result.json)。 历史R1/R2字段（不代表本次修复仍有该问题）：通过（R1/R2均passed）。镜像归档扫描25288个成员、Git跟踪文件311份，frontend/dist及公开artifact亦纳入扫描，凭据命中0；helper合计扫描504次（artifact+Git+dist，非504份公开证据）；R1输出：相同扫描边界的helper合计507次、凭据命中0；原日志计数标签问题见[WS-DEF-004](缺陷报告.md#5-ws-def-004秘密扫描日志的统计名称不准确)。证据：[R1](artifacts/ws-20261023t020902z-9fa22610/categories/quality/QLT_006.json)、[R2](artifacts/ws-20261023t030707z-c936fff7/categories/quality/QLT_006.json)，完整断言/关联日志见各轮同目录result.json。
+- 复现步骤：本次实际执行§1.4完整All命令；从仓库根运行 `pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspace-tests.ps1 -Mode All`，或定向 `-Mode Selected -Categories 'quality'`（执行整类）；等入口清理结束后查看新run_id的`categories/quality/QLT_006.json`和`result.json`。当前已回填文档须重新冻结，不能直接复用旧FrozenBuild；精确输入归档见修复报告§3.3。
+- 测试结果是否稳定出现：本次最终修复源码仅完整执行1轮并通过，未作同源重复稳定性判定；不将源码不同的轮次合并为两轮同源。 历史R1/R2判定：是：两轮同源均passed；表示判定一致，不要求身份、时间或性能数值相同。
 
 ## 4. 覆盖矩阵
 
@@ -1895,14 +1984,14 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 | context | CTX_001～CTX_013 | 13 |
 | model | MOD_001～MOD_008 | 8 |
 | run | RUN_001～RUN_030 | 30 |
-| workspace | UI_001～UI_014 | 14 |
+| workspace | UI_001～UI_018 | 18 |
 | compatibility | COMP_001～COMP_013 | 13 |
 | performance | PERF_001、PERF_002 | 2 |
 | quality | QLT_001～QLT_006 | 6 |
 
-合计104个唯一用例；前置/流程中提到其他用例只用于解释断言分工，不形成执行先后依赖。以下覆盖表是设计追溯，不是通过率或执行证据。
+合计108个唯一用例（原104例、新增UI_015～018）；前置/流程中提到其他用例只用于解释断言分工，不形成执行先后依赖。以下覆盖表是设计追溯，不是通过率或执行证据。
 
-### 4.2 全部84个测试点到用例
+### 4.2 全部88个测试点到用例
 
 原矩阵状态保留为历史快照；V/E/B按§1.1解释。一个测试点可能需要数据/事务层与DOM层不同用例共同取证，不因已有一个断言就省略另一层。
 
@@ -1916,6 +2005,10 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 | TP-THR-05 | 归档不删除历史且仍可读取 | SES_006；UI_001 | V：原可验证，现仍可设计本机验证 |
 | TP-THR-06 | 归档 Thread 的新写操作受拒绝 | SES_007 | V：原可验证，现仍可设计本机验证 |
 | TP-THR-07 | 取消归档恢复活跃列表资格 | SES_008；UI_001 | V：原可验证，现仍可设计本机验证 |
+| TP-THR-09 | 普通与归档视图互斥呈现 | UI_015 | V：本次补充 |
+| TP-THR-10 | 归档视图共享游标与迟到分页隔离 | UI_016 | V：本次补充 |
+| TP-THR-11 | 首屏外有效归档偏好恢复只读视图 | UI_017 | V：本次补充 |
+| TP-THR-12 | 归档视图中新建普通会话的选中语义 | UI_018 | V：本次补充 |
 | TP-BR-01 | 从有效历史消息位置创建 Branch | SES_009；UI_013 | V：原可验证，现仍可设计本机验证 |
 | TP-BR-02 | Branch 读取包含共同祖先且不复制祖先事实 | SES_010；UI_013 | V：原可验证，现仍可设计本机验证 |
 | TP-BR-03 | 同一Thread兄弟与嵌套Branch路径隔离 | SES_011；CTX_007 | V：原可验证，现仍可设计本机验证 |
@@ -1999,7 +2092,7 @@ Thread全局 Message.seq 在分支上可有间隙；Event.seq 属于同一Run，
 
 | PRD需求 | 覆盖用例 | 验收关注 |
 | --- | --- | --- |
-| FR-TH-01 | SES_001～SES_008；UI_001、UI_013；COMP_001、COMP_003、COMP_005、COMP_006 | Thread创建/列表/详情/重命名及新标题边界/归档/取消归档、更新时间排序、旧标题兼容读取、历史保留与归档后写入边界。 |
+| FR-TH-01 | SES_001～SES_008；UI_001、UI_013、UI_015～UI_018；COMP_001、COMP_003、COMP_005、COMP_006 | Thread创建/列表/详情/重命名及新标题边界/归档/取消归档、更新时间排序、旧标题兼容读取、历史保留与归档后写入边界、页面双视图/分页/首屏外偏好/归档视图新建。 |
 | FR-TH-02 | SES_011～SES_014、SES_016、SES_017；CTX_001、CTX_002、CTX_006、CTX_007；UI_005、UI_010 | 当前Thread/Branch历史进入后续请求；两Thread/多Branch的消息、摘要、Evidence、Prompt和异步前端投影互不串用。 |
 | FR-MEM-01 | SES_018；CTX_001；RUN_001～RUN_003、RUN_014、RUN_015；UI_001～UI_003、UI_014；COMP_002、COMP_004、COMP_005 | 持久事实可恢复，已完成历史实际进入后续Run上下文；delta非完成事实；最终assistant与成功终态原子一致。 |
 | FR-BR-01 | SES_009～SES_017；CTX_002、CTX_007；UI_013；COMP_005 | 从历史锚点分叉、共享祖先不复制、路径正确、原分支不被覆盖、非法/过期锚点与并发边界。 |

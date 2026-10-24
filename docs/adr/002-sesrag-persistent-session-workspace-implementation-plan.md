@@ -1,26 +1,34 @@
-# ADR-003：SesRAG 持久化会话与对话工作台实施方案
+# ADR-002：SesRAG 持久化会话与对话工作台实施方案
 
-**编号**：003
+**编号**：002
 
-**状态**：已接受
+**状态**：已实施（原两轮104例及本次最终108例均有完整证据；小缺陷001～004已处理，005未定义）。
 
 **版本**：v0.2
 
-**日期**：2026-10-20
+**日期**：2026-10-20；当前编号/导航/最小修复及验收状态更新：2026-10-24。
 
 **对应项目开发版本**：`sesrag_v0.2` / `v0.2`
 
-**适用范围**：在第一轮 Demo 和 ADR-002 缺陷修复基线上实施 v0.2 持久化会话、分支对话、可恢复流式运行、多模型选择、上下文预算和对话工作台。
+**适用范围**：在第一轮 Demo 和 ADR-001基础缺陷修复基线上实施 v0.2 持久化会话、分支对话、可恢复流式运行、多模型选择、上下文预算和对话工作台。
 
 **依据**：[`docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md`](../prd/002-SesRAG-持久化会话与对话工作台-PRD.md)
 
 **关联基线**：[`001 Demo PRD`](../prd/001-SesRAG-项目Demo-PRD.md)、[`ADR-001 Demo 实施方案`](001-sesrag-demo-implementation-plan.md)、[`ADR-001 缺陷修复方案`](001-SesRAG-Demo-缺陷修复-plan.md)、[`CONTEXT.md`](../../CONTEXT.md)、[`接口文档`](../接口文档.md)。
 
-**实施结果**：功能实现和分类/质量门禁证据见[PR-002](../pr/002-SesRAG-持久化会话与对话工作台-PR.md)。
+**实施结果**：功能实现和分类/质量门禁证据见[PR-002](../pr/002-SesRAG-持久化会话与对话工作台-PR.md)。 原验收与补充发现见[测试报告](../../tests/sesrag-persistent-session-workspace-test/测试报告.md)；2026-10-24最小修复、工程问题处理及最终108例通过/清理见[修复验收报告](../../tests/sesrag-persistent-session-workspace-test/小缺陷修复与回归验收报告.md)。
 
-**取代关系**：本 ADR 不取代 ADR-001 或 ADR-002；它在其基础上扩展 v0.2，会话产品行为和新增迁移/契约以本 ADR 为当前实施依据。
+**取代关系**：本ADR在Demo及ADR-001基础缺陷修复上扩展v0.2；不取代原Demo历史记录。此前正文自称ADR-003是编号残留，当前统一为ADR-002。
 
-**本版修订**：在 v0.1 原有方案基础上，明确 §6 的接口新增/修改/保留清单、v1/v2 契约及调用方处置策略，并同步文件清单、实施路线和验证门禁；不改变产品范围，不表示相关 API 已实施。
+**本版修订**：在 v0.1 原有方案基础上，明确 §6 的接口新增/修改/保留清单、v1/v2 契约及调用方处置策略，并同步文件清单、实施路线和验证门禁；不改变产品范围，不表示相关 API 已实施。 2026-10-24校准编号002、当前验收入口及结果来源；设计阶段的原预计与旧专项不能充当本轮正式证据。
+
+### 2026-10-24 小缺陷修复决策（WS-DEF-001～004）
+
+本次是既有需求的最小补齐，原功能范围与接口契约不变。工作台侧栏增加“普通会话／已归档”两个互斥视图；复用 `include_archived=true` 返回的摘要事实与全量排序游标，在 store 按 `archived_at` 过滤当前已加载集合，**不新增归档 API、不把服务端 include_archived 误解为只查归档**。两个视图共享分页进度；空视图但 `has_more=true` 时明确提示继续加载，不能宣布服务端没有此类会话。归档/取消归档后切到目标视图并保留当前 Thread/Branch；有效归档偏好恢复归档只读视图，无效/无偏好回普通视图，新建回普通视图。切视图使旧选择和迟到分页失效，保留既有 epoch 隔离。
+
+修复文件为 `frontend/src/stores/thread.ts`、`components/ThreadList.vue`、`pages/WorkspacePage.vue` 和侧栏样式；先以 `frontend/tests/thread-store.test.ts` 建立失败回归，再补本轮 Playwright 用例/矩阵/manifest。应用 OpenAPI 版本从已安装 `sesrag` 包元数据读取，单一源是 `pyproject.toml`；轻量 API 测试验证前后端发布版本一致。文档编号/当前验收导航原地校准；安全扫描日志改称包含 artifact、Git 和 dist 的合计扫描次数，不改历史原始证据或扫描断言。
+
+实施路线：失败断言 → 最小代码/导航修复 → 本机单元、类型、Lint、构建和测试工程门禁 → 规范及需求双轴校审 → 当前源码新建镜像执行一轮 All（含故障清理）→ 回填真实结果与修复验收记录。原报告未定义 WS-DEF-005；本次不擅自将弃用警告等其他事项编号为第五缺陷，交付明确列为未有定义。
 
 ## 1. 决策摘要
 
@@ -499,7 +507,7 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 
 ## 9. 项目文件和目录变更
 
-以下保留设计确认时的预计清单；具体落地文件以PR-003实际变动为准，预计文件名不作为已创建证据。括号中的同目录文件必须分职责实现；新增 Python 包补 `__init__.py`。本 ADR 首版交付已包含 PRD 关联、README 导航和 CONTEXT 设计来源。
+以下保留设计确认时的预计清单；具体落地文件以PR-002实际变动为准，预计文件名不作为已创建证据。括号中的同目录文件必须分职责实现；新增 Python 包补 `__init__.py`。本 ADR 首版交付已包含 PRD 关联、README 导航和 CONTEXT 设计来源。
 
 实施命名映射：预计的`test_branch_context.py`拆分为`tests/unit/test_branch_paths.py`与`test_context_planning.py`；`test_v2_run_states.py`/`test_v2_provider_context.py`的执行断言落入`tests/integration/test_v2_run_execution.py`与`test_provider_http.py`；预计`fixtures/v2-session/`改为`fixtures/v2-profiles.json`及分类内独立动态数据。新增应用服务进一步拆为`session_threads.py`、`session_runs.py`、`session_execution.py`，`migrations/v2_session_checks.py`集中迁移只读预检。职责不变，避免为匹配预计文件名复制第二套实现。
 
@@ -533,13 +541,13 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | `tests/integration/session_pg_probe.py` | 真实 PostgreSQL 多连接、迁移回填、分支并发、快照和终态屏障。 | 阶段 1～3。 |
 | `tests/unit/test_model_profiles.py`、`tests/unit/test_v2_run_states.py` | 版本/Secret/默认选择、取消/重试/终态与有限资源边界回归。 | 阶段 2～3。 |
 | `tests/integration/test_v2_provider_context.py` | 可控 Mock/HTTP Provider 上下文实收断言、模型快照和错误分类。 | 阶段 2～3。 |
-| `tests/demo-smoke/specific_test_script/v2-session-tests.mjs`、`v2-context-tests.mjs`、`v2-model-tests.mjs`、`v2-run-tests.mjs`、`v2-workspace-tests.mjs` | 同目录五个分类分别验证会话/分支、预算/摘要、模型/快照、取消/恢复/流、浏览器工作台；不把全部新用例塞入单个大脚本。 | 阶段 5，按同名 category 接入 manifest。 |
-| `tests/demo-smoke/fixtures/v2-session/` | 两 Thread、多 Branch、超上下文、慢/失败 Provider 等安全 fixture。 | 阶段 5；不存真实 Key。 |
-| `tests/demo-smoke/tooling/v2-workspace.test.ts` | 新工作台组件/Markdown/状态门禁，正式分类收集真实 Vitest 逐项结果。 | 阶段 4～5。 |
+| `tests/sesrag-persistent-session-workspace-test/specific_test_script/` | 当前独立工程的session/context/model/run/workspace/compatibility/performance/quality八分类，取代原预计接入旧Demo工程的做法。具体文件和用例见该目录README。 | 阶段5，按manifest调度。 |
+| `tests/sesrag-persistent-session-workspace-test/fixtures/` | 两Thread/多Branch、预算与慢/失败Provider等安全合成素材；按实际目录README准备，不存真实Key。 | 阶段5。 |
+| `frontend/tests/workspace-components.test.ts`、`frontend/tests/thread-store.test.ts` | 当前前端自有组件/Markdown/状态及归档视图回归；正式Chromium结果另由独立suite采集。 | 阶段4～5。 |
 | `docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md` | 后续正式测试环境、需求/用例矩阵、命令和验收边界；不覆盖 Demo 方案。 | 阶段 5 前确定。 |
-| `docs/pr/003-SesRAG-持久化会话与对话工作台-PR.md` | 实施差异、真实变更及验证证据；对应 ADR-003/PRD-002，PR-002 已被历史修复占用。 | 阶段 5 完成后回填。 |
+| `docs/pr/002-SesRAG-持久化会话与对话工作台-PR.md` | 实施差异、真实变更及验证证据；对应 ADR-002/PRD-002，Demo历史修复记录已统一编号001。 | 阶段 5 完成后回填。 |
 
-新增目录必须在对应模块 README 登记；测试脚本遵守 `tests/demo-smoke` 的分类协议，不能单独销毁总入口拥有的容器/卷。
+新增目录必须在对应模块 README 登记；测试脚本遵守 `tests/sesrag-persistent-session-workspace-test/specific_test_script/README.md` 的分类协议，不能单独销毁总入口拥有的容器/卷。
 
 ### 9.2 预计修改文件/目录
 
@@ -560,8 +568,8 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | `pyproject.toml`、`docker/api/Dockerfile` | 添加并锁定经验证的 tiktoken 版本，构建时预备支持 encoding 的缓存；Mock 不依赖运行时网络下载，缺缓存明确配置不可用。 | 2 |
 | `README.md`、`backend/README.md`、`frontend/README.md`、`CONTEXT.md`、`docs/接口文档.md` | 模块新增文件职责、术语/代际、v2 协议和操作导航；只在接口文档维护正式接口表。 | 各阶段 |
 | `docs/runbooks/demo-development.md`、`demo-smoke-environment.md`（同 runbooks 目录） | Windows/Linux 停写备份/迁移/受限回退、Profile 导入/Secret、部署更新及测试资源回收命令。 | 2、5 |
-| `tests/demo-smoke/specific_test_script/manifest.json`、`tests/demo-smoke/run-demo-smoke.ps1`、`tests/demo-smoke/compose/docker-compose.demo-smoke.yml` | 接入 v2 分类和对应参数/慢 Provider/预算 fixture，保留总入口启动到销毁的所有权。 | 5 |
-| `tests/demo-smoke/README.md`、`test-plan.md`、`specific_test_script/README.md`、`tooling/quality-category-gate.test.mjs` 及质量门禁 | 记录新增分类/用例 ID，拆分 legacy/v2 验收口径，真实报告门禁不得沿用旧149用例数作为 v2 完整覆盖。 | 5 |
+| `tests/sesrag-persistent-session-workspace-test/specific_test_script/manifest.json`、`run-workspace-tests.ps1`、`compose/docker-compose.workspace-test.yml`（均在本轮套件内） | 独立接入八分类与受控Provider，保留入口的创建、采证和销毁所有权。 | 5 |
+| `tests/sesrag-persistent-session-workspace-test/README.md`、`test-plan.md`、`specific_test_script/README.md`及`tooling/*.test.mjs`（均在该套件内） | 分类ID、结果协议、自测和清理门禁；旧149例不是v0.2完整覆盖依据。 | 5 |
 
 ### 9.3 暂不新增/不修改的文件边界
 
@@ -624,8 +632,8 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 
 1. 接入 v0.2 迁移到 Compose `migrate`，更新 `.env.example`、Runbook、README、模块 README。
 2. 执行后端单测、契约/类型生成检查、真实 PostgreSQL 多连接探针、Provider 协议、前端 typecheck/build/Vitest/Playwright。
-3. 在 tests/demo-smoke 按 §9 五分类接入 v0.2，保留既有 Demo 回归；更新门禁适应明确的协议差异，不能删原安全/租约断言逃避失败。使用独立 fixture，经总入口完成启动、测试、报告、销毁和残留检查；同一冻结源码至少执行两轮正式回归。
-4. 退出条件：PRD 第 9 节全部验收及 §12 P0/P1 需求均有真实证据；失败/blocked/未运行单列，未满足项不能写为全部完成；完成 PR-003 及验收记录，再按 §13.3 判断是否可改为“已实施”。
+3. 正式测试使用 `tests/sesrag-persistent-session-workspace-test/` 独立八分类，不维护或复用已退出本分支的旧Demo验收目录。独立fixture经总入口完成启动、测试、报告、销毁和残留检查；同一冻结源码至少执行两轮正式回归，已完成的原两轮详见本轮测试报告；本次小修另按授权执行一轮。
+4. 退出条件：PRD 第 9 节全部验收及 §12 P0/P1 需求均有真实证据；失败/blocked/未运行单列，未满足项不能写为全部完成；完成 PR-002 及验收记录，再按 §13.3 判断是否可改为“已实施”。
 
 ## 12. PRD 覆盖矩阵
 
@@ -636,7 +644,7 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | FR-BR-02 | `operation_kind`、`parent_run_id`、新 Run/子 Branch；自动 Task 重试保持原 Run。 | `runs.py`、`task_execution.py`、`run_handler.py`、Run API、PG 并发测试。 |
 | FR-MOD-01、FR-MOD-02 | §5.2/§7.3/阶段2：Profile 单一真源、版本快照、Secret runtime injection；双 Mock 可选择。 | `model_profiles.py`、`providers/registry.py`、0005、`model_profile_v2.json`、Provider 实收/变配置恢复测试。 |
 | FR-STR-01、FR-STR-02 | §6.3/§7.3/阶段3：先提交 Event 再 SSE、按 seq 补放、按 generation 分草稿。 | `journal.py`、`routes/v2/runs.py`、`run.ts`、`run_event_v2.json`、SSE/浏览器测试。 |
-| FR-REC-01、FR-REC-02 | 事实恢复、非终态自动观察、Worker lease/generation 继续执行。 | `WorkspacePage.vue`、`thread.ts`、`runtime.py`、`tests/integration/session_pg_probe.py`、`tests/demo-smoke/tooling/pg-execution.py`、Playwright。 |
+| FR-REC-01、FR-REC-02 | 事实恢复、非终态自动观察、Worker lease/generation 继续执行。 | `WorkspacePage.vue`、`thread.ts`、`runtime.py`、`tests/integration/session_pg_probe.py`、`tests/sesrag-persistent-session-workspace-test/specific_test_script/probes/postgres-cases.py`、Playwright。 |
 | FR-RUN-01 | cancelling 状态、取消边界、迟到结果保护和幂等终态。 | `runs.py`、`task_execution.py`、0006、取消/成功竞态测试。 |
 | FR-OBS-01、FR-MD-01 | 时间线安全摘要、Markdown 清洗、Citation 展开、禁止隐藏思维链。 | `RunTimeline.vue`、`MessageTimeline.vue`、`ContextNotice.vue`、安全/组件测试。 |
 | FR-CTX-01、FR-CTX-02 | ContextPlan、TokenCounter、裁剪/摘要来源和预算失败。 | `context.py`、`context_counter.py`、0005、上下文单元/PG 测试。 |
@@ -644,7 +652,7 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | FR-ERR-01 | Provider/上下文/取消/基础设施稳定错误码、有限重试和安全日志。 | `errors.py`、Provider Adapter、Worker runtime、HTTP/故障测试。 |
 | NFR-SEC-01、NFR-SEC-02、NFR-ISO-01 | Secret 引用、请求脱敏、Branch/Run scope、DOMPurify。 | `config.py`、v2 schemas、frontend stores、SEC/FE 测试。 |
 | NFR-REL-01、NFR-REL-02 | PostgreSQL 事实、Task -> Run -> Thread -> Branch 锁序、SSE 投影、lease recovery。 | 0004～0006、`task_execution.py`、真实 PG/Compose smoke。 |
-| NFR-PERF-01、NFR-CAP-01 | API/首 delta 预算、Context/stream/event 有界配置。 | `config.py`、context/provider adapters、`tests/demo-smoke/tooling/v2-performance.mjs`、WORKSPACEV_001/TP-VW-004。旧v1性能分类只作兼容回归。 |
+| NFR-PERF-01、NFR-CAP-01 | API/首 delta 预算、Context/stream/event 有界配置。 | `config.py`、context/provider adapters、`tests/sesrag-persistent-session-workspace-test/specific_test_script/performance-tests.mjs`、PERF_001/002。旧v1性能分类只作兼容回归。 |
 | NFR-OBS-01、NFR-TEST-01 | 关联 ID、Context 安全摘要、Mock/慢/失败 Provider、可重放证据。 | `runtime.py`、测试工具、v0.2 smoke 报告。 |
 | NFR-MIG-01、NFR-DEP-01 | 新迁移、旧快照兼容、Compose migrate、Runbook/README 更新。 | `migrations/versions/0004..0006`、`docker-compose.yml`、部署/回滚测试。 |
 
@@ -654,7 +662,7 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 
 - 后端：`python -m pytest tests/unit tests/api tests/integration -q`、`mypy backend`、`ruff check .`、`ruff format --check .`。
 - 契约：`npm run generate:api --prefix frontend`、`npm run check:api --prefix frontend`（实施后同时覆盖 v1/v2 两份产物）；Schema 动态验证覆盖成功、422、404、409、取消、模型禁用和错误脱敏；--output 的 v1 兼容模式和显式 --version v2 临时输出均有漂移负哨兵。
-- 前端：`npm run typecheck --prefix frontend`、`npm run build --prefix frontend`、`npm run lint --prefix frontend`、`npm run unit:frontend --prefix tests/demo-smoke`。
+- 前端：`npm run typecheck --prefix frontend`、`npm run build --prefix frontend`、`npm run lint --prefix frontend`、`npm run test:unit --prefix frontend`。
 - 真实 PostgreSQL：迁移全新/旧数据复制库、Branch 并发/幂等、Context 发布、Run 终态屏障、lease/generation、重启恢复。
 - Compose/浏览器：按 Runbook 启停、迁移退出码、API/Worker/Redis/PG readiness、SSE 重连、刷新/切 Thread/Branch、资源清理。
 
@@ -704,5 +712,5 @@ Run 保留 queued/running/retry_waiting/succeeded/failed/cancelled，新增 canc
 | 本版契约/调用方处置 | v1 契约保留冻结，v2 独立新增并严格引用 schema 1；本轮不正式删除/废弃 v1。新工作台切换、旧 client 保留、两代类型生成和拒绝降级的边界已与 §9/§11/§13 对齐。 |
 | 本版交叉行为校正 | 明确 v2 读取/取消旧 Run 不触发 Thread 升级，legacy 不产生 v2 执行事实；区分业务错误 code/message 与请求参数校验 422 的安全 detail 包装，显式 retry/regenerate 的 Profile 规则不被“默认模型”概述覆盖。 |
 
-本节是设计阶段的文档校审结论，不是实现测试证据；§13的实现测试、性能及两轮回归结果应查阅PR-003与TEST-002。
+本节是设计阶段的文档校审结论，不是实现测试证据；§13的实现测试、性能及两轮回归结果应查阅PR-002与TEST-002。
 

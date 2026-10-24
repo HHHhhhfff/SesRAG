@@ -26,7 +26,7 @@ async function main(contextFile) {
       await fresh('UI_001普通');
       await pageFor(null, async (page) => { await until(() => page.locator('.topbar h2').textContent(), (value) => value !== '选择会话', '无偏好默认选择'); assert.notEqual(await page.locator('.topbar h2').textContent(), t.title); });
       await pageFor(t, async (page) => { assert.equal(await page.locator('textarea').isDisabled(), true); await page.getByRole('button', { name: '取消归档', exact: true }).click(); await until(() => page.locator('textarea').isEnabled(), Boolean, '取消归档可写'); await waitText(page, '归档历史'); });
-      return { actual: '页面归档保留历史并禁写；无偏好未选归档项，有效归档偏好恢复只读；取消归档可继续。界面为混排标识，未提供独立归档筛选页。', thread_id: t.thread_id };
+      return { actual: '页面归档保留历史并禁写；无偏好默认普通视图，有效归档偏好恢复到归档只读视图；取消归档回普通视图并可继续。', thread_id: t.thread_id };
     });
     // UI_002：真实刷新、失效身份和不可写Storage不能成为事实来源。
     await suite.test('UI_002', async () => {
@@ -355,6 +355,98 @@ async function main(contextFile) {
         assert.equal(requests.length, 2); assert.deepEqual(requests[0], requests[1]); await done(c, target.run_id); related.push({ kind, source: source.run_id, target: target.run_id });
       }
       return { actual: 'message及retry/regenerate三类已接受响应丢失后均重放原键/规范请求；编辑正文或改模型不替换原操作，不重复创建业务身份。', run_id: accepted.run_id, related };
+    });
+    // UI_015 / TP-THR-09：真实服务端归档事实投影到两个互斥列表，不能只改徽标。
+    await suite.test('UI_015', async () => {
+      const normal = await fresh('UI_015普通'); const archived = await fresh('UI_015归档');
+      await request(c, `/api/v2/threads/${archived.thread_id}`, { method: 'PATCH', body: { archived: true } });
+      await pageFor(normal, async (page) => {
+        const item = (title) => page.locator('.thread-item').filter({ hasText: title });
+        assert.equal(await page.getByRole('button', { name: '普通会话', exact: true }).getAttribute('aria-pressed'), 'true');
+        assert.equal(await item(normal.title).count(), 1); assert.equal(await item(archived.title).count(), 0);
+        // 审批补充：切视图会推进epoch，真实失败必须可见而非被旧epoch吞掉。
+        const detailPattern = '**/api/v2/threads/*';
+        await page.route(detailPattern, route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ code: 'DATABASE_UNAVAILABLE', message: '测试注入的读取故障' }) }));
+        try {
+          await page.getByRole('button', { name: '已归档', exact: true }).click();
+          await until(() => page.locator('.error-banner').textContent(), value => value.includes('DATABASE_UNAVAILABLE'), '视图读取错误可见');
+          assert.equal(await page.locator('textarea').isDisabled(), true);
+        } finally { await page.unroute(detailPattern); }
+        await page.getByRole('button', { name: '普通会话', exact: true }).click(); await waitTitle(page, normal.title);
+        await page.getByRole('button', { name: '已归档', exact: true }).click();
+        await until(() => item(archived.title).count(), count => count === 1, '归档列表出现目标');
+        assert.equal(await item(normal.title).count(), 0); await selectThread(page, archived);
+        assert.equal(await page.locator('textarea').isDisabled(), true);
+        await page.getByRole('button', { name: '取消归档', exact: true }).click();
+        await until(() => page.getByRole('button', { name: '普通会话', exact: true }).getAttribute('aria-pressed'), value => value === 'true', '取消归档回普通');
+        await waitTitle(page, archived.title); assert.equal(await page.locator('textarea').isEnabled(), true);
+        await page.getByRole('button', { name: '已归档', exact: true }).click(); assert.equal(await item(archived.title).count(), 0);
+      });
+      return { actual: '普通/已归档视图按服务端事实互斥显示；切视图读取503明确显示且可恢复，归档可读禁写，取消归档移动回普通且当前身份不变。', normal_thread_id: normal.thread_id, archived_thread_id: archived.thread_id };
+    });
+    // UI_016 / TP-THR-10：真实分页空视图与迟到响应；仅延迟真实HTTP，不伪造产品数据。
+    await suite.test('UI_016', async () => {
+      const archived = await fresh('UI_016旧归档'); await request(c, `/api/v2/threads/${archived.thread_id}`, { method: 'PATCH', body: { archived: true } });
+      for (let i = 0; i < 101; i++) await fresh(`UI_016普通${i}`);
+      await pageFor(null, async (page) => {
+        await until(() => page.locator('.thread-item').count(), count => count === 100, '首屏100条摘要');
+        await page.getByRole('button', { name: '已归档', exact: true }).click();
+        assert.equal(await page.locator('.thread-item').count(), 0); assert.equal(await page.locator('textarea').isDisabled(), true);
+        assert.ok((await page.locator('.thread-panel').innerText()).includes('已加载会话中暂无归档项，可加载更多'));
+        let releasePage; const gate = new Promise(resolve => { releasePage = resolve; }); let received = false; let handled;
+        const handledPage = new Promise(resolve => { handled = resolve; });
+        const pattern = '**/api/v2/threads?*';
+        await page.route(pattern, async route => {
+          if (!new URL(route.request().url()).searchParams.has('cursor')) return route.continue();
+          try { const response = await route.fetch(); received = true; await gate; await route.fulfill({ response }); } finally { handled(); }
+        });
+        try {
+          await page.getByRole('button', { name: '加载更多', exact: true }).click(); await until(() => received, Boolean, '真实分页已响应但挂起');
+          await page.getByRole('button', { name: '普通会话', exact: true }).click(); releasePage(); await handledPage;
+          await until(() => page.getByRole('button', { name: '加载更多', exact: true }).isEnabled(), Boolean, '旧分页退出');
+          assert.equal(await page.locator('.thread-item small').count(), 0);
+          await page.unroute(pattern); await page.getByRole('button', { name: '已归档', exact: true }).click();
+          assert.equal(await page.locator('.thread-item').filter({ hasText: archived.title }).count(), 0, '迟到分页不得写入缓存');
+          await page.getByRole('button', { name: '加载更多', exact: true }).click();
+          await until(() => page.locator('.thread-item').filter({ hasText: archived.title }).count(), count => count === 1, '新分页读取首屏外归档');
+          const titles = await page.locator('.thread-item').allTextContents(); assert.equal(new Set(titles).size, titles.length);
+          assert.ok(titles.every(title => title.includes('已归档')));
+        } finally { releasePage(); if (received) await handledPage; await page.unroute(pattern); }
+      });
+      return { actual: '100条普通项首屏不误报无归档，空视图禁写且可加载更多；切视图丢弃真实迟到分页，原游标可重试，加载后归档列表不混入普通项且无重复。', archived_thread_id: archived.thread_id };
+    });
+    // UI_017 / TP-THR-11：首屏之外的有效归档身份需独立校验和恢复，不能默认跳到普通。
+    await suite.test('UI_017', async () => {
+      const t = await fresh('UI_017首屏外归档'); const created = await answer(c, t, 'UI_017持久历史');
+      const before = await detail(c, t.thread_id); await request(c, `/api/v2/threads/${t.thread_id}`, { method: 'PATCH', body: { archived: true } });
+      for (let i = 0; i < 101; i++) await fresh(`UI_017普通${i}`);
+      const first = (await request(c, '/api/v2/threads?include_archived=true&limit=100')).data;
+      assert.ok(!first.threads.some(item => item.thread_id === t.thread_id));
+      await pageFor(t, async page => {
+        assert.equal(await page.getByRole('button', { name: '已归档', exact: true }).getAttribute('aria-pressed'), 'true');
+        await waitText(page, 'UI_017持久历史'); assert.equal(await page.locator('textarea').isDisabled(), true);
+        assert.equal(await pageRunId(page), created.run_id); await page.reload(); await waitTitle(page, t.title); await waitText(page, 'UI_017持久历史');
+        assert.equal(await page.getByRole('button', { name: '已归档', exact: true }).getAttribute('aria-pressed'), 'true');
+      });
+      assert.deepEqual((await detail(c, t.thread_id)).messages, before.messages);
+      return { actual: '有效归档偏好不在首屏时经服务端独立读取，自动进入归档只读视图；刷新恢复同Thread/Branch/Run和完整历史，事实不变。', thread_id: t.thread_id, run_id: created.run_id };
+    });
+    // UI_018 / TP-THR-12：归档视图中的新建入口必须展示并选中新普通会话。
+    await suite.test('UI_018', async () => {
+      const t = await fresh('UI_018归档来源'); await request(c, `/api/v2/threads/${t.thread_id}`, { method: 'PATCH', body: { archived: true } });
+      let created;
+      await pageFor(t, async page => {
+        const accepted = page.waitForResponse(response => new URL(response.url()).pathname === '/api/v2/threads' && response.request().method() === 'POST');
+        await page.getByRole('button', { name: '新建会话', exact: true }).click(); created = await (await accepted).json();
+        await waitTitle(page, created.title); await until(() => page.locator('textarea').isEnabled(), Boolean, '新会话可写');
+        assert.equal(await page.getByRole('button', { name: '普通会话', exact: true }).getAttribute('aria-pressed'), 'true');
+        assert.equal(await page.locator('.thread-item.active').count(), 1);
+        assert.equal(await page.evaluate(() => localStorage.getItem('sesrag.selectedThreadId')), created.thread_id);
+        assert.equal(await page.locator('.thread-item').filter({ hasText: t.title }).count(), 0);
+      });
+      assert.notEqual(created.thread_id, t.thread_id); assert.equal(created.archived_at, null);
+      assert.ok((await detail(c, t.thread_id)).thread.archived_at);
+      return { actual: '归档视图点击新建后回普通视图，选中新Thread/默认Branch且输入可用，来源归档事实不变。', source_thread_id: t.thread_id, new_thread_id: created.thread_id };
     });
   } finally { await browser.close(); }
   return suite.finish();

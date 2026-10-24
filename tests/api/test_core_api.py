@@ -1,7 +1,19 @@
+import tomllib
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from backend.app import create_app
 from backend.config import Settings
+
+
+def test_openapi_version_matches_release_metadata():
+    # WS-DEF-002：应用发布版本独立于HTTP与Event契约版本。
+    root = Path(__file__).resolve().parents[2]
+    expected = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"][
+        "version"
+    ]
+    assert create_app().openapi()["info"]["version"] == expected
 
 
 def test_thread_message_run_and_event_flow(tmp_path):

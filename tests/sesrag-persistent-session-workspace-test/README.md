@@ -1,15 +1,17 @@
 # PRD-002 本机隔离测试套件
 
-本目录承载 v0.2「持久化会话与对话工作台」的独立测试环境和验收工程；不复用、不恢复 `tests/demo-smoke/`。任务5～6已完成两轮同源码/依赖/镜像的All，两轮各104通过、0失败/受限/未运行/工程错误，清理通过，退出0；[用例](test-cases.md)的312个执行字段已回填。详细结果、真实命令和证据见[测试报告](测试报告.md)，归档呈现、版本元数据、文档残留和扫描计数措辞4项补充问题见[缺陷报告](缺陷报告.md)。任务3～4不同源码试跑历史仍保留于[脚本校审记录](测试脚本实施与试跑校审记录.md)，没有拼接旧结果冒充本轮通过。
+本目录承载 v0.2「持久化会话与对话工作台」的独立测试环境和验收工程；不复用、不恢复 `tests/demo-smoke/`。任务5～6已完成两轮同源码/依赖/镜像的All，两轮各104通过、0失败/受限/未运行/工程错误，清理通过，退出0；[用例](test-cases.md)的312个执行字段已回填。详细结果、真实命令和证据见[测试报告](测试报告.md)，归档呈现、版本元数据、文档残留和扫描计数措辞4项补充问题见[缺陷报告](缺陷报告.md)。任务3～4不同源码试跑历史仍保留于[脚本校审记录](测试脚本实施与试跑校审记录.md)，没有拼接旧结果冒充本轮通过。 2026-10-24已完成WS-DEF-001～004最小修复，新增归档4点/4例，最终108例完整All通过、清理通过、退出0；首轮2项工程失败保留单列，最新结论以[修复回归报告](小缺陷修复与回归验收报告.md)为准。
 
 ## 当前状态
+
+2026-10-24最小修复新增TP-THR-09～12及UI_015～018，仍由`workspace-tests.mjs`和现有总入口执行：互斥归档视图、真实分页迟到隔离、首屏外归档偏好和归档视图中新建。QLT_006用中文明确标注artifact/Git/dist合计扫描次数；新增formatter自测属于工程门禁，不计产品用例。上述18例workspace在两次修复轮均通过；最终108例全通过。完整变更及最新回归结果见[小缺陷修复与回归验收报告](小缺陷修复与回归验收报告.md)，原104例两轮证据保留。
 
 | 文件/目录 | 用途 | 状态 |
 | --- | --- | --- |
 | [测试点设计与需求覆盖矩阵](测试点设计与需求覆盖矩阵.md) | PRD-002 的测试目标、需求映射、代码依据和本机可验证性。 | 已完成设计；不是执行结果。 |
-| [test-cases.md](test-cases.md) | 8类、104个用例：设计、需求追溯及逐例真实结果/复现/稳定性。 | 覆盖84点；312个执行字段已填；原E标记保留设计历史，两轮最终无blocked。 |
+| [test-cases.md](test-cases.md) | 当前8类108例、88点，324个最新执行字段已据真实结果填写；原104例两轮文字标为历史。 | 最终108通过；新增四例有真实Chromium证据。 |
 | [测试报告](测试报告.md) | 任务5～6：正式两轮基线、环境/命令、分类与性能/质量结果、证据和清理校审。 | 两轮各104 passed；自动化集通过，不宣称PRD零差异。 |
-| [缺陷报告](缺陷报告.md) | 失败/受限集合核对和4项补充发现的原因类型、代码定位、影响及处理方向。 | 注册用例失败/受限均0；4项问题仍按报告保留。 |
+| [缺陷报告](缺陷报告.md) | 原4项补充发现及2026-10-24修复状态，原失败/受限集合保留。 | 001～004已处理；005原报告未定义。 |
 | [任务5～6最终校审](artifacts/任务5-6最终校审.json) | 两轮逐例对照、证据hash、字段/链接/覆盖与独立残留审计。 | 交付阶段生成的机器可读记录；Git忽略，交接时随证据保留。 |
 | [test-plan.md](test-plan.md) | 用例和8类产品脚本的接入路线、先决条件与完成状态。 | 8类已登记 ready；具体试跑结论另见校审记录。 |
 | [run-workspace-tests.ps1](run-workspace-tests.ps1) | `Environment`/`Selected`/`All`/`Cleanup` 生命周期主入口。 | Environment仅技术探测；Selected/All执行登记分类并统一清理。 |
@@ -61,9 +63,9 @@ Selected/All先冻结本轮源码、依赖和镜像，再串行创建8类中的�
 
 ## 用例、脚本与正式结果
 
-[测试用例](test-cases.md)按 `session/context/model/run/workspace/compatibility/performance/quality` 八类组织，分别为18/13/8/30/14/13/2/6例。每例均关联测试点；末尾提供84点、29项FR/NFR与10项整体验收的覆盖表。V/E/B是设计可验证状态，不是执行结果：原19个受限点的前置已解除并完成正式测试；当前结论以逐例执行字段、原始JSON和测试报告为准。
+[测试用例](test-cases.md)按 `session/context/model/run/workspace/compatibility/performance/quality` 八类组织，分别为18/13/8/30/18/13/2/6例。每例均关联测试点；末尾提供88点、29项FR/NFR与10项整体验收的覆盖表。V/E/B是设计可验证状态，不是执行结果：原19个受限点的前置已解除并完成正式测试；当前结论以逐例执行字段、原始JSON和测试报告为准。
 
-任务1～2准备、任务3～4接入/试跑和任务5～6两轮正式执行均已完成。两轮run_id为`ws-20261023t020902z-9fa22610`、`ws-20261023t030707z-c936fff7`；原始目录互不覆盖。ready必须登记该类别全部设计ID，8类required不得降级。断言覆盖以实现、逐例证据与报告共同核对，不以104条注册数量代替结论；UI_001通过仍登记PRD归档呈现差异。
+任务1～2准备、任务3～4接入/试跑和任务5～6两轮正式执行均已完成。两轮run_id为`ws-20261023t020902z-9fa22610`、`ws-20261023t030707z-c936fff7`；原始目录互不覆盖。ready必须登记该类别全部设计ID，8类required不得降级。断言覆盖以实现、逐例证据与报告共同核对，不以104条注册数量代替结论；原R1/R2的UI_001曾登记归档呈现差异；本次已新增双视图和UI_015～018，修复是否通过以新回归证据为准。
 
 ### 分类脚本与用例对应
 
@@ -73,7 +75,7 @@ Selected/All先冻结本轮源码、依赖和镜像，再串行创建8类中的�
 | `context-tests.mjs` | CTX_001～CTX_013（13例） | 规划器/Worker、Provider实收hash、真实文档索引及Evidence身份 |
 | `model-tests.mjs` | MOD_001～MOD_008（8例） | Profile仓储/冻结快照、真实HTTP、浏览器/PG/日志秘密扫描 |
 | `run-tests.mjs` | RUN_001～RUN_030（30例） | Worker/队列/事务、Journal/SSE、真实API/Worker/PG/Redis停启 |
-| `workspace-tests.mjs` | UI_001～UI_014（14例） | 真实Chromium与同源工作台、网络屏障、DOM/Storage |
+| `workspace-tests.mjs` | UI_001～UI_018（18例） | 真实Chromium与同源工作台、网络屏障、DOM/Storage |
 | `compatibility-tests.mjs` | COMP_001～COMP_013（13例） | 真实v1/v2契约、PG旧版本专库迁移及安全回退 |
 | `performance-tests.mjs` | PERF_001～PERF_002（2例） | 30样本p95、持久delta与DOM同宿主单调时钟区间 |
 | `quality-tests.mjs` | QLT_001～QLT_006（6例） | 实际质量命令及负例、Provider、镜像层、外层清理审计 |
@@ -101,13 +103,13 @@ docker buildx build --file tests/sesrag-persistent-session-workspace-test/compos
 | `compose/Dockerfile.python-tools`、`requirements-tools.txt` | 构建阶段：以本轮 app 镜像为基底，补装精确版本 Python 测试依赖与套件工具；词表继承 app 的构建预热资产。 |
 | `compose/Dockerfile.npm-cache` | 可选准备阶段：将已校验的本项目公开npm缓存bind预热到BuildKit的`sesrag-frontend-npm`，不复制进镜像、不输出tag；仅用于Docker下载不稳定时，不是验收入口。 |
 | `tooling/preflight.mjs` | 运行前检查 Node24、8 类 manifest、3 份 Schema、浏览器和源码/工具指纹；排除秘密、依赖目录和运行数据。 |
-| `tooling/case-catalog.mjs`、`case-catalog.test.mjs` | 准备/接入阶段：从正式用例清单解析8类104例，校验ready全类覆盖、必需分类和脚本真实路径；自测覆盖注册拒绝与受限故障控制。 |
+| `tooling/case-catalog.mjs`、`case-catalog.test.mjs` | 准备/接入阶段：从正式用例清单解析8类108例，校验ready全类覆盖、必需分类和脚本真实路径；自测覆盖注册拒绝与受限故障控制。 |
 | `tooling/orchestrator.mjs` | 全生命周期编排、锁/账本、构建/迁移/Profile/就绪、技术探测、采证、清理及最终报告；由 PowerShell 唯一入口调用。 |
 | `tooling/compose.mjs` | 统一显式 file/env/project 参数、已退出一次性服务查询、动态回环端口发现和有界就绪等待。 |
 | `tooling/resources.mjs` | Engine/所有权/路径校验、独立残留扫描和受约束清理；禁止全局 prune。 |
 | `tooling/process-registry.mjs` | 子进程身份、超时、输出限额和先脱敏后发布；不按进程名批量杀进程。 |
 | `tooling/category-runner.mjs` | 后续分类进程调用、逐用例身份/集合/结果/证据协议校验；缺报告或 exit0 空结果不能通过。 |
-| `tooling/product-category.mjs`、`product-scripts.test.mjs` | 分类实现公共层：从用例/矩阵生成追溯字段、逐例中文输出和脱敏证据、回归/PG/runtime合并；自测校验104例注册和性能判据。 |
+| `tooling/product-category.mjs`、`product-scripts.test.mjs` | 分类实现公共层：从用例/矩阵生成追溯字段、逐例中文输出和脱敏证据、回归/PG/runtime合并；自测校验108例注册和性能判据。 |
 | `specific_test_script/*-runtime.mjs`、`support.mjs`、`browser-support.mjs` | 产品执行阶段：真实API/Provider屏障、动态业务数据和Chromium支持；不拥有Docker删除权限。 |
 | `specific_test_script/probes/case-selectors.json`、`backend-regression-probe.py` | 容器阶段：逐例明确指定pytest节点，保存JUnit、日志和节点观察，不通过测试矩阵文字机械推断结果。 |
 | `specific_test_script/probes/test_case_supplements.py` | 补充用例边界：摘要归属、精确预算、检索故障、不可变Profile、凭据撤销、草稿/资源上限。 |

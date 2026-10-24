@@ -1,6 +1,6 @@
 # 分类测试脚本约定
 
-此目录放PRD-002的8类产品脚本及它们的runtime/support/probes；`manifest.json`已登记104例，8类均为`ready/required=true`。脚本—用例完整映射见[套件README](../README.md#分类脚本与用例对应)。ready表示能被调度，不表示产品通过。Provider环境夹具和运行器自测仍归`fixtures/`、`tooling/`，不计产品用例。
+此目录放PRD-002的8类产品脚本及它们的runtime/support/probes；`manifest.json`已登记108例，8类均为`ready/required=true`。脚本—用例完整映射见[套件README](../README.md#分类脚本与用例对应)。ready表示能被调度，不表示产品通过。Provider环境夹具和运行器自测仍归`fixtures/`、`tooling/`，不计产品用例。
 
 ## 接口
 
@@ -29,11 +29,13 @@ pwsh -NoProfile -File tests/sesrag-persistent-session-workspace-test/run-workspa
 
 完成产品用例、脚本和自测后，才能将对应 manifest 项从 planned 改为 ready，并同步 `case_ids`、需求映射与超时。总入口串行创建/清理各分类独占 project；总入口拒绝覆盖不完整时，不应通过改为 `required=false` 或缩小 case 集合规避。
 
-八类均为必需分类。`tooling/case-catalog.mjs` 以 `test-cases.md` 第3节各分类的 `####` 用例标题为完整清单；ready 项必须登记该类全部用例（18/13/8/30/14/13/2/6），遗漏、错类、未知 ID 或真实路径越界的脚本在部署前拒绝。一个分类可用一个入口依次调用本类多个模块，但不能只登记已写好的部分来绕过剩余用例。All 的未接入报告按设计清单统计104例 not_run，不是0例通过。
+八类均为必需分类。`tooling/case-catalog.mjs` 以 `test-cases.md` 第3节各分类的 `####` 用例标题为完整清单；ready 项必须登记该类全部用例（18/13/8/30/18/13/2/6），遗漏、错类、未知 ID 或真实路径越界的脚本在部署前拒绝。一个分类可用一个入口依次调用本类多个模块，但不能只登记已写好的部分来绕过剩余用例。All 的未接入报告按设计清单统计108例 not_run，不是0例通过。
 
 质量前置只由当轮 quality 分类经协议校验后的 `QLT_002`、`QLT_003` 真实结果判定：两例均 passed 才能 ready。Environment 或不含 quality 的 Selected 仍为 pending；工具安装、自检或 manifest=ready 均不能替代这两例正式结果。
 
 ## 实际执行与证据分层
+
+后端回归探针只挂载后端、tests、迁移、contracts和pyproject等后端输入，不保证存在`/work/frontend`。后端API单测不能读取前端文件；应用版本与pyproject的比较留在后端API测试，跨前后端发布版本由宿主quality分类QLT_002请求真实`/openapi.json`并与frontend/package.json比较。不得为修工程错误删除产品版本断言或把缺文件当skip/pass。
 
 session/context/model/run/compatibility先调用`probes/backend-regression-probe.py`，以`case-selectors.json`逐例指定节点；`@case::`是本套件应用/Worker补充断言，`@migration::`是补充迁移断言，`@pg::`是独立真实PG探针。JUnit节点未找到、跳过或失败必须保留。各类`*-runtime.mjs`补充正式HTTP、容器、Provider实收和真实索引观察；runtime成功不得覆盖关联回归失败或跳过。迁移在PG专库运行，不能用SQLite结果冒充PG。
 

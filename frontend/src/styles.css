@@ -27,6 +27,9 @@ button { cursor: pointer; }
 .context-notice { margin: 12px 0; color: #9fc9bd; font-size: 11px; }
 .text-action { margin-left: 8px; padding: 0; border: 0; color: #81c9a8; background: transparent; font-size: 11px; }
 .thread-more { width: 100%; justify-content: center; }
+.thread-views { display: flex; gap: 6px; margin-bottom: 14px; }
+.thread-views button { flex: 1; justify-content: center; }
+.thread-views button[aria-pressed="true"] { border-color: #73a9bb; background: #243d49; color: #edf4f7; }
 .eyebrow { color: #8b9aa6; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
 h1, h2 { margin: 4px 0 0; font-size: 18px; letter-spacing: 0; }
 .icon-button, .send-button { display: grid; place-items: center; border: 1px solid #33414b; color: #dce6eb; background: #18222a; }

@@ -22,6 +22,14 @@ const activeId = computed(() => threadStore.active?.thread.thread_id); const api
 watch(() => threadStore.epoch, () => runStore.reset(), { flush: 'sync' })
 watch(() => threadStore.active?.runs, runs => { const detail = threadStore.active; const ownRuns = runs?.filter(item => item.branch_id === detail?.branch.branch_id); const latest = ownRuns?.find(item => item.run_id === detail?.active_run_id) ?? ownRuns?.find(item => item.run_id === detail?.recent_run_id) ?? ownRuns?.[0]; if (latest && !runStore.current) void runStore.observe(latest.run_id) }, { deep: true })
 async function selectThread(threadId: string) { error.value = ''; try { await threadStore.selectThread(threadId) } catch (cause) { if (!disposed && threadStore.selectedId === threadId) error.value = `${failureCode(cause, 'THREAD_READ_FAILED')}：无法读取会话` } }
+async function changeListView(view: 'active' | 'archived') {
+  error.value = ''
+  const pending = threadStore.setListView(view)
+  // setListView会同步推进epoch；必须捕获新身份，否则当前视图的读取失败会被当作旧请求吞掉。
+  const epoch = threadStore.epoch
+  try { await pending }
+  catch (cause) { if (!disposed && epoch === threadStore.epoch) error.value = `${failureCode(cause, 'THREAD_READ_FAILED')}：无法读取会话` }
+}
 async function addThread() {
   const epoch = threadStore.epoch
   try { await threadStore.addThread() }
@@ -39,12 +47,15 @@ onMounted(bootstrap); onUnmounted(() => { disposed = true; runStore.reset(); thr
 <template>
   <main class="app-shell">
     <ThreadList
-      :threads="threadStore.threads"
+      :threads="threadStore.visibleThreads"
+      :view="threadStore.listView"
       :active-id="activeId"
       :has-more="threadStore.hasMore"
+      :loading-more="threadStore.loadingMore"
       @select="selectThread"
       @create="addThread"
-      @more="threadStore.loadMoreThreads"
+      @more="action(() => threadStore.loadMoreThreads())"
+      @view="changeListView"
     />
     <section class="conversation-column">
       <header class="topbar">

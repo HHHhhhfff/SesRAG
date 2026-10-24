@@ -8,8 +8,20 @@ const readIdentity = (key: string) => { try { const value = localStorage.getItem
 const writeIdentity = (key: string, value: string | null) => { try { if (value) localStorage.setItem(key, value); else localStorage.removeItem(key) } catch { /* 隐私模式不可用时仅保留内存状态。 */ } }
 
 export const useThreadStore = defineStore('thread', {
-  state: () => ({ threads: [] as ThreadSummary[], branches: [] as Branch[], active: null as ThreadDetail | null, loading: false, loadingOlder: false, epoch: 0, submissionVersion: 0, selectedId: readIdentity('sesrag.selectedThreadId'), selectedBranchId: readIdentity('sesrag.selectedBranchId'), nextCursor: null as string | null, hasMore: false, error: '', pendingMessage: null as { key: string; threadId: string; payload: MessageCreate } | null, pendingFork: null as { key: string; threadId: string; payload: BranchCreate } | null }),
+  state: () => ({ threads: [] as ThreadSummary[], branches: [] as Branch[], active: null as ThreadDetail | null, listView: 'active' as 'active' | 'archived', loading: false, loadingMore: false, loadingOlder: false, epoch: 0, submissionVersion: 0, selectedId: readIdentity('sesrag.selectedThreadId'), selectedBranchId: readIdentity('sesrag.selectedBranchId'), nextCursor: null as string | null, hasMore: false, error: '', pendingMessage: null as { key: string; threadId: string; payload: MessageCreate } | null, pendingFork: null as { key: string; threadId: string; payload: BranchCreate } | null }),
+  getters: {
+    visibleThreads: (state) => state.threads.filter(thread => Boolean(thread.archived_at) === (state.listView === 'archived')),
+  },
   actions: {
+    async setListView(view: 'active' | 'archived') {
+      if (view === this.listView) return
+      this.listView = view
+      // 视图切换也是身份切换；空视图必须关闭旧Run投影，不保留隐藏的可写会话。
+      this.epoch++; this.active = null; this.selectedId = null; this.selectedBranchId = null; this.branches = []; this.pendingMessage = null; this.pendingFork = null; this.loading = false; this.loadingOlder = false
+      writeIdentity('sesrag.selectedThreadId', null); writeIdentity('sesrag.selectedBranchId', null)
+      const next = this.visibleThreads[0]
+      if (next) await this.selectThread(next.thread_id)
+    },
     mergeSummary(thread: ThreadSummary) {
       this.threads = [...this.threads.filter(item => item.thread_id !== thread.thread_id), thread]
         .sort((a, b) => b.updated_at.localeCompare(a.updated_at) || b.thread_id.localeCompare(a.thread_id))
@@ -32,13 +44,20 @@ export const useThreadStore = defineStore('thread', {
       }
       if (epoch !== this.epoch) return
       const next = preferred ?? this.threads.find(thread => !thread.archived_at)
+      this.listView = next?.archived_at ? 'archived' : 'active'
       if (next) await this.selectThread(next.thread_id, this.selectedBranchId ?? undefined)
       else { this.selectedId = null; this.active = null; this.branches = [] }
     },
     async loadMoreThreads() {
-      if (!this.hasMore || !this.nextCursor) return
-      const epoch = this.epoch; const page = await listThreads({ limit: 100, cursor: this.nextCursor, include_archived: true })
-      if (epoch === this.epoch) { this.threads.push(...page.threads.filter(item => !this.threads.some(row => row.thread_id === item.thread_id))); this.nextCursor = page.next_cursor; this.hasMore = page.has_more }
+      if (this.loadingMore || !this.hasMore || !this.nextCursor) return
+      const epoch = this.epoch; this.loadingMore = true
+      try {
+        const page = await listThreads({ limit: 100, cursor: this.nextCursor, include_archived: true })
+        if (epoch !== this.epoch) return
+        // 两个视图共享服务端完整排序游标；去重缓存，再投影当前视图，不伪造归档专用游标。
+        this.threads.push(...page.threads.filter(item => !this.threads.some(row => row.thread_id === item.thread_id))); this.nextCursor = page.next_cursor; this.hasMore = page.has_more
+        if (!this.selectedId && this.visibleThreads[0]) await this.selectThread(this.visibleThreads[0].thread_id)
+      } finally { this.loadingMore = false }
     },
     async selectThread(threadId: string, requestedBranch?: string) {
       const epoch = ++this.epoch
@@ -67,10 +86,10 @@ export const useThreadStore = defineStore('thread', {
       const epoch = this.epoch
       const thread = await createThread()
       if (!this.threads.some(item => item.thread_id === thread.thread_id)) this.threads.unshift(thread)
-      if (epoch === this.epoch) await this.selectThread(thread.thread_id)
+      if (epoch === this.epoch) { this.listView = 'active'; await this.selectThread(thread.thread_id) }
     },
     async rename(title: string) { if (!this.selectedId || !title.trim()) return; const id = this.selectedId; const epoch = this.epoch; const updated = await patchThread(id, { title: title.trim() }); if (epoch !== this.epoch || id !== this.selectedId) return; this.mergeSummary(updated); if (this.active) this.active.thread = updated },
-    async setArchived(archived: boolean) { if (!this.selectedId) return; const id = this.selectedId; const epoch = this.epoch; const updated = await patchThread(id, { archived }); if (epoch !== this.epoch || id !== this.selectedId) return; this.mergeSummary(updated); if (this.active) this.active.thread = updated },
+    async setArchived(archived: boolean) { if (!this.selectedId) return; const id = this.selectedId; const epoch = this.epoch; const updated = await patchThread(id, { archived }); if (epoch !== this.epoch || id !== this.selectedId) return; this.mergeSummary(updated); this.listView = updated.archived_at ? 'archived' : 'active'; if (this.active) this.active.thread = updated },
     async loadOlder() {
       const detail = this.active
       if (this.loadingOlder || !detail?.has_more || detail.next_before_seq === null) return

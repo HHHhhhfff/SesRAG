@@ -401,7 +401,7 @@ for (const mode of ['Selected', 'All']) test(`${mode}的ready分类真实调用�
     assert.notEqual(calls[0].split(':')[2], calls[2].split(':')[2]);
     const report = JSON.parse(fs.readFileSync(path.join(state.artifacts, 'summary.json')));
     assert.equal(report.product_acceptance, mode === 'All' ? 'passed' : 'partial');
-    assert.equal(report.counts.passed, mode === 'All' ? 104 : 31);
+    assert.equal(report.counts.passed, mode === 'All' ? 108 : 31);
     assert.equal(report.quality_prerequisites, mode === 'All' ? 'ready' : 'pending');
   } finally { fs.rmSync(fixtureRoot, { recursive: true, force: true }); if (state) { fs.rmSync(state.artifacts, { recursive: true, force: true }); fs.rmSync(state.runtime, { recursive: true, force: true }); fs.rmSync(state.temp, { recursive: true, force: true }); } }
 });

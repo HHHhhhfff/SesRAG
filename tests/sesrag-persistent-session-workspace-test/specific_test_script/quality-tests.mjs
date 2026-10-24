@@ -5,6 +5,11 @@ import { openCategory, helper, repoRoot } from '../tooling/product-category.mjs'
 import { runCommand } from '../tooling/process-registry.mjs';
 import { assert, thread, send, done, scenario, barrier, release, observations, request } from './support.mjs';
 
+// WS-DEF-004 / QLT_006：helper包含多个持久面，次数不等于独立公开artifact份数。
+export function secretAuditObservation(members, trackedFiles, audit) {
+  return `扫描镜像归档${members}个成员（Key/control/PG密码/DSN）、${trackedFiles}个Git跟踪文件；helper对artifact、Git跟踪文件及frontend/dist合计扫描${audit.files_scanned}次（不承诺去重），未发现运行凭据。`;
+}
+
 async function main(contextFile) {
   const suite = openCategory('quality', contextFile); const c = suite.context;
   // QLT_001：场景驱动真实产品请求；Provider自测只作协议辅助，不替代产品结算。
@@ -33,10 +38,15 @@ async function main(contextFile) {
   }
   // QLT_002：每项质量命令独立保留，不允许pytest通过掩盖Ruff/mypy失败。
   await suite.test('QLT_002', async () => {
+    // WS-DEF-002：除源码单测外，核对本轮真实镜像公开的应用版本。
+    const metadata = (await request(c, '/openapi.json')).data.info;
+    const expectedVersion = JSON.parse(fs.readFileSync(path.join(repoRoot, 'frontend/package.json'), 'utf8')).version;
+    assert.equal(metadata.version, expectedVersion, '实际API镜像发布版本须与当前前端发布元数据一致');
+    const versionEvidence = suite.evidence('openapi-metadata.json', { title: metadata.title, version: metadata.version, expected_version: expectedVersion });
     const checks = backend.checks.filter((item) => item.name !== 'counter');
     const required = ['ruff', 'mypy', 'pytest', 'bad-contract-rejected'];
     return { status: required.every((name) => checks.some((item) => item.name === name && item.exit_code === 0)) && checks.every((item) => item.exit_code === 0) ? 'passed' : 'failed', actual: checks.map((item) => `${item.name}退出${item.exit_code}`).join('；') || '后端探针无完整结果', checks,
-      reason_code: 'BACKEND_QUALITY_GATE', reason: '后端质量门禁存在非零结果，详见各命令日志。', evidence_paths: backendEvidence };
+      reason_code: 'BACKEND_QUALITY_GATE', reason: '后端质量门禁存在非零结果，详见各命令日志。', evidence_paths: [...backendEvidence, versionEvidence] };
   });
   // QLT_003：运行当前源码真实工具；负例仅写本轮tmp，不修改冻结源码。
   await suite.test('QLT_003', async () => {
@@ -94,8 +104,8 @@ async function main(contextFile) {
     function walk(directory) { for (const item of fs.readdirSync(directory, { withFileTypes: true })) { const file = path.join(directory, item.name); if (item.isDirectory()) walk(file); else if (needles.some((value) => fs.readFileSync(file).includes(Buffer.from(value)))) hits.push(path.relative(repoRoot, file)); } }
     assert.ok(fs.existsSync(dist), '前端构建产物缺失，不能声称已扫描'); walk(dist); assert.deepEqual(hits, []);
     const reportAudit = await helper(c, 'audit-artifact-secrets'); assert.equal(reportAudit.result.files_with_secret, 0);
-    return { actual: `扫描镜像归档${scan.members_scanned}个成员（Key/control/PG密码/DSN）、${files}个Git跟踪文件、frontend/dist及${reportAudit.result.files_scanned}份当轮公开证据；未发现运行凭据。`, evidence_paths: [evidence], tracked_file_count: files, artifact_audit: reportAudit.result };
+    return { actual: secretAuditObservation(scan.members_scanned, files, reportAudit.result), evidence_paths: [evidence], tracked_file_count: files, artifact_audit: reportAudit.result };
   });
   return suite.finish();
 }
-main(process.argv[process.argv.indexOf('--context') + 1]).then((code) => { process.exitCode = code; }).catch((error) => { console.error(`【quality】工程错误：${error.message}`); process.exitCode = 2; });
+if (process.argv.includes('--context')) main(process.argv[process.argv.indexOf('--context') + 1]).then((code) => { process.exitCode = code; }).catch((error) => { console.error(`【quality】工程错误：${error.message}`); process.exitCode = 2; });
