@@ -1,5 +1,17 @@
 # 后端集成验证
 
+## PRD-003 独立实施检查
+
+`test_rag_provider_protocols_v3.py`用受控HTTP验证显式维度、输入index与原生rerank；`test_rag_recovery_v3.py`验证单Job恢复、等待不耗失败次数、未知不重提、失败保active与引用保护。普通pytest不联网、不读真实Key。
+
+`run_rag_v3_check.py`是本轮独立Compose检查总入口；`compose.rag-v3.yml`创建随机项目、随机凭据和专用卷，不读根.env，不开放宿主端口。`rag_v3_pg_probe.py`只在该容器marker下运行，覆盖真实四迁移、txt/md→构建→诊断／schema3 Run→Context／Citation／SSE→重建历史证据、384/1024空间隔离、PG物化SQL排序、不可变触发器和active/latest复合FK。总入口finally收日志、down -v --rmi local并按项目标签复查容器／卷／网络及本次应用镜像，保留共享基础镜像和构建缓存，证据保存`data/rag-implementation/`。
+
+```powershell
+.venv/Scripts/python.exe tests/integration/run_rag_v3_check.py
+```
+
+Linux改为`.venv/bin/python`。这是开发实施smoke，不替代后续TEST-003完整验收、真实模型效果／性能验收。镜像构建失败也会收证清理，结果不能写成产品通过。前轮正式验收套件不被调用或修改。
+
 `conftest.py` 提供文档测试独立 SQLite 和上传目录。`test_document_boundaries.py` 覆盖上传清理、Parser错误结算与事务外Embedding；`test_rag_review_fixes.py` 覆盖空白兼容、双故障收尾、巨大整数以及解析进程取消/spawn/output/ZIP边界。
 
 `test_provider_http.py` 使用仅绑定127.0.0.1的临时 HTTP/SSE 服务，验证三片流、跨Task迭代、安全分型、响应头及body总预算，fixture负责关闭，无生产测试路由。

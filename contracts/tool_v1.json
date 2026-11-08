@@ -1,0 +1,45 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "const": "rag.search",
+      "default": "rag.search",
+      "title": "Name",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "readonly": {
+      "const": true,
+      "default": true,
+      "title": "Readonly",
+      "type": "boolean"
+    },
+    "max_calls_per_generation": {
+      "const": 1,
+      "default": 1,
+      "title": "Max Calls Per Generation",
+      "type": "integer"
+    },
+    "input_contract": {
+      "const": "tool_rag_search_input_v1.json",
+      "default": "tool_rag_search_input_v1.json",
+      "title": "Input Contract",
+      "type": "string"
+    },
+    "result_contract": {
+      "const": "tool_rag_search_result_v2.json",
+      "default": "tool_rag_search_result_v2.json",
+      "title": "Result Contract",
+      "type": "string"
+    }
+  },
+  "title": "RagToolDefinition",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/tool_v1.json"
+}

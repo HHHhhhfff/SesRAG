@@ -24,6 +24,8 @@ class PostgresQueue:
             worker_id,
             task.generation,
             task.attempt,
+            task.index_batch_id,
+            task.retrieval_execution_id,
         )
 
     async def start(self, task):

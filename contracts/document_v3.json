@@ -1,0 +1,338 @@
+{
+  "$defs": {
+    "IndexBuild": {
+      "additionalProperties": false,
+      "properties": {
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "knowledge_base_id": {
+          "title": "Knowledge Base Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "building",
+            "waiting",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "parse": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ParseOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "chunk_count": {
+          "maximum": 50000,
+          "minimum": 0,
+          "title": "Chunk Count",
+          "type": "integer"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "operation_status": {
+          "anyOf": [
+            {
+              "const": "cancelling",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operation Status"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "index_batch_id",
+        "document_id",
+        "knowledge_base_id",
+        "state",
+        "stage",
+        "task_id",
+        "parse",
+        "chunk_count",
+        "error_code",
+        "created_at"
+      ],
+      "title": "IndexBuild",
+      "type": "object"
+    },
+    "ParseOutcome": {
+      "additionalProperties": false,
+      "properties": {
+        "parse_job_id": {
+          "title": "Parse Job Id",
+          "type": "string"
+        },
+        "parser_profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parser Profile Id"
+        },
+        "parser_profile_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parser Profile Version"
+        },
+        "parser_hash": {
+          "title": "Parser Hash",
+          "type": "string"
+        },
+        "output_protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Protocol"
+        },
+        "parser_kind": {
+          "enum": [
+            "local",
+            "mineru"
+          ],
+          "title": "Parser Kind",
+          "type": "string"
+        },
+        "routing_policy_version": {
+          "title": "Routing Policy Version",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "waiting",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "remote_outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Remote Outcome"
+        },
+        "artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Artifact Id"
+        },
+        "poll_count": {
+          "maximum": 60,
+          "minimum": 0,
+          "title": "Poll Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "parse_job_id",
+        "parser_profile_id",
+        "parser_profile_version",
+        "parser_hash",
+        "output_protocol",
+        "parser_kind",
+        "routing_policy_version",
+        "state",
+        "stage",
+        "error_code",
+        "remote_outcome",
+        "artifact_id",
+        "poll_count"
+      ],
+      "title": "ParseOutcome",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "title": "Document Id",
+      "type": "string"
+    },
+    "knowledge_base_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Knowledge Base Id"
+    },
+    "filename": {
+      "title": "Filename",
+      "type": "string"
+    },
+    "extension": {
+      "title": "Extension",
+      "type": "string"
+    },
+    "size_bytes": {
+      "title": "Size Bytes",
+      "type": "integer"
+    },
+    "content_hash": {
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "metadata_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Metadata Version",
+      "type": "integer"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Tags",
+      "type": "array"
+    },
+    "availability": {
+      "enum": [
+        "none",
+        "ready",
+        "reindex_required"
+      ],
+      "title": "Availability",
+      "type": "string"
+    },
+    "active_index_batch_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Active Index Batch Id"
+    },
+    "latest_build": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IndexBuild"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "knowledge_base_id",
+    "filename",
+    "extension",
+    "size_bytes",
+    "content_hash",
+    "tags",
+    "availability",
+    "active_index_batch_id",
+    "latest_build",
+    "created_at"
+  ],
+  "title": "Document",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/document_v3.json"
+}

@@ -2,6 +2,8 @@
 
 import pytest
 
+from backend.application.legacy_rag import bootstrap_default
+from backend.application.rag_profiles import bootstrap_mock
 from backend.config import Settings
 from backend.db.base import Base
 from backend.db.session import create_engine, create_session_factory
@@ -17,5 +19,11 @@ async def document_db(tmp_path):
     engine = create_engine(settings)
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
-    yield settings, create_session_factory(engine)
+    factory = create_session_factory(engine)
+    # 测试明确建立可信Mock基线，不让生产入口凭维度推断旧空间。
+    async with factory() as session:
+        await bootstrap_mock(session)
+        await bootstrap_default(session, settings)
+        await session.commit()
+    yield settings, factory
     await engine.dispose()

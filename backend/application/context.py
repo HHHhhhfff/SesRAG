@@ -74,6 +74,7 @@ class ContextInput:
     max_candidate_messages: int = 200
     max_candidate_chars: int = 200_000
     prior_omitted_ranges: tuple[OmittedRange, ...] = ()
+    evidence_role: str = "system"
 
 
 @dataclass(frozen=True, slots=True)
@@ -266,7 +267,7 @@ def plan_context(
             ordered.extend(ModelMessage(m.role, m.content) for m in unit)
         ordered.append(current)
         for item in evidence:
-            ordered.append(ModelMessage("system", "[非可信检索证据]\n" + item.text))
+            ordered.append(ModelMessage(request.evidence_role, "[非可信检索证据]\n" + item.text))
         return tuple(ordered)
 
     while counter.count_messages(messages_for()) > available and evidence:

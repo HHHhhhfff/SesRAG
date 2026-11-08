@@ -1,5 +1,18 @@
 # SesRAG 前端
 
+## v0.3 RAG 工作台
+
+新工作台的消息、Run、Context、Event和文档使用`src/api/v3/`与生成的`types/api-v3.ts`；Thread/Branch/Models元数据继续复用v2。下文ADR-002说明保留为旧会话能力背景，文档v1入口仅作兼容调用，不是新UI默认入口。
+
+- `stores/rag.ts`及`components/RagPanel.vue`：知识库管理、策略／独立模型空间、后续Run配置、过滤与独立检索诊断。诊断不创建聊天消息。
+- `stores/documents.ts`及`components/DocumentUploader.vue`：九格式固定提示、每次办公外发确认、有界状态刷新、旧active与最新构建分别显示、查看已发布切片。确定性4xx拒绝后可改正输入，网络未知上传沿用原文件和幂等键。
+- `components/EvidenceViewer.vue`：经受权接口读取固定Bundle文本／组件／位置，来源缺失明确显示，迟到响应不能覆盖已切换身份。
+- `events/rag-event-stream.ts`：三代事件补放和v3 SSE传输，仍由run store唯一seq入口去重；Event不能直接宣布终态。
+- `markdown/render.ts`：统一DOMPurify清洗；阻断远程图片、iframe、script、svg、样式及危险协议，不自动拉取文档资产。
+- `tests/rag-workspace.test.ts`：本轮固定路由、逐次授权、已知拒绝恢复、迟到诊断和恶意Markdown组件／store回归，不作为完整浏览器或效果验收证明。
+
+新能力启用和真实服务限制见[v0.3 Runbook](../docs/runbooks/rag-v3-development.md)，正式字段见[接口文档](../docs/接口文档.md)。
+
 重试/重新生成默认沿用来源Run的模型快照；只有查看该Run后在模型控件手动切换，才发送显式覆盖。全局保存的模型偏好只用于新消息选择，不自动覆盖旧Run。工作台自动观察只选当前Branch的Run，继承祖先Run保留为历史；侧栏摘要由服务端事实刷新并按最近更新时间排序。
 
 Demo 使用 Vue 3、TypeScript、Vite、Pinia 和单页原生组件；无需 Router 或 UI 库。Markdown 由 marked 解析并经 DOMPurify 清洗，不能直接渲染模型原始 HTML。
@@ -39,6 +52,8 @@ Vite 代理 `/api` 和 `/health`。宿主默认目标 `http://127.0.0.1:8000`，
 根 `.env.example` 是配置说明模板；宿主运行 Vite 不自动读取仓库根 `.env`，需要前述进程环境或前端局部 env 文件。
 
 ## 类型与质量检查
+
+v0.3的`components/rag-labels.ts`只将服务端持久阶段转为中文，`styles.css`约束RAG表单与长证据换行，不在显示层推断终态。`api/v3/rag.ts`／`stores/rag.ts`／`RagPanel.vue`／`EvidenceViewer.vue`承担库、策略、独立诊断与证据；正式接口见接口文档，当前验收限制见PR-003。
 
 `tests/thread-store.test.ts` 是 WS-DEF-001 的8项store/侧栏/页面回归，覆盖互斥视图、归档移动、首屏外偏好、空视图、新建、共享游标去重、迟到响应及当前视图读取失败的可见错误与恢复；正式浏览器验收由 PRD-002 独立套件UI_015～018执行。
 

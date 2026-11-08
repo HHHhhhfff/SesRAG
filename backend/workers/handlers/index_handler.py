@@ -34,6 +34,10 @@ async def process_index_task(
         )
         if document is None:
             raise PermanentTaskError("DOCUMENT_NOT_FOUND", "索引任务引用的文档不存在")
+        if document.extension == ".docx":
+            raise PermanentTaskError(
+                "DOCUMENT_WRITE_UPGRADE_REQUIRED", "残留DOCX任务不能隐式外发或继续本地解析"
+            )
         check_locked_times(task.lease_expires_at, task.deadline_at)
         document.status = DocumentState.INDEXING.value
         document_id, storage_key, extension = (

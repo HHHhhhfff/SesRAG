@@ -4,7 +4,7 @@ import { marked } from 'marked'
 // 保存正文和流式草稿都走同一入口，禁止危险协议、事件属性和脚本节点。
 const purifier = (value: string) => DOMPurify.sanitize(value, {
   USE_PROFILES: { html: true },
-  FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
+  FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'img', 'svg', 'picture', 'video', 'audio', 'source', 'link', 'base', 'meta'],
   FORBID_ATTR: ['style', 'onerror', 'onclick', 'onload', 'onmouseover'],
   ALLOW_UNKNOWN_PROTOCOLS: false,
 })

@@ -73,6 +73,11 @@ h1, h2 { margin: 4px 0 0; font-size: 18px; letter-spacing: 0; }
 .failure-summary { color: #e19090; font-size: 12px; }
 .document-item { flex-wrap: wrap; }
 .stream-status { color: #9cabb5; font-size: 12px; }
+.rag-panel, .document-panel, .evidence-viewer { overflow-wrap: anywhere; min-width: 0; }
+.rag-panel label, .rag-form label { display: block; margin: 8px 0; }
+.rag-panel input:not([type="checkbox"]), .rag-panel select, .rag-form input:not([type="checkbox"]) { max-width: 100%; box-sizing: border-box; }
+.rag-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.rag-panel pre, .document-panel pre, .evidence-viewer pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 @media (max-width: 1000px) {
   .app-shell { grid-template-columns: 220px minmax(0, 1fr); }

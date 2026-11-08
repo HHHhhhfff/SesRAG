@@ -1,0 +1,225 @@
+{
+  "$defs": {
+    "Location": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "line",
+            "paragraph",
+            "table_cell",
+            "page",
+            "slide",
+            "sheet_range",
+            "block"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "source",
+            "normalized"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "verified",
+            "block_only"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number"
+        },
+        "end_number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Number"
+        },
+        "block_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "sheet_name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet Name"
+        },
+        "cell_range": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell Range"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "row": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "origin",
+        "quality",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "Location",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "bundle_id": {
+      "title": "Bundle Id",
+      "type": "string"
+    },
+    "document_id": {
+      "title": "Document Id",
+      "type": "string"
+    },
+    "index_batch_id": {
+      "title": "Index Batch Id",
+      "type": "string"
+    },
+    "context_evidence_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Context Evidence Ids",
+      "type": "array"
+    },
+    "locations": {
+      "items": {
+        "$ref": "#/$defs/Location"
+      },
+      "maxItems": 1000,
+      "title": "Locations",
+      "type": "array"
+    },
+    "dense_score": {
+      "title": "Dense Score",
+      "type": "number"
+    },
+    "rerank_score": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rerank Score"
+    }
+  },
+  "required": [
+    "bundle_id",
+    "document_id",
+    "index_batch_id",
+    "context_evidence_ids",
+    "locations",
+    "dense_score"
+  ],
+  "title": "CitationV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/citation_v2.json"
+}

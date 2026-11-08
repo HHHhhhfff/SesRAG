@@ -38,7 +38,7 @@ class EmbeddingType(TypeDecorator[list[float]]):
 
     def load_dialect_impl(self, dialect):  # type: ignore[no-untyped-def]
         if dialect.name == "postgresql" and Vector is not None:
-            return dialect.type_descriptor(Vector(384))
+            return dialect.type_descriptor(Vector())
         return dialect.type_descriptor(JSON())
 
 
@@ -162,6 +162,7 @@ class ContextPlanModel(Base):
         UniqueConstraint("task_id", "generation", name="uq_context_plans_task_generation"),
     )
     context_plan_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, default=2, server_default="2")
     run_id: Mapped[str] = mapped_column(ForeignKey("runs.run_id"), index=True)
     task_id: Mapped[str] = mapped_column(ForeignKey("tasks.task_id"))
     generation: Mapped[int] = mapped_column(Integer)
@@ -174,6 +175,7 @@ class ContextPlanModel(Base):
     omitted_ranges: Mapped[list] = mapped_column(JSON, default=list)
     summary_ids: Mapped[list] = mapped_column(JSON, default=list)
     selected_evidence: Mapped[list] = mapped_column(JSON, default=list)
+    omitted_evidence: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
     trim_policy_version: Mapped[str] = mapped_column(String(40))
     counter_version: Mapped[str] = mapped_column(String(40))
     estimated_input_tokens: Mapped[int] = mapped_column(Integer)
@@ -225,6 +227,7 @@ class MessageModel(Base):
     status: Mapped[str] = mapped_column(String(20), default="completed")
     run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     citations_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    citation_schema_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     idempotency_key: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
@@ -237,7 +240,7 @@ class RunModel(Base):
             "'succeeded','failed','cancelled')",
             name="ck_runs_status",
         ),
-        CheckConstraint("execution_schema_version IN (1,2)", name="ck_runs_execution_schema"),
+        CheckConstraint("execution_schema_version IN (1,2,3)", name="ck_runs_execution_schema"),
         CheckConstraint(
             "operation_kind IN ('initial','user_retry','regenerate','branch_continue')",
             name="ck_runs_operation_kind",
@@ -265,6 +268,9 @@ class RunModel(Base):
         String(30), default="initial", server_default="initial"
     )
     execution_schema_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    retrieval_view_id: Mapped[str | None] = mapped_column(
+        ForeignKey("retrieval_views.view_id"), nullable=True
+    )
     context_plan_id: Mapped[str | None] = mapped_column(
         ForeignKey("context_plans.context_plan_id", use_alter=True, name="fk_runs_context_plan"),
         nullable=True,
@@ -297,9 +303,19 @@ class TaskModel(Base):
             sqlite_where=text("kind='run'"),
         ),
         CheckConstraint(
-            "(kind = 'run' AND run_id IS NOT NULL AND document_id IS NULL) OR "
-            "(kind = 'index_document' AND document_id IS NOT NULL AND run_id IS NULL)",
+            "(kind = 'run' AND run_id IS NOT NULL AND document_id IS NULL "
+            "AND index_batch_id IS NULL AND retrieval_execution_id IS NULL) OR "
+            "(kind = 'index_document' AND document_id IS NOT NULL AND run_id IS NULL "
+            "AND index_batch_id IS NULL AND retrieval_execution_id IS NULL) OR "
+            "(kind = 'index_build' AND index_batch_id IS NOT NULL AND run_id IS NULL "
+            "AND document_id IS NULL AND retrieval_execution_id IS NULL) OR "
+            "(kind = 'retrieval_diagnostic' AND retrieval_execution_id IS NOT NULL "
+            "AND run_id IS NULL AND document_id IS NULL AND index_batch_id IS NULL)",
             name="ck_tasks_kind_target",
+        ),
+        CheckConstraint(
+            "state != 'waiting_external' OR kind IN ('index_build','retrieval_diagnostic')",
+            name="ck_tasks_external_wait_kind",
         ),
     )
 
@@ -307,6 +323,16 @@ class TaskModel(Base):
     kind: Mapped[str] = mapped_column(String(30), index=True)
     run_id: Mapped[str | None] = mapped_column(ForeignKey("runs.run_id"), nullable=True, index=True)
     document_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    index_batch_id: Mapped[str | None] = mapped_column(
+        ForeignKey("index_builds.index_batch_id"), nullable=True
+    )
+    retrieval_execution_id: Mapped[str | None] = mapped_column(
+        ForeignKey("retrieval_executions.execution_id"), nullable=True
+    )
+    failure_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     state: Mapped[str] = mapped_column(String(30), index=True)
     attempt: Mapped[int] = mapped_column(Integer, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, default=3)
@@ -343,9 +369,29 @@ class RunEventModel(Base):
 
 class DocumentModel(Base):
     __tablename__ = "documents"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["document_id", "active_index_batch_id"],
+            ["index_builds.document_id", "index_builds.index_batch_id"],
+            name="fk_document_active_batch",
+            use_alter=True,
+        ),
+        ForeignKeyConstraint(
+            ["document_id", "latest_index_batch_id"],
+            ["index_builds.document_id", "index_builds.index_batch_id"],
+            name="fk_document_latest_batch",
+            use_alter=True,
+        ),
+    )
 
     document_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     owner_id: Mapped[str] = mapped_column(String(120), index=True)
+    knowledge_base_id: Mapped[str | None] = mapped_column(
+        ForeignKey("knowledge_bases.knowledge_base_id"), nullable=True, index=True
+    )
+    tags_json: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
+    latest_index_batch_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    metadata_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     filename: Mapped[str] = mapped_column(String(255))
     source: Mapped[str] = mapped_column(String(40), default="local_upload")
     extension: Mapped[str] = mapped_column(String(20))
@@ -364,7 +410,20 @@ class DocumentModel(Base):
 class ChunkModel(Base):
     __tablename__ = "chunks"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["index_batch_id", "document_id", "space_id"],
+            ["index_builds.index_batch_id", "index_builds.document_id", "index_builds.space_id"],
+            name="fk_chunks_build_document_space",
+        ),
         UniqueConstraint("document_id", "index_batch_id", "seq", name="uq_chunks_batch_seq"),
+        ForeignKeyConstraint(
+            ["space_id", "dimension"],
+            ["embedding_spaces.space_id", "embedding_spaces.dimension"],
+            name="fk_chunks_space_dimension",
+        ),
+        CheckConstraint(
+            "dimension IS NULL OR dimension BETWEEN 1 AND 2000", name="ck_chunks_dimension"
+        ),
     )
 
     chunk_id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -375,5 +434,14 @@ class ChunkModel(Base):
     start_offset: Mapped[int] = mapped_column(Integer)
     end_offset: Mapped[int] = mapped_column(Integer)
     embedding: Mapped[list[float] | None] = mapped_column(EmbeddingType(), nullable=True)
+    space_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    dimension: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    block_segments_json: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
+    legacy_unverified: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     locations_json: Mapped[list[dict]] = mapped_column(JSON, default=list, server_default="[]")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+# 共享唯一 metadata；直接导入旧模型的测试／进程也须解析新增关系的目标表。
+from backend.db import rag_models as _rag_models  # noqa: E402, F401

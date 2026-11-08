@@ -1,7 +1,9 @@
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +15,8 @@ RESERVED_EVENTS = {
     "run.cancelling",
     "message.completed",
     "run.succeeded",
+    "tool.failed",
+    "tool.cancelled",
 }
 
 
@@ -47,8 +51,9 @@ async def append_event(
         )
         if terminal or event_type not in {f"run.{run.status}", "message.completed"}:
             raise ValueError("RUN_TERMINAL")
-    if run.execution_schema_version == 2:
+    if run.execution_schema_version in {2, 3}:
         from backend.api.schemas.v2.runs import EVENT_DATA_V2
+        from backend.api.schemas.v3.events import EVENT_DATA_V3
         from backend.application.errors import PermanentTaskError
         from backend.db.models import TaskModel
 
@@ -78,7 +83,10 @@ async def append_event(
             **data,
             **({"task_id": None, "attempt": None, "generation": None} if control else execution),
         }
-        data = EVENT_DATA_V2[event_type].model_validate(data).model_dump(mode="json")
+        event_types: Mapping[str, type[BaseModel]] = (
+            EVENT_DATA_V3 if run.execution_schema_version == 3 else EVENT_DATA_V2
+        )
+        data = event_types[event_type].model_validate(data).model_dump(mode="json")
     run.next_event_seq += 1
     event = RunEventModel(
         event_id=str(uuid4()),

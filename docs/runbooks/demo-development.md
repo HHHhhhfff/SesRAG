@@ -1,5 +1,7 @@
 # Demo 本地开发 Runbook
 
+> v0.3新增RAG Profile、四步迁移、私有卷及办公解析前提，先结合[v0.3部署／升级补充](rag-v3-development.md)使用本文。已有数据升级不能直接沿用下文旧版本的裸`upgrade head`；本轮已有业务事实后的回退采用一致备份恢复。
+
 本文用于在本机通过 Docker Compose 部署 SesRAG Demo。所有命令均从仓库根目录执行；Windows 使用 PowerShell 7.4+ 和 Docker Desktop Linux Engine，Linux 使用 Bash、Docker Engine 和 Docker Compose v2；首次 Linux 凭据生成还需要 `openssl` 命令。先运行 `docker version` 与 `docker compose version`，确认 Docker daemon 可用。
 
 `.env.example` 是模板，不含可直接使用的密码；Compose 自动读取仓库根目录的 `.env`。真实凭据只写入 `.env`（该文件已被 Git 忽略），不要修改 `.env.example`、提交 `.env`、把密码贴入命令行或把完整 DSN 写入日志。

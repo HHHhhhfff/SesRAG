@@ -25,7 +25,9 @@ from backend.infrastructure.queue.adapter import PostgresQueue
 from backend.infrastructure.queue.postgres_queue import acknowledge_cancellation
 from backend.infrastructure.rag.parsers import SubprocessParser
 from backend.infrastructure.rag.pgvector_store import PgVectorStore
+from backend.workers.handlers.index_build_handler import process_index_build_task
 from backend.workers.handlers.index_handler import process_index_task
+from backend.workers.handlers.retrieval_diagnostic_handler import process_diagnostic_task
 from backend.workers.handlers.run_handler import process_run_task
 
 logger = logging.getLogger(__name__)
@@ -207,6 +209,14 @@ class WorkerRuntime:
                 self.parser,
                 self.vector_store,
             )
+        elif task.kind == "index_build":
+            await process_index_build_task(
+                self.session_factory, self.settings, task.task_id, self.worker_id, task.generation
+            )
+        elif task.kind == "retrieval_diagnostic":
+            await process_diagnostic_task(
+                self.session_factory, self.settings, task.task_id, self.worker_id, task.generation
+            )
         else:
             raise ApplicationError("UNKNOWN_TASK_KIND", "不支持的任务类型")
 
@@ -286,6 +296,24 @@ class WorkerRuntime:
         return True
 
     async def _ack_cancel(self, task):
+        if task.kind in {"index_build", "retrieval_diagnostic"}:
+
+            async def acknowledge_rag(session):
+                from backend.application.rag_task_execution import settle_rag_task
+                from backend.infrastructure.queue.postgres_queue import lock_owned_task
+
+                current = await lock_owned_task(
+                    session, task.task_id, task.worker_id, task.generation
+                )
+                if current is not None and current.cancel_requested_at:
+                    lease, deadline = current.lease_expires_at, current.deadline_at
+                    await settle_rag_task(session, current, "TASK_CANCELLED", cancelled=True)
+                    from backend.infrastructure.queue.postgres_queue import commit_authorized
+
+                    await commit_authorized(session, lease, deadline)
+
+            await self._database(acknowledge_rag)
+            return
         if task.kind != "run":
             return
         try:

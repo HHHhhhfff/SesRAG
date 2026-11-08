@@ -1,8 +1,12 @@
 # SesRAG Demo
 
-v0.2 当前代码的详细落地、文件变动和需求核对见[PR-002实施结果调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)。本轮及后续PRD的本机验收独立组织；当前正式入口为[PRD-002测试套件](tests/sesrag-persistent-session-workspace-test/README.md)。旧Demo验收文件只在上一版本/测试分支查阅，当前导航不再指向已退出目录。
+v0.3（`sesrag_v0.3`）已落地[RAG 检索增强与 MinerU 接入](docs/prd/003-SesRAG-RAG检索增强与MinerU接入-PRD.md)工程基线：知识库、版本化向量空间、结构切片、冻结检索视图、只读工具及诊断、pgvector数据库内精确检索、候选发布、历史证据和v3工作台。[实施结果简要说明](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-PR.md)记录文件／接口变动、实际检查及剩余验收前提，不替代正式调研或验收报告。
 
-v0.2 当前[TEST-002正式测试实施方案](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)已建立独立的本机Compose测试环境、总入口、工具/素材和报告清理流程，入口及职责见[测试套件说明](tests/sesrag-persistent-session-workspace-test/README.md)，实际演练结果见[环境实施与验证记录](tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)。独立[测试点矩阵](tests/sesrag-persistent-session-workspace-test/测试点设计与需求覆盖矩阵.md)与[测试用例设计](tests/sesrag-persistent-session-workspace-test/test-cases.md)已完成；任务1～2的工具前置和总入口核验见[准备记录](tests/sesrag-persistent-session-workspace-test/测试准备与总入口核验记录.md)。任务3～4已接入8类104例脚本，真实试跑及修订证据见[脚本校审记录](tests/sesrag-persistent-session-workspace-test/测试脚本实施与试跑校审记录.md)；任务5～6现已完成同源两轮All，各104通过、0失败/受限/未运行/工程错误，清理通过；结果及真实命令见[测试报告](tests/sesrag-persistent-session-workspace-test/测试报告.md)，归档呈现等4项补充发现见[缺陷报告](tests/sesrag-persistent-session-workspace-test/缺陷报告.md)，原104例执行字段已回填。本次最小修复新增4个归档用例，当前登记108例，最终完整回归108通过、清理通过、退出0；首轮工程失败如实保留，未定义005不作虚构处理。改动及本轮真实结果见[小缺陷修复与回归验收报告](tests/sesrag-persistent-session-workspace-test/小缺陷修复与回归验收报告.md)。
+九格式固定路由：txt/md仅本地；doc/docx/pdf/xls/xlsx/ppt/pptx原件通过MinerU、逐次确认外发，失败不回退。办公真实样本已完成协议解析；真实Embedding／rerank请求成功，但输入计数未校准，真实模型Profile仍明确不可用。部署、升级和独立检查使用[v0.3 Runbook](docs/runbooks/rag-v3-development.md)。历史验收入口仅用于对应旧版本，不作为本轮通过证明。
+
+v0.2历史代码的详细落地、文件变动和需求核对见[PR-002实施结果调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)，对应历史验收入口为[PRD-002测试套件](tests/sesrag-persistent-session-workspace-test/README.md)。v0.3及后续PRD的本机验收独立组织；当前开发检查使用v0.3 Runbook，正式TEST-003待后续编制。旧Demo验收文件只在上一版本/测试分支查阅。
+
+v0.2 历史[TEST-002正式测试实施方案](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)已建立独立的本机Compose测试环境、总入口、工具/素材和报告清理流程，入口及职责见[测试套件说明](tests/sesrag-persistent-session-workspace-test/README.md)，实际演练结果见[环境实施与验证记录](tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)。独立[测试点矩阵](tests/sesrag-persistent-session-workspace-test/测试点设计与需求覆盖矩阵.md)与[测试用例设计](tests/sesrag-persistent-session-workspace-test/test-cases.md)已完成；任务1～2的工具前置和总入口核验见[准备记录](tests/sesrag-persistent-session-workspace-test/测试准备与总入口核验记录.md)。任务3～4已接入8类104例脚本，真实试跑及修订证据见[脚本校审记录](tests/sesrag-persistent-session-workspace-test/测试脚本实施与试跑校审记录.md)；任务5～6现已完成同源两轮All，各104通过、0失败/受限/未运行/工程错误，清理通过；结果及真实命令见[测试报告](tests/sesrag-persistent-session-workspace-test/测试报告.md)，归档呈现等4项补充发现见[缺陷报告](tests/sesrag-persistent-session-workspace-test/缺陷报告.md)，原104例执行字段已回填。本次最小修复新增4个归档用例，当前登记108例，最终完整回归108通过、清理通过、退出0；首轮工程失败如实保留，未定义005不作虚构处理。改动及本轮真实结果见[小缺陷修复与回归验收报告](tests/sesrag-persistent-session-workspace-test/小缺陷修复与回归验收报告.md)。
 
 SesRAG 是一个前后端分离、Docker Compose 部署的持久会话 RAG 应用。v0.2 在保留文本文档索引/pgvector 与 v1 文档 API 的同时，已增加持久 Thread/Branch、Run/Context/Event Journal、Profile 选择与冻结快照、重试/重新生成/取消和 Vue 对话工作台。Worker 仍以 PostgreSQL 持久任务和有限 lease 执行。
 
@@ -16,9 +20,9 @@ frontend/      Vue 3 + TypeScript 单页工作台；模块与生成入口见fron
 migrations/    Alembic 数据库迁移
 contracts/     Thread/Message/Run/Document/Health、响应/引用和 Run Event 版本化 JSON Schema
 tests/         单元、API 和集成测试
-tests/sesrag-persistent-session-workspace-test/ 本轮独立环境、统一入口、工具、接入规范和按run_id保存的证据
+tests/sesrag-persistent-session-workspace-test/ PRD-002历史独立环境与验收证据（不作为v0.3入口）
 docker/        API/Worker 与前端镜像定义
-docs/prd/      Demo、v0.2 与完整项目 PRD
+docs/prd/      Demo、v0.2、v0.3 与完整项目 PRD，以及对应调研依据
 docs/adr/      实施方案和架构决策
 docs/pr/       PRD 实施完成后的开发结果记录
 docs/test/     PRD 测试验收方案和结果
@@ -30,6 +34,8 @@ AGENTS.md      仓库级 AI 开发约束
 ## 文档入口
 
 - 产品目标：[`docs/prd/`](docs/prd/)，当前 Demo 为 [`001-SesRAG-项目Demo-PRD.md`](docs/prd/001-SesRAG-项目Demo-PRD.md)，v0.2 持久化会话与对话工作台为 [`002-SesRAG-持久化会话与对话工作台-PRD.md`](docs/prd/002-SesRAG-持久化会话与对话工作台-PRD.md)，完整目标为 [`SesRAG-完整项目-PRD.md`](docs/prd/SesRAG-完整项目-PRD.md)。
+- v0.3 需求依据：[PRD-003：RAG 检索增强与 MinerU 接入](docs/prd/003-SesRAG-RAG检索增强与MinerU接入-PRD.md)；[配套调研依据](docs/prd/003-SesRAG-RAG与MinerU-调研依据.md)说明静态资料核实范围，不代表真实服务已联调。本轮对象的含义与状态见 `CONTEXT.md`。
+- v0.3 [ADR-003实施方案](docs/adr/003-sesrag-rag-mineru-implementation-plan.md)：明确模型适配、异步解析／索引、冻结视图、v3接口与旧契约边界、文件变更和分阶段门槛；实施证据及受限项见PR-003，后续正式测试独立进行。
 - Demo基础缺陷修复方案：[ADR-001](docs/adr/001-SesRAG-Demo-缺陷修复-plan.md)；历史范围及结果见[PR-001](docs/pr/001-SesRAG-Demo-缺陷修复-PR.md)。
 - 实施方案与架构决策：[`docs/adr/`](docs/adr/)。
 - v0.2 持久化会话与对话工作台实施方案：[ADR-002](docs/adr/002-sesrag-persistent-session-workspace-implementation-plan.md)；实际代码和剩余验证缺口见 [PR-002调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)。
@@ -54,6 +60,23 @@ AGENTS.md      仓库级 AI 开发约束
 首次启动由 `migrate` 容器执行 Alembic 迁移。PostgreSQL 使用 `pgvector/pgvector:pg16`，API 和 Worker 共享 `uploads` volume。停止服务使用 `docker compose down`；只有明确确认要永久清除本项目数据库与上传文件、且所需数据已备份后，才使用 `docker compose down -v`。升级、回退、备份和恢复步骤见本地开发 Runbook。
 
 ## 环境变量
+
+v0.3新增配置与默认值如下；完整命令见[v0.3 Runbook](docs/runbooks/rag-v3-development.md)。模板和配置文件均不含真实凭据。`docker/rag-profiles.example.json`是显式导入输入，`rag-bootstrap.example.json`是旧库分段升级的显式选择；都不会在普通启动中扫描`docs/secret`。迁移无需外部服务Key。
+
+| 配置 | 是否必填／默认 | 作用和边界 |
+| --- | --- | --- |
+| `MINERU_ENABLED` | 否，false | 只控制办公原件外发能力，不影响txt/md本地或聊天启动 |
+| `MINERU_API_KEY` | 真实办公解析必填，默认空 | 精准API服务端令牌，不进入浏览器、快照或日志 |
+| `MINERU_STATE_ENCRYPTION_KEY` | 真实办公解析必填，默认空 | 32字节随机base64；保护能力URL私有状态；API/Worker一致并独立备份 |
+| `MINERU_STORAGE_HOST_ALLOWLIST` | 真实办公解析必填，默认空 | 上传／下载分别核实的精确域，禁止通配符、私网及自动扩权 |
+| `RAG_EMBEDDING_API_KEY`、`RAG_RERANK_API_KEY` | 对应真实Profile必填，默认空 | 独立受信alias，不自动复用生成Key；未校准输入计数时即使有Key也不可用 |
+| `RAG_ARTIFACT_DIR`、`RAG_TMP_DIR` | 私有路径，默认`/data/rag-artifacts`、`/data/rag-tmp` | API/Worker共享私有卷，不公开静态目录 |
+| `RAG_STORAGE_BUDGET_BYTES` | 否，10737418240（10GiB） | 原源／规范文本／候选／历史依赖的保守软预算，不是宿主硬配额 |
+| `RAG_TMP_BUDGET_BYTES` | 否，1073741824（1GiB） | 临时预算及并发预留，至少402653184（384MiB）容纳一个槽位；不足启动拒绝，达到边界不破坏active |
+| `RAG_PIPELINE_CONCURRENCY` | 否，1，允许1～4 | 当前实现是共享PG门限；每Worker串行推进阶段，远端等待释放租约槽位 |
+| `RAG_BOOTSTRAP_CONFIG` | 空库可空；非空旧库升级必须显式设置 | 只读非Secret初始化文件，选择默认库的可信空间，不自动确认未知历史向量 |
+
+本轮新增模块的职责导航见[后端README](backend/README.md)、[前端README](frontend/README.md)、[契约README](contracts/README.md)、[独立集成检查](tests/integration/README.md)及[固定样本](tests/fixtures/rag-v3/README.md)。开发实施证据集中`data/rag-implementation/`且被Git忽略，正式验收后续另行组织。
 
 `.env.example` 已逐项注释。核心配置如下：
 

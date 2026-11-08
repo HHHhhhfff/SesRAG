@@ -11,3 +11,6 @@
 ```powershell
 .venv/Scripts/python.exe -m pytest tests/unit -q
 ```
+# PRD-003 补充说明
+
+`test_rag_profiles_v3.py`、`test_rag_migrations_v3.py`、`test_rag_chunking_v3.py`、`test_rag_office_inputs_v3.py`、`test_rag_mineru_tables_v3.py`、`test_rag_vector_normalization_v3.py`、`test_rag_sql_scope_v3.py`分别覆盖固定路由／空间、元数据及实际迁移、结构与字节预算、九格式和恶意包、云端表格／图片空文本、查询／入库归一化、PG物化查询编译。SQL编译与SQLite不等于PG执行证明。旧v2迁移测试固定到0006，防止本轮head变化使历史hash口径漂移。

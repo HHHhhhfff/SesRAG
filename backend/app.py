@@ -11,6 +11,9 @@ from backend.api.routes import documents, health, runs, threads
 from backend.api.routes.v2 import models as models_v2
 from backend.api.routes.v2 import runs as runs_v2
 from backend.api.routes.v2 import threads as threads_v2
+from backend.api.routes.v3 import resources as rag_v3
+from backend.api.routes.v3 import retrieval as retrieval_v3
+from backend.api.routes.v3 import sessions as sessions_v3
 from backend.application.errors import ApplicationError
 from backend.config import Settings
 from backend.db.base import Base
@@ -30,6 +33,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if app_settings.auto_create_schema:
             async with engine.begin() as connection:
                 await connection.run_sync(Base.metadata.create_all)
+            from backend.application.legacy_rag import bootstrap_default
+            from backend.application.rag_profiles import bootstrap_mock
+
+            async with session_factory() as session:
+                await bootstrap_mock(session)
+                await bootstrap_default(session, app_settings)
+                await session.commit()
         await notifier.connect()
         try:
             yield
@@ -114,6 +124,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(runs_v2.router)
     app.include_router(runs.router)
     app.include_router(documents.router)
+    app.include_router(rag_v3.router)
+    app.include_router(retrieval_v3.router)
+    app.include_router(sessions_v3.router)
     return app
 
 

@@ -152,9 +152,7 @@ def test_event_response_validates_version_and_exact_payload():
 def test_json_contract_samples_also_validate_backend_dtos():
     # QLT_002工具前置：字面样本属于开发测试，不能依赖已删除的旧PRD验收工程。
     samples = json.loads(
-        (Path(__file__).parent / "fixtures/v2-contract-samples.json").read_text(
-            encoding="utf-8"
-        )
+        (Path(__file__).parent / "fixtures/v2-contract-samples.json").read_text(encoding="utf-8")
     )
     from urllib.parse import urljoin
 

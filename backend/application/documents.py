@@ -36,6 +36,10 @@ async def create_document(
     ):
         raise ApplicationError("INVALID_DOCUMENT_FILENAME", "文件名无效", 422)
     extension = Path(filename).suffix.lower()
+    if extension == ".docx":
+        raise ApplicationError(
+            "DOCUMENT_WRITE_UPGRADE_REQUIRED", "DOCX写入请升级到v3并确认云端外发", 409
+        )
     if extension not in ALLOWED_EXTENSIONS:
         raise ApplicationError("UNSUPPORTED_DOCUMENT_TYPE", "仅支持 txt、md、docx 文档", 415)
     if len(content) > MAX_DOCUMENT_BYTES:
@@ -51,6 +55,9 @@ async def create_document(
     }
     if content_type not in allowed_mime[extension]:
         raise ApplicationError("DOCUMENT_MIME_MISMATCH", "文档 MIME 类型与扩展名不匹配", 415)
+    from backend.application.legacy_rag import require_legacy_base
+
+    base = await require_legacy_base(session, settings)
 
     document_id = str(uuid4())
     try:
@@ -64,6 +71,7 @@ async def create_document(
         document = DocumentModel(
             document_id=document_id,
             owner_id=settings.owner_id,
+            knowledge_base_id=base.knowledge_base_id,
             filename=filename,
             source="local_upload",
             extension=extension,
@@ -102,7 +110,10 @@ async def create_document(
 async def list_documents(session: AsyncSession, settings: Settings) -> list[DocumentModel]:
     result = await session.execute(
         select(DocumentModel)
-        .where(DocumentModel.owner_id == settings.owner_id)
+        .where(
+            DocumentModel.owner_id == settings.owner_id,
+            DocumentModel.extension.in_(ALLOWED_EXTENSIONS),
+        )
         .order_by(DocumentModel.created_at.desc())
     )
     return list(result.scalars())
@@ -119,6 +130,15 @@ async def create_index_task(
     )
     if document is None or document.owner_id != settings.owner_id:
         raise ApplicationError("DOCUMENT_NOT_FOUND", "文档不存在", 404)
+    if document.extension == ".docx":
+        raise ApplicationError(
+            "DOCUMENT_WRITE_UPGRADE_REQUIRED", "DOCX重建请使用v3并逐次授权外发", 409
+        )
+    from backend.application.legacy_rag import require_legacy_base
+
+    base = await require_legacy_base(session, settings)
+    if document.knowledge_base_id not in {None, base.knowledge_base_id}:
+        raise ApplicationError("DOCUMENT_WRITE_UPGRADE_REQUIRED", "此文档请使用v3重建", 409)
     active = await session.execute(
         select(TaskModel).where(
             TaskModel.document_id == document_id,

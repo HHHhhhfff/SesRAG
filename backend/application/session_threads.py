@@ -137,8 +137,14 @@ async def list_session_branches(session, settings, thread_id):
     )
 
 
-async def session_thread_detail(session, settings, thread_id, query):
+async def session_thread_detail(session, settings, thread_id, query, *, allow_v3=False):
     thread = await get_thread(session, settings, thread_id)
+    if not allow_v3 and await session.scalar(
+        select(RunModel.run_id)
+        .where(RunModel.thread_id == thread_id, RunModel.execution_schema_version == 3)
+        .limit(1)
+    ):
+        raise ApplicationError("CLIENT_UPGRADE_REQUIRED", "此会话需要v3详情读取", 409)
     selected = query.branch_id or (await default_branch(session, thread_id)).branch_id
     repository = SQLBranchRepository(session)
     scope = await resolve_scope(repository, thread_id, selected)
@@ -215,6 +221,7 @@ async def session_thread_detail(session, settings, thread_id, query):
     ]
     messages = [
         {
+            **({"citation_schema_version": message.citation_schema_version} if allow_v3 else {}),
             **{
                 name: getattr(message, name)
                 for name in (

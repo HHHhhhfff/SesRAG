@@ -1,0 +1,58 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "knowledge_base_id": {
+      "title": "Knowledge Base Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "enabled": {
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "is_default": {
+      "title": "Is Default",
+      "type": "boolean"
+    },
+    "embedding_space_id": {
+      "title": "Embedding Space Id",
+      "type": "string"
+    },
+    "embedding_profile_id": {
+      "title": "Embedding Profile Id",
+      "type": "string"
+    },
+    "embedding_profile_version": {
+      "title": "Embedding Profile Version",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "knowledge_base_id",
+    "name",
+    "enabled",
+    "is_default",
+    "embedding_space_id",
+    "embedding_profile_id",
+    "embedding_profile_version",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "KnowledgeBase",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/knowledge_base_v3.json"
+}

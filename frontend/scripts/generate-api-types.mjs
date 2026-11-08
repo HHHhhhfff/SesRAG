@@ -12,9 +12,10 @@ const v2Names = {
   'model_profile_v2.json': 'ModelProfile', 'context_plan_v2.json': 'ContextPlan',
   'run_event_v2.json': 'RunEvent', 'api_responses_v2.json': null,
 }
+const v3Names = { 'api_responses_v3.json': null }
 const schemas = new Map()
 const registered = new Map()
-for (const [file, name] of Object.entries({ ...v1Names, ...v2Names })) {
+for (const [file, name] of Object.entries({ ...v1Names, ...v2Names, ...v3Names })) {
   const schema = JSON.parse(await readFile(new URL(`../../contracts/${file}`, import.meta.url), 'utf8'))
   schemas.set(file, schema)
   if (name) registered.set(`${file}#`, name)
@@ -66,6 +67,7 @@ function generate(version) {
     const schema = pointer ? schemas.get(file).$defs[pointer.split('/').at(-1)] : schemas.get(file)
     lines.push(`export type ${name} = ${render(schema, file)}`)
   }
+  if (version === 'v3') lines.push(`export type RunEvent = ${render(schemas.get('api_responses_v3.json').properties.event, 'api_responses_v3.json')}`)
   const header = `// 自动生成自 contracts/*_${version}.json；请运行 npm run generate:api，勿手工修改。`
   if (imports.size) lines.unshift(`import type { ${[...imports].map(name => `${name} as Legacy${name}`).join(', ')} } from './api'`)
   return `${[header, ...lines].join('\n\n')}\n`
@@ -73,13 +75,13 @@ function generate(version) {
 const outputArgument = process.argv.indexOf('--output')
 const versionArgument = process.argv.indexOf('--version')
 const selectedVersion = versionArgument === -1 ? null : process.argv[versionArgument + 1]
-if (selectedVersion !== null && !['v1', 'v2'].includes(selectedVersion)) throw new Error('--version只支持v1或v2')
+if (selectedVersion !== null && !['v1', 'v2', 'v3'].includes(selectedVersion)) throw new Error('--version只支持v1、v2或v3')
 if (outputArgument !== -1) {
   if (!process.argv[outputArgument + 1]) throw new Error('--output需要明确临时文件路径')
   await writeFile(process.argv[outputArgument + 1], generate(selectedVersion ?? 'v1'))
 } else {
-  for (const version of selectedVersion ? [selectedVersion] : ['v1', 'v2']) {
-    const target = new URL(`../src/types/${version === 'v1' ? 'api' : 'api-v2'}.ts`, import.meta.url)
+  for (const version of selectedVersion ? [selectedVersion] : ['v1', 'v2', 'v3']) {
+    const target = new URL(`../src/types/${version === 'v1' ? 'api' : `api-${version}`}.ts`, import.meta.url)
     const output = generate(version)
     if (process.argv.includes('--check')) {
       // Git 的 CRLF 检出不属于契约漂移；真实字段差异仍然失败。

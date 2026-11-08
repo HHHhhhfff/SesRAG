@@ -53,6 +53,8 @@ class TaskLease:
     worker_id: str
     generation: int
     attempt: int
+    index_batch_id: str | None = None
+    retrieval_execution_id: str | None = None
 
 
 class QueuePort(Protocol):

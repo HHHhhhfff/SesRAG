@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { renderMarkdown } from '../markdown/render'
-import type { Message } from '../types/api-v2'
+import type { Message } from '../types/api-v3'
+import EvidenceViewer from './EvidenceViewer.vue'
 
 defineProps<{ messages: Message[]; readonly?: boolean; hasMore?: boolean }>()
 const expanded = ref(new Set<string>())
@@ -51,8 +52,13 @@ function toggle(key: string) {
       >
         <div
           v-for="(citation, index) in message.citations"
-          :key="citation.chunk_id"
+          :key="'bundle_id' in citation ? citation.bundle_id : citation.chunk_id"
         >
+          <details v-if="'bundle_id' in citation">
+            <summary>知识证据 {{ index + 1 }} · {{ citation.document_id }}</summary>
+            <EvidenceViewer :bundle-id="citation.bundle_id" />
+          </details>
+          <template v-else>
           <button
             class="citation"
             :aria-expanded="expanded.has(`${message.message_id}-${index}`)"
@@ -86,6 +92,7 @@ function toggle(key: string) {
               历史引用未保存批次和基础位置
             </p>
           </div>
+          </template>
         </div>
       </div>
     </article>

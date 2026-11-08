@@ -1,0 +1,91 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "enum": [
+        "embedding",
+        "rerank",
+        "parser",
+        "retrieval"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "profile_id": {
+      "title": "Profile Id",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "integer"
+    },
+    "available": {
+      "title": "Available",
+      "type": "boolean"
+    },
+    "unavailable_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Unavailable Reason"
+    },
+    "formats": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 9,
+      "title": "Formats",
+      "type": "array"
+    },
+    "verified_formats": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 9,
+      "title": "Verified Formats",
+      "type": "array"
+    },
+    "space_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Space Id"
+    },
+    "dimension": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dimension"
+    }
+  },
+  "required": [
+    "kind",
+    "profile_id",
+    "version",
+    "available",
+    "unavailable_reason"
+  ],
+  "title": "RagProfile",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/rag_profile_v3.json"
+}

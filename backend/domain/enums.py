@@ -15,6 +15,7 @@ class TaskState(StrEnum):
     LEASED = "leased"
     RUNNING = "running"
     RETRY_WAITING = "retry_waiting"
+    WAITING_EXTERNAL = "waiting_external"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -23,6 +24,8 @@ class TaskState(StrEnum):
 class TaskKind(StrEnum):
     RUN = "run"
     INDEX_DOCUMENT = "index_document"
+    INDEX_BUILD = "index_build"
+    RETRIEVAL_DIAGNOSTIC = "retrieval_diagnostic"
 
 
 class DocumentState(StrEnum):

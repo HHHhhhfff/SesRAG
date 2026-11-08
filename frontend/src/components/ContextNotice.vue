@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ContextPlan, ContextPlanSummary } from '../types/api-v2'
-defineProps<{ plan: ContextPlanSummary | null; detail?: ContextPlan | null }>()
+import type { ContextResponse, ContextPlanSummary } from '../types/api-v3'
+defineProps<{ plan: ContextPlanSummary | null; detail?: ContextResponse['plan'] }>()
 </script>
 <template>
   <p

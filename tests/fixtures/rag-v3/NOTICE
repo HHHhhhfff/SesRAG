@@ -1,0 +1,9 @@
+SesRAG PRD-003 development fixtures
+
+public-word.doc and public-slides.ppt are unmodified public test files from Apache POI.
+Apache POI, Copyright The Apache Software Foundation.
+Licensed under the Apache License, Version 2.0.
+Sources and SHA-256 values are recorded in manifest.json.
+https://github.com/apache/poi
+
+The other knowledge.* files are synthetic SesRAG development inputs.

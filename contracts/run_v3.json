@@ -1,0 +1,541 @@
+{
+  "$defs": {
+    "ContextPlanSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "estimated_input_tokens": {
+          "minimum": 0,
+          "title": "Estimated Input Tokens",
+          "type": "integer"
+        },
+        "reserved_output_tokens": {
+          "minimum": 1,
+          "title": "Reserved Output Tokens",
+          "type": "integer"
+        },
+        "safety_margin_tokens": {
+          "minimum": 0,
+          "title": "Safety Margin Tokens",
+          "type": "integer"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "budget_exceeded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "context_plan_id": {
+          "minLength": 1,
+          "title": "Context Plan Id",
+          "type": "string"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "selected_message_count": {
+          "minimum": 0,
+          "title": "Selected Message Count",
+          "type": "integer"
+        },
+        "omitted_message_count": {
+          "minimum": 0,
+          "title": "Omitted Message Count",
+          "type": "integer"
+        },
+        "summary_count": {
+          "minimum": 0,
+          "title": "Summary Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "estimated_input_tokens",
+        "reserved_output_tokens",
+        "safety_margin_tokens",
+        "context_window_tokens",
+        "status",
+        "context_plan_id",
+        "generation",
+        "attempt",
+        "selected_message_count",
+        "omitted_message_count",
+        "summary_count"
+      ],
+      "title": "ContextPlanSummary",
+      "type": "object"
+    },
+    "ModelSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "display_name": {
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "provider_kind": {
+          "enum": [
+            "mock",
+            "openai_compatible"
+          ],
+          "title": "Provider Kind",
+          "type": "string"
+        },
+        "model_name": {
+          "minLength": 1,
+          "title": "Model Name",
+          "type": "string"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "minimum": 1,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "display_name",
+        "provider_kind",
+        "model_name",
+        "context_window_tokens",
+        "max_output_tokens"
+      ],
+      "title": "ModelSelection",
+      "type": "object"
+    },
+    "RagSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "execution_state": {
+          "enum": [
+            "not_started",
+            "running",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Execution State",
+          "type": "string"
+        },
+        "result_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "ok",
+                "empty",
+                "degraded"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Result Mode"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "view_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "View Id"
+        },
+        "knowledge_base_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Knowledge Base Id"
+        },
+        "retrieval_profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Profile Id"
+        },
+        "top_k": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top K"
+        },
+        "embedding_dimensions": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Embedding Dimensions"
+        }
+      },
+      "required": [
+        "enabled",
+        "execution_state",
+        "result_mode"
+      ],
+      "title": "RagSummary",
+      "type": "object"
+    },
+    "SnapshotSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "enum": [
+            2,
+            3
+          ],
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "context_policy_version": {
+          "title": "Context Policy Version",
+          "type": "string"
+        },
+        "counter_version": {
+          "title": "Counter Version",
+          "type": "string"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "reserved_output_tokens": {
+          "minimum": 1,
+          "title": "Reserved Output Tokens",
+          "type": "integer"
+        },
+        "safety_margin_tokens": {
+          "minimum": 0,
+          "title": "Safety Margin Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "context_policy_version",
+        "counter_version",
+        "context_window_tokens",
+        "reserved_output_tokens",
+        "safety_margin_tokens"
+      ],
+      "title": "SnapshotSummary",
+      "type": "object"
+    },
+    "TaskSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "run",
+          "title": "Kind",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "leased",
+            "running",
+            "retry_waiting",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 0,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "worker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Worker Id"
+        },
+        "generation": {
+          "minimum": 0,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "lease_expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lease Expires At"
+        },
+        "last_error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Error Code"
+        }
+      },
+      "required": [
+        "task_id",
+        "kind",
+        "state",
+        "attempt",
+        "worker_id",
+        "generation",
+        "lease_expires_at",
+        "last_error_code"
+      ],
+      "title": "TaskSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "thread_id": {
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "branch_id": {
+      "title": "Branch Id",
+      "type": "string"
+    },
+    "user_message_id": {
+      "title": "User Message Id",
+      "type": "string"
+    },
+    "assistant_message_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Assistant Message Id"
+    },
+    "parent_run_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parent Run Id"
+    },
+    "operation_kind": {
+      "title": "Operation Kind",
+      "type": "string"
+    },
+    "execution_schema_version": {
+      "enum": [
+        1,
+        2,
+        3
+      ],
+      "title": "Execution Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "retry_waiting",
+        "cancelling",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "legacy": {
+      "title": "Legacy",
+      "type": "boolean"
+    },
+    "snapshot": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SnapshotSummary"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context_plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ContextPlanSummary"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last Error Code"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ModelSelection"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "task": {
+      "$ref": "#/$defs/TaskSummary"
+    },
+    "rag_summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RagSummary"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "thread_id",
+    "branch_id",
+    "user_message_id",
+    "assistant_message_id",
+    "parent_run_id",
+    "operation_kind",
+    "execution_schema_version",
+    "status",
+    "legacy",
+    "snapshot",
+    "context_plan",
+    "last_error_code",
+    "model",
+    "task",
+    "rag_summary",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "RunDetail",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/run_v3.json"
+}

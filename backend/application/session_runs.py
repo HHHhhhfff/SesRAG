@@ -44,11 +44,13 @@ from backend.infrastructure.session.branches import SQLBranchRepository
 from backend.infrastructure.session.model_profiles import SQLModelProfileRepository
 
 
-async def load_session_run(session, settings, run_id):
+async def load_session_run(session, settings, run_id, *, allow_v3=False):
     run = await session.get(RunModel, run_id)
     thread = await session.get(ThreadModel, run.thread_id) if run else None
     if thread is None or thread.owner_id != settings.owner_id:
         raise ApplicationError("RUN_NOT_FOUND", "Run 不存在", 404)
+    if run.execution_schema_version == 3 and not allow_v3:
+        raise ApplicationError("CLIENT_UPGRADE_REQUIRED", "此Run需要v3接口", 409)
     task = await session.get(TaskModel, run.primary_task_id)
     if task is None:
         raise ApplicationError("RUN_NOT_FOUND", "Run 不存在", 404)
@@ -96,7 +98,7 @@ def new_snapshot(settings, thread, branch, message, profile, source=None):
         "embedding_config_ref": None if settings.mock_provider else "env:MODEL_API_KEY",
     }
     prompt = {"version": "rag_v1"}
-    if source is not None and source.execution_schema_version == 2:
+    if source is not None and source.execution_schema_version in {2, 3}:
         old = source.snapshot_json
         context = deepcopy(old["context"])
         # 显式换模型只替换与新 Profile 绑定的预算和计数器。
@@ -140,8 +142,17 @@ def operation_result(run):
     }
 
 
-async def insert_run(session, settings, thread, branch, message, profile, kind, source=None):
+async def insert_run(
+    session, settings, thread, branch, message, profile, kind, source=None, *, rag_selection=None
+):
     snapshot = new_snapshot(settings, thread, branch, message, profile, source)
+    schema3 = rag_selection is not None or (
+        source is not None and source.execution_schema_version == 3
+    )
+    if schema3:
+        from backend.application.rag_sessions import upgrade_snapshot
+
+        snapshot = await upgrade_snapshot(session, settings, snapshot, rag_selection, source)
     run = RunModel(
         run_id=str(uuid4()),
         thread_id=thread.thread_id,
@@ -149,7 +160,8 @@ async def insert_run(session, settings, thread, branch, message, profile, kind, 
         user_message_id=message.message_id,
         parent_run_id=source.run_id if source else None,
         operation_kind=kind,
-        execution_schema_version=2,
+        execution_schema_version=3 if schema3 else 2,
+        retrieval_view_id=snapshot.get("rag", {}).get("view_id"),
         status="queued",
         snapshot_json=snapshot,
         model_profile_id=profile.profile_id,
@@ -193,9 +205,15 @@ async def insert_run(session, settings, thread, branch, message, profile, kind, 
     return run, task
 
 
-async def create_session_message(session, settings, thread_id, payload, key):
+async def create_session_message(session, settings, thread_id, payload, key, *, allow_v3=False):
     thread = await get_thread(session, settings, thread_id)
     await session.refresh(thread, with_for_update=True)
+    if not allow_v3 and await session.scalar(
+        select(RunModel.run_id)
+        .where(RunModel.thread_id == thread_id, RunModel.execution_schema_version == 3)
+        .limit(1)
+    ):
+        raise ApplicationError("CLIENT_UPGRADE_REQUIRED", "此会话已升级，请使用v3", 409)
     digest = request_hash(
         "message",
         payload.model_dump(exclude_unset=True),
@@ -243,6 +261,7 @@ async def create_session_message(session, settings, thread_id, payload, key):
         message,
         profile,
         "branch_continue" if branch.parent_branch_id else "initial",
+        rag_selection=payload.rag if allow_v3 else None,
     )
     record_operation(
         session,
@@ -267,8 +286,8 @@ async def branch_busy(session, branch_id):
     )
 
 
-async def create_related_run(session, settings, run_id, payload, key, kind):
-    source, _ = await load_session_run(session, settings, run_id)
+async def create_related_run(session, settings, run_id, payload, key, kind, *, allow_v3=False):
+    source, _ = await load_session_run(session, settings, run_id, allow_v3=allow_v3)
     thread = await get_thread(session, settings, source.thread_id)
     await session.refresh(thread, with_for_update=True)
     digest = request_hash(
@@ -279,6 +298,10 @@ async def create_related_run(session, settings, run_id, payload, key, kind):
     replay = await replay_operation(session, thread.thread_id, key, digest)
     if replay:
         return operation_result(await session.get(RunModel, replay.result_run_id)), True
+    if allow_v3 and source.execution_schema_version != 3:
+        raise ApplicationError(
+            "LEGACY_RETRIEVAL_VIEW_UNAVAILABLE", "旧Run没有冻结视图，请发送新消息", 409
+        )
     if thread.archived_at is not None:
         raise ApplicationError("THREAD_ARCHIVED", "Thread 已归档", 409)
     # 来源只读，不能在持有 Thread 锁后再反锁旧 Run/Task。
@@ -349,7 +372,7 @@ async def create_related_run(session, settings, run_id, payload, key, kind):
 
 
 async def cancel_session_run(session, settings, run_id):
-    run, task = await load_session_run(session, settings, run_id)
+    run, task = await load_session_run(session, settings, run_id, allow_v3=True)
     if run.execution_schema_version == 1:
         from backend.application.runs import cancel_run
 
@@ -397,8 +420,8 @@ def summary_projection(summary):
     return {name: getattr(summary, name) for name in SummaryMetadata.model_fields}
 
 
-async def context_detail(session, settings, run_id, generation=None):
-    run, task = await load_session_run(session, settings, run_id)
+async def context_detail(session, settings, run_id, generation=None, *, allow_v3=False):
+    run, task = await load_session_run(session, settings, run_id, allow_v3=allow_v3)
     statement = select(ContextPlanModel).where(ContextPlanModel.run_id == run_id)
     if generation is not None:
         statement = statement.where(ContextPlanModel.generation == generation)
@@ -420,6 +443,8 @@ async def context_detail(session, settings, run_id, generation=None):
         name: getattr(plan, name) for name in ContextProjection.model_fields if name != "summaries"
     }
     result["summaries"] = [summary_projection(s) for s in summaries]
+    if allow_v3 and run.execution_schema_version == 3:
+        result["omitted_evidence"] = plan.omitted_evidence
     return utc_projection({"plan": result, "reason": None})
 
 
@@ -462,8 +487,8 @@ async def session_run_detail(session, settings, run_id):
     return utc_projection(result)
 
 
-async def session_run_events(session, settings, run_id, after_seq=0, limit=200):
-    await load_session_run(session, settings, run_id)
+async def session_run_events(session, settings, run_id, after_seq=0, limit=200, *, allow_v3=False):
+    await load_session_run(session, settings, run_id, allow_v3=allow_v3)
     rows = list(
         (
             await session.scalars(

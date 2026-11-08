@@ -50,6 +50,10 @@ SYSTEM_PROMPTS = {
 
 
 def evidence_metadata(item):
+    from backend.application.rag_run_execution import BundleContext, bundle_metadata
+
+    if isinstance(item, BundleContext):
+        return bundle_metadata(item)
     return {
         "document_id": item.document_id,
         "chunk_id": item.chunk_id,
@@ -64,6 +68,8 @@ def evidence_metadata(item):
 async def publish_plan(
     factory, task_id, worker_id, generation, plan, context_input, snapshot, evidence
 ):
+    from backend.application.rag_run_execution import BundleContext, context_identity
+
     async with factory() as session:
         task, run = await lock_execution(session, task_id, worker_id, generation)
         lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
@@ -96,6 +102,7 @@ async def publish_plan(
         selected = {identity for identity in plan.selected_evidence_ids}
         row = ContextPlanModel(
             context_plan_id=str(uuid4()),
+            schema_version=run.execution_schema_version,
             run_id=run.run_id,
             task_id=task_id,
             generation=generation,
@@ -113,8 +120,14 @@ async def publish_plan(
                     "content_hash": hashlib.sha256(e.text.encode()).hexdigest(),
                 }
                 for e in evidence
-                if (e.document_id, e.chunk_id) in selected
+                if (e.document_id, context_identity(e)) in selected
             ],
+            omitted_evidence=[
+                {"bundle_id": identity, "reason": reason}
+                for _, identity, reason in plan.omitted_evidence
+            ]
+            if run.execution_schema_version == 3
+            else [],
             trim_policy_version=plan.effective_policy_version,
             counter_version=plan.counter_version,
             estimated_input_tokens=plan.estimated_input_tokens,
@@ -125,6 +138,43 @@ async def publish_plan(
         )
         session.add(row)
         await session.flush()
+        if run.execution_schema_version == 3:
+            from backend.db.rag_models import ContextEvidenceModel
+
+            projected = []
+            for item in evidence:
+                if (
+                    not isinstance(item, BundleContext)
+                    or (item.document_id, item.bundle_id) not in selected
+                ):
+                    continue
+                metadata = evidence_metadata(item)
+                ids = []
+                for component in item.components:
+                    identity = str(uuid4())
+                    session.add(
+                        ContextEvidenceModel(
+                            context_evidence_id=identity,
+                            plan_id=row.context_plan_id,
+                            component_id=component["component_id"],
+                            start_offset=component["start_offset"],
+                            end_offset=component["end_offset"],
+                            selected_hash=component["content_hash"],
+                        )
+                    )
+                    ids.append(identity)
+                projected.append(
+                    {
+                        **metadata,
+                        "context_evidence_ids": ids,
+                        "content_hash": hashlib.sha256(item.text.encode()).hexdigest(),
+                    }
+                )
+            row.selected_evidence = projected
+        else:
+            from backend.application.legacy_rag import protect_legacy_items
+
+            await protect_legacy_items(session, row.selected_evidence, plan_id=row.context_plan_id)
         run.context_plan_id = row.context_plan_id
         await append_event(
             session,
@@ -243,7 +293,13 @@ async def process_session_run(
         snapshot = deepcopy(run.snapshot_json)
         thread = await session.get(ThreadModel, run.thread_id)
         message = await session.get(MessageModel, run.user_message_id)
-        provider = provider_from_snapshot2(snapshot)
+        schema3 = run.execution_schema_version == 3
+        if schema3:
+            from backend.application.rag_sessions import generation_snapshot
+
+            provider = provider_from_snapshot2(generation_snapshot(snapshot))
+        else:
+            provider = provider_from_snapshot2(snapshot)
         if (
             snapshot["owner_id"] != thread.owner_id
             or snapshot["thread_id"] != run.thread_id
@@ -282,6 +338,7 @@ async def process_session_run(
         policy["summary_max_tokens"],
         policy["max_candidate_messages"],
         policy["max_candidate_chars"],
+        evidence_role="user" if schema3 else "system",
     )
     guarded = partial(
         guarded_call,
@@ -297,7 +354,13 @@ async def process_session_run(
         await publish_plan(factory, task_id, worker_id, generation, plan, request, snapshot, [])
         return
     evidence = []
-    if snapshot["retrieval"]["enabled"]:
+    if schema3:
+        from backend.application.rag_run_execution import execute_run_retrieval
+
+        evidence = await execute_run_retrieval(
+            factory, settings, task_id, worker_id, generation, snapshot, question
+        )
+    elif snapshot["retrieval"]["enabled"]:
         if embedding_provider is None:
             embedding_provider = embedding_from_snapshot2(snapshot)
         vector = validate_vector(await guarded(partial(embedding_provider.embed, question)))
@@ -309,16 +372,17 @@ async def process_session_run(
                 )
 
         evidence = await guarded(retrieve)
-    async with factory() as session:
-        await append_execution_event(
-            session,
-            task_id,
-            worker_id,
-            generation,
-            "retrieval.completed",
-            {"count": len(evidence), "items": [evidence_metadata(e) for e in evidence]},
-        )
-        await session.commit()
+    if not schema3:
+        async with factory() as session:
+            await append_execution_event(
+                session,
+                task_id,
+                worker_id,
+                generation,
+                "retrieval.completed",
+                {"count": len(evidence), "items": [evidence_metadata(e) for e in evidence]},
+            )
+            await session.commit()
 
     async def candidates():
         async with factory() as session:
@@ -351,6 +415,8 @@ async def process_session_run(
             return history, ranges
 
     history, ranges = await guarded(candidates)
+    from backend.application.rag_run_execution import context_identity
+
     request = replace(
         request,
         history=history,
@@ -358,8 +424,8 @@ async def process_session_run(
         evidence=tuple(
             EvidenceInput(
                 e.document_id,
-                e.chunk_id,
-                e.score,
+                context_identity(e),
+                getattr(e, "selection_priority", e.score),
                 e.text,
                 e.index_batch_id,
                 e.start_offset,
@@ -414,7 +480,7 @@ async def process_session_run(
     citations = [
         {**evidence_metadata(e), "filename": e.filename}
         for e in evidence
-        if (e.document_id, e.chunk_id) in selected
+        if (e.document_id, context_identity(e)) in selected
     ]
     async with factory() as session:
         await complete_run(session, task_id, worker_id, generation, answer, citations)

@@ -2,6 +2,30 @@
 
 `api/` 保存 HTTP/SSE 路由与公开投影，`application/` 保存应用事务边界，`domain/` 保存稳定对象与协议，`infrastructure/` 实现适配器，`workers/` 编排租约与处理器。正式接口见 [接口文档](../docs/接口文档.md)。
 
+## v0.3 RAG 实施模块
+
+本轮需求／决策为PRD-003／ADR-003。下列是新增实现，旧协议兼容模块继续保留；真实模型计数前提和独立验收状态见[实施记录](../docs/pr/003-SesRAG-RAG检索增强与MinerU接入-PR.md)。
+
+| 文件／目录 | 主要职责 |
+| --- | --- |
+| `domain/rag.py`、`rag_profiles.py`、`rag_snapshot.py`、`ports/rag.py` | 九格式固定路由、纯DTO、版本化配置／空间、冻结只读工具绑定与可替换能力 |
+| `db/rag_models.py` | 知识库、解析Job／产物／块、构建、视图、工具、Bundle／实际上下文证据、GC记录的持久映射 |
+| `application/knowledge_bases.py`、`rag_profiles.py`、`rag_operations.py` | owner范围、不可变配置导入、独立资源操作幂等；不以文件hash充当远端幂等 |
+| `application/index_builds.py`、`parse_jobs.py`、`rag_task_execution.py` | 上传／重建／取消事务、单Job检查点、正常等待让出、有效租约结算和旧active保护 |
+| `application/retrieval_views.py`、`retrieval.py`、`evidence_assembly.py`、`source_locations.py` | 冻结批次集合、共用诊断／检索、邻近合并、重排／dense分数及实际来源映射 |
+| `application/rag_sessions.py`、`rag_run_execution.py`、`legacy_rag.py` | 接入原会话事务、schema3事实、每代只读工具、旧可信384空间守卫和旧协议新写引用FK保护 |
+| `application/rag_capacity.py`、`rag_gc.py`、`rag_retention.py` | 保守软预算、带引用保护的批次清理、独立诊断七天保留及三十天墓碑；保留未知提交摘要 |
+| `infrastructure/rag/office_validation.py`、`isolated_processing.py`、`local_structure.py`、`structured_chunker.py` | 原件格式预检、有界子进程、本地文本结构／规范文本切片；不解析办公正文或执行Office |
+| `infrastructure/rag/mineru_client.py`、`mineru_outputs.py`、`html_tables.py` | 精准API申请／原件PUT／轮询／下载、安全包验证、HTML表格转文本结构、可靠PDF页映射 |
+| `infrastructure/rag/download_safety.py`、`artifact_store.py` | 精确域／逐跳出站检查、DNS绑定公网IP、限量读取、AES-GCM私有能力状态 |
+| `infrastructure/rag/vector_search.py`、`providers/bailian_embedding.py`、`bailian_rerank.py`、`rag_registry.py` | PG物化范围后精确cosine排序、显式1024维、float32归一化、独立原生重排与真实／Mock替换 |
+| `api/routes/v3/`、`api/schemas/v3/` | 资源／诊断／会话HTTP与SSE适配及严格公开投影；请求字段见正式接口文档 |
+| `workers/handlers/index_build_handler.py`、`retrieval_diagnostic_handler.py` | 有界构建及诊断编排，复用持久队列与generation，不增平行事实源 |
+| `tools/sync_rag_profiles.py`、`upgrade_rag_schema.py`、`confirm_legacy_rag_space.py` | 显式导入、四迁移分段升级和有证据的旧空间确认，迁移不读模型Key／不调用云端 |
+| `tools/export_rag_contracts.py`、`check_rag_providers.py`、`cleanup_rag_artifacts.py` | 契约导出／漂移检查、显式公开合成样本真实探针、安全维护入口 |
+
+部署配置、命令和旧库回滚见[v0.3 Runbook](../docs/runbooks/rag-v3-development.md)。新向量Profile支持声明空间，`VECTOR_DIMENSION=384`只约束legacy配置。Windows子进程仍无Linux RLIMIT；容器检查补充Linux实际运行证据。旧PRD正式验收目录不纳入本轮维护。
+
 ADR-002 增加的 `domain/ports/__init__.py` 定义纯 Python 的 TaskLease、Parser/位置、IndexedChunk/Evidence DTO，以及非空 Queue/Parser/VectorStore/Embedding/Model 协议，不引入 ORM 或厂商 SDK。
 
 `application/task_execution.py` 统一 Task 身份、租约/截止、取消和最终消息事务；`vector_validation.py` 验证固定 384 维、有限且 float32 可表示数值。Worker Runtime 是组合根：绑定 `queue/adapter.py` 的事务适配器、`providers/factory.py` 的快照 Provider 工厂、`rag/pgvector_store.py` 的向量适配器和 `rag/parsers.py` 的 Parser；handler 实际消费这些注入依赖。

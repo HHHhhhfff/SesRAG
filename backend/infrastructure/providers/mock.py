@@ -43,7 +43,7 @@ class MockModelProvider:
         evidence = [
             {"text": message.content}
             for message in request.messages
-            if message.role == "system" and message.content.startswith("[非可信检索证据]")
+            if message.role in {"system", "user"} and message.content.startswith("[非可信检索证据]")
         ]
         async for part in self.stream_answer(question, evidence):
             yield part

@@ -37,7 +37,7 @@ def test_legacy_backfill_repeat_and_safe_roundtrip():
         migrate(connection, "upgrade", "0003_chunk_locations")
         seed(connection)
         before = facts(connection)
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         assert {
             "branches",
             "session_operations",
@@ -54,7 +54,7 @@ def test_legacy_backfill_repeat_and_safe_roundtrip():
         )
         assert connection.execute(text("SELECT COUNT(*) FROM model_profiles")).scalar_one() == 2
         assert facts(connection) == before
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         assert facts(connection) == before
         migrate(connection, "downgrade", "0003_chunk_locations")
         assert facts(connection) == before
@@ -80,7 +80,7 @@ def test_upgrade_preflight_preserves_revision_and_original_facts(change, categor
         connection.execute(text(change))
         before = facts(connection)
         with pytest.raises(RuntimeError, match=category):
-            migrate(connection, "upgrade", "head")
+            migrate(connection, "upgrade", "0006_v2_run_guards")
         assert facts(connection) == before
         assert (
             connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
@@ -91,7 +91,7 @@ def test_upgrade_preflight_preserves_revision_and_original_facts(change, categor
 
 def test_downgrade_refuses_v2_facts_before_removing_any_table():
     with migration_engine().begin() as connection:
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         connection.execute(
             text(
                 "INSERT INTO threads (thread_id,owner_id,title,next_message_seq,"
@@ -194,7 +194,7 @@ def test_mixed_legacy_states_preserve_full_fact_hash_and_counts():
         for state in ("queued", "running", "retry_waiting", "succeeded", "failed", "cancelled"):
             seed_run(connection, state, state)
         before = historic_hash(connection)
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         assert historic_hash(connection) == before
         assert connection.execute(text("SELECT COUNT(*) FROM branches")).scalar_one() == 6
         assert (
@@ -206,7 +206,7 @@ def test_mixed_legacy_states_preserve_full_fact_hash_and_counts():
             ).scalar_one()
             == 6
         )
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         assert historic_hash(connection) == before
         migrate(connection, "downgrade", "0003_chunk_locations")
         assert historic_hash(connection) == before
@@ -231,7 +231,7 @@ def test_preflight_identifies_conflicts_without_rewriting_facts(mutation, catego
         connection.execute(text(mutation))
         before = historic_hash(connection)
         with pytest.raises(RuntimeError, match=category):
-            migrate(connection, "upgrade", "head")
+            migrate(connection, "upgrade", "0006_v2_run_guards")
         assert historic_hash(connection) == before
         assert "branches" not in inspect(connection).get_table_names()
 
@@ -245,7 +245,7 @@ def test_preflight_identifies_conflicts_without_rewriting_facts(mutation, catego
 )
 def test_custom_profile_downgrade_requires_explicit_export(change):
     with migration_engine().begin() as connection:
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         connection.execute(text(change))
         with pytest.raises(RuntimeError, match="CUSTOM_PROFILE_EXPORT_REQUIRED"):
             migrate(connection, "downgrade", "0003_chunk_locations")
@@ -278,7 +278,7 @@ def test_preflight_rejects_duplicate_work_without_cancel_or_delete(category):
             )
         before = historic_hash(connection)
         with pytest.raises(RuntimeError, match=category):
-            migrate(connection, "upgrade", "head")
+            migrate(connection, "upgrade", "0006_v2_run_guards")
         assert historic_hash(connection) == before
         assert "branches" not in inspect(connection).get_table_names()
 
@@ -288,7 +288,7 @@ def test_downgrade_rejects_every_session_business_fact(fact):
     with migration_engine().begin() as connection:
         migrate(connection, "upgrade", "0003_chunk_locations")
         seed_run(connection, "old", "failed")
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         if fact == "schema2":
             connection.execute(text("UPDATE runs SET execution_schema_version=2"))
         elif fact == "child":
@@ -327,7 +327,7 @@ def test_downgrade_rejects_every_session_business_fact(fact):
 
 def test_v2_migration_chain_refuses_base_downgrade_even_empty():
     with migration_engine().begin() as connection:
-        migrate(connection, "upgrade", "head")
+        migrate(connection, "upgrade", "0006_v2_run_guards")
         with pytest.raises(RuntimeError, match="BASE_DOWNGRADE_FORBIDDEN"):
             migrate(connection, "downgrade", "base")
         assert "model_profiles" in inspect(connection).get_table_names()

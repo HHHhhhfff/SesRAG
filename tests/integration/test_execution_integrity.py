@@ -7,6 +7,8 @@ import pytest
 import pytest_asyncio
 
 from backend.application.documents import create_document
+from backend.application.legacy_rag import bootstrap_default
+from backend.application.rag_profiles import bootstrap_mock
 from backend.application.runs import cancel_run
 from backend.application.task_execution import ExecutionStopped, guarded_call
 from backend.application.threads import create_message_run, create_thread
@@ -30,6 +32,8 @@ async def execution(tmp_path):
         await connection.run_sync(Base.metadata.create_all)
     factory = create_session_factory(engine)
     async with factory() as session:
+        await bootstrap_mock(session)
+        await bootstrap_default(session, settings)
         thread = await create_thread(session, settings, "执行约束")
         _, run, task, _ = await create_message_run(
             session, settings, thread.thread_id, "问题", "one"
