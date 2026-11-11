@@ -1,0 +1,156 @@
+x-labels: &labels
+  sesrag.test.suite: rag-mineru-003
+  sesrag.test.run: ${TEST_RUN_ID:?private run required}
+  sesrag.test.owner: ${TEST_OWNER:?ownership required}
+x-env: &env
+  DATABASE_URL: postgresql+psycopg://rag_test:${TEST_PASSWORD:?private password required}@postgres:5432/rag_test
+  REDIS_URL: redis://redis:6379/0
+  REDIS_ENABLED: "true"
+  OWNER_ID: rag-test-owner-a
+  UPLOAD_DIR: /data/uploads
+  RAG_ARTIFACT_DIR: /data/artifacts
+  RAG_TMP_DIR: /data/scratch
+  MOCK_PROVIDER: "true"
+  QUEUE_POLL_INTERVAL: "0.2"
+  SSE_POLL_INTERVAL: "0.2"
+  MINERU_ENABLED: ${MINERU_ENABLED:-false}
+  MINERU_API_KEY: ${MINERU_API_KEY:-}
+  MINERU_STATE_ENCRYPTION_KEY: ${MINERU_STATE_ENCRYPTION_KEY:-}
+  MINERU_STORAGE_HOST_ALLOWLIST: ${MINERU_STORAGE_HOST_ALLOWLIST:-}
+  MODEL_API_KEY: ${MODEL_API_KEY:-}
+  RAG_EMBEDDING_API_KEY: ${RAG_EMBEDDING_API_KEY:-}
+  RAG_RERANK_API_KEY: ${RAG_RERANK_API_KEY:-}
+  TEST_PROJECT: ${TEST_PROJECT}
+  TEST_RUN_ID: ${TEST_RUN_ID}
+  TEST_LANE: local
+  TEST_CONTROL_TOKEN: ${TEST_CONTROL_TOKEN}
+  PYTHONPATH: /suite:/app
+x-app: &app
+  image: ${APP_IMAGE:?app image required}
+  labels: *labels
+  environment: *env
+  networks: [testnet]
+  volumes: &app-volumes
+    - uploads:/data/uploads
+    - artifacts:/data/artifacts
+    - scratch:/data/scratch
+    - ${SUITE_DIR}/harness:/suite/harness:ro
+    - ${SUITE_DIR}/helpers:/suite/helpers:ro
+    - ${RUN_DIR}/config:/config:ro
+  restart: "no"
+  stop_grace_period: 25s
+  logging:
+    driver: json-file
+    options: {max-size: 5m, max-file: "1"}
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    labels: *labels
+    environment:
+      POSTGRES_DB: rag_test
+      POSTGRES_USER: rag_test
+      POSTGRES_PASSWORD: ${TEST_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [testnet]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U rag_test -d rag_test]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+  redis:
+    image: redis:7-alpine
+    labels: *labels
+    networks: [testnet]
+    command: [redis-server, --save, "", --appendonly, "no"]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  scenario-control:
+    <<: *app
+    profiles: [local]
+    environment:
+      TEST_CONTROL_TOKEN: ${TEST_CONTROL_TOKEN}
+      TEST_LANE: local
+      PYTHONPATH: /suite:/app
+    volumes:
+      - ${SUITE_DIR}/harness:/suite/harness:ro
+      - control:/data/control
+    command: [uvicorn, harness.scenario_control:app, --host, 0.0.0.0, --port, "8081", --no-access-log]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')"]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  migrate:
+    <<: *app
+    command: [python, -m, backend.tools.upgrade_rag_schema]
+    depends_on:
+      postgres: {condition: service_healthy}
+  profile-init:
+    <<: *app
+    command: [python, -m, helpers.initialize]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  api:
+    <<: *app
+    command: [python, -m, harness.local_entry, api]
+    depends_on:
+      profile-init: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      scenario-control: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+  worker:
+    <<: *app
+    command: [python, -m, harness.local_entry, worker]
+    depends_on:
+      profile-init: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      scenario-control: {condition: service_healthy}
+  frontend:
+    image: ${FRONTEND_IMAGE:?frontend image required}
+    labels: *labels
+    networks: [testnet]
+    environment: {VITE_API_BASE_URL: "", API_PROXY_TARGET: "http://api:8000"}
+    ports: ["127.0.0.1::5173"]
+    depends_on:
+      api: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: 5m, max-file: "1"}
+  tools:
+    <<: *app
+    image: ${TOOLS_IMAGE:?tools image required}
+    command: [python, -c, "import time; time.sleep(86400)"]
+    shm_size: 512mb
+    volumes:
+      - uploads:/data/uploads
+      - artifacts:/data/artifacts
+      - scratch:/data/scratch
+      - ${SUITE_DIR}/harness:/suite/harness:ro
+      - ${SUITE_DIR}/helpers:/suite/helpers:ro
+      - ${SUITE_DIR}/fixtures:/suite/fixtures:ro
+      - ${SUITE_DIR}/schemas:/suite/schemas:ro
+      - ${SUITE_DIR}/specific_test_script:/suite/specific_test_script:ro
+      - ${SUITE_DIR}/manifest.json:/suite/manifest.json:ro
+      - ${RUN_DIR}/config:/config:ro
+      - ${RUN_DIR}/tools-private.json:/run/secrets/tools-private.json:ro
+      - ${INPUT_DIR}:/inputs:ro
+      - ${REPORT_DIR}:/reports
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  pgdata: {labels: *labels}
+  uploads: {labels: *labels}
+  artifacts: {labels: *labels}
+  scratch: {labels: *labels}
+  control: {labels: *labels}
+networks:
+  testnet:
+    internal: true
+    labels: *labels

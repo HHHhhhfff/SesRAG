@@ -1,10 +1,14 @@
 # SesRAG Demo
 
-v0.3（`sesrag_v0.3`）已落地[RAG 检索增强与 MinerU 接入](docs/prd/003-SesRAG-RAG检索增强与MinerU接入-PRD.md)工程基线：知识库、版本化向量空间、结构切片、冻结检索视图、只读工具及诊断、pgvector数据库内精确检索、候选发布、历史证据和v3工作台。[实施结果简要说明](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-PR.md)记录文件／接口变动、实际检查及剩余验收前提，不替代正式调研或验收报告。
+v0.3（`sesrag_v0.3`）已落地[RAG 检索增强与 MinerU 接入](docs/prd/003-SesRAG-RAG检索增强与MinerU接入-PRD.md)工程基线：知识库、版本化向量空间、结构切片、冻结检索视图、只读工具及诊断、pgvector数据库内精确检索、候选发布、历史证据和v3工作台。[实施结果简要说明](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-PR.md)记录主要交付与历史检查；[实施结果调研](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-实施结果调研.md)逐项核对需求、源码机制、文件变动及待验收内容，供后续测试设计使用。两者均不替代正式验收报告。
 
 九格式固定路由：txt/md仅本地；doc/docx/pdf/xls/xlsx/ppt/pptx原件通过MinerU、逐次确认外发，失败不回退。办公真实样本已完成协议解析；真实Embedding／rerank请求成功，但输入计数未校准，真实模型Profile仍明确不可用。部署、升级和独立检查使用[v0.3 Runbook](docs/runbooks/rag-v3-development.md)。历史验收入口仅用于对应旧版本，不作为本轮通过证明。
 
-v0.2历史代码的详细落地、文件变动和需求核对见[PR-002实施结果调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)，对应历史验收入口为[PRD-002测试套件](tests/sesrag-persistent-session-workspace-test/README.md)。v0.3及后续PRD的本机验收独立组织；当前开发检查使用v0.3 Runbook，正式TEST-003待后续编制。旧Demo验收文件只在上一版本/测试分支查阅。
+v0.2历史代码的详细落地、文件变动和需求核对见[PR-002实施结果调研](docs/pr/002-SesRAG-持久化会话与对话工作台-实施结果调研.md)，对应历史验收入口为[PRD-002测试套件](tests/sesrag-persistent-session-workspace-test/README.md)。v0.3及后续PRD的本机验收独立组织；当前开发检查使用v0.3 Runbook。[TEST-003正式测试实施方案](docs/test/003-SesRAG-RAG检索增强与MinerU接入-test-plan.md)的隔离临时环境已实施并完成工程演练；产品分类接入、真实MinerU与模型业务闭环及正式验收仍待后续任务。旧Demo验收文件只在上一版本/测试分支查阅。
+
+PRD-003已完成独立[测试点设计与需求覆盖矩阵](tests/sesrag-rag-mineru-test/测试点设计与需求覆盖矩阵.md)：248点、18类，覆盖46项功能和12项非功能需求，并标明当前代码依据、真实前提与测试工程缺口。[本轮测试目录说明](tests/sesrag-rag-mineru-test/README.md)列出文件职责和后续准备顺序；产品用例与分类脚本仍待实施，测试点可验证不表示已通过。
+
+TEST-003临时环境、统一入口、工具/数据和清理工程已完成，同源两轮Environment、故障及强停恢复演练通过，本轮资源复查无残留；实际命令、缓存保留和限制见[环境实施与验证记录](tests/sesrag-rag-mineru-test/环境实施与验证记录.md)。产品分类仍为planned；环境通过不能替代本轮真实业务、格式、效果及性能验收。
 
 v0.2 历史[TEST-002正式测试实施方案](docs/test/002-SesRAG-持久化会话与对话工作台-test-plan.md)已建立独立的本机Compose测试环境、总入口、工具/素材和报告清理流程，入口及职责见[测试套件说明](tests/sesrag-persistent-session-workspace-test/README.md)，实际演练结果见[环境实施与验证记录](tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)。独立[测试点矩阵](tests/sesrag-persistent-session-workspace-test/测试点设计与需求覆盖矩阵.md)与[测试用例设计](tests/sesrag-persistent-session-workspace-test/test-cases.md)已完成；任务1～2的工具前置和总入口核验见[准备记录](tests/sesrag-persistent-session-workspace-test/测试准备与总入口核验记录.md)。任务3～4已接入8类104例脚本，真实试跑及修订证据见[脚本校审记录](tests/sesrag-persistent-session-workspace-test/测试脚本实施与试跑校审记录.md)；任务5～6现已完成同源两轮All，各104通过、0失败/受限/未运行/工程错误，清理通过；结果及真实命令见[测试报告](tests/sesrag-persistent-session-workspace-test/测试报告.md)，归档呈现等4项补充发现见[缺陷报告](tests/sesrag-persistent-session-workspace-test/缺陷报告.md)，原104例执行字段已回填。本次最小修复新增4个归档用例，当前登记108例，最终完整回归108通过、清理通过、退出0；首轮工程失败如实保留，未定义005不作虚构处理。改动及本轮真实结果见[小缺陷修复与回归验收报告](tests/sesrag-persistent-session-workspace-test/小缺陷修复与回归验收报告.md)。
 
@@ -20,6 +24,7 @@ frontend/      Vue 3 + TypeScript 单页工作台；模块与生成入口见fron
 migrations/    Alembic 数据库迁移
 contracts/     Thread/Message/Run/Document/Health、响应/引用和 Run Event 版本化 JSON Schema
 tests/         单元、API 和集成测试
+tests/sesrag-rag-mineru-test/ PRD-003独立环境、工具、协议及后续产品验收入口
 tests/sesrag-persistent-session-workspace-test/ PRD-002历史独立环境与验收证据（不作为v0.3入口）
 docker/        API/Worker 与前端镜像定义
 docs/prd/      Demo、v0.2、v0.3 与完整项目 PRD，以及对应调研依据

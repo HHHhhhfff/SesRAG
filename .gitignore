@@ -30,3 +30,11 @@ tests/sesrag-persistent-session-workspace-test/tmp/
 tests/sesrag-persistent-session-workspace-test/node_modules/
 tests/sesrag-persistent-session-workspace-test/.cache/
 tests/sesrag-persistent-session-workspace-test/compose/.env.workspace-test.local
+# PRD-003独立临时测试：保留固定夹具/脚本，忽略运行副本与工具缓存。
+tests/sesrag-rag-mineru-test/runtime/
+tests/sesrag-rag-mineru-test/runtime-inputs/
+tests/sesrag-rag-mineru-test/tmp/
+tests/sesrag-rag-mineru-test/artifacts/
+tests/sesrag-rag-mineru-test/.cache/
+tests/sesrag-rag-mineru-test/node_modules/
+tests/sesrag-rag-mineru-test/compose/.env.rag-test.local

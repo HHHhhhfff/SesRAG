@@ -13,6 +13,13 @@
 
 正式测试方案至少说明：对应 PRD/ADR、版本和日期、测试边界、环境与隔离方式、目录和文件职责、总入口脚本、分类脚本协议、报告格式、失败语义、清理策略和分阶段退出条件。结果记录至少说明：实际环境、执行命令、结果、失败或跳过项、复现方式和剩余风险。未运行的检查不得写成通过。
 
+## RAG检索增强与MinerU接入（003）
+
+- [正式测试实施方案](003-SesRAG-RAG检索增强与MinerU接入-test-plan.md)：A～E环境工程已在独立`tests/sesrag-rag-mineru-test/`实施并演练；本机Compose、总入口、共享数据/工具和清理闭环已通过，具体产品用例和分类脚本另行实施。
+- 方案覆盖46项功能与12项非功能需求，区分local可控测试、真实MinerU/Embedding/rerank/生成业务闭环、逐格式验收及效果/性能。真实模型计数校准仍是明确前置，不以历史协议成功或Mock结果替代。
+- [测试点与需求覆盖矩阵](../../tests/sesrag-rag-mineru-test/测试点设计与需求覆盖矩阵.md)：248点、18类，覆盖46项功能和12项非功能需求，明确代码依据、可验证状态与受限原因；目录说明见[本轮README](../../tests/sesrag-rag-mineru-test/README.md)。
+- 独立环境同源两轮Environment、故障及强停恢复演练通过，本轮容器/卷/网络/tag、runtime/tmp无残留，25项宿主工程自测通过；实际命令、排错与保留资源见[环境实施与验证记录](../../tests/sesrag-rag-mineru-test/环境实施与验证记录.md)。产品用例/分类脚本仍待实施，尚未执行本轮正式产品验收。
+
 ## 持久化会话与对话工作台（002）
 
 - [正式测试实施方案](002-SesRAG-持久化会话与对话工作台-test-plan.md)：已建立独立目录 `tests/sesrag-persistent-session-workspace-test/`、本机Compose、总入口、工具/数据、报告和清理恢复流程；实际命令、结果和限制见[环境实施与验证记录](../../tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)。环境实施与产品用例验收分别判定。

@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "categories": [
+    {
+      "category": "catalog",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/catalog-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "ingestion",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/ingestion-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "mineru",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/mineru-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 2,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "chunking",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/chunking-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "vectors",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/vectors-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "retrieval",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/retrieval-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "execution",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/execution-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 2,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "workspace",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/workspace-tests.mjs",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "compatibility",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/compatibility-tests.py",
+      "cases": [],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "lifecycle",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/lifecycle-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "performance",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/performance-tests.py",
+      "cases": [],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "quality",
+      "lane": "local",
+      "status": "planned",
+      "entrypoint": "specific_test_script/quality-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "real-formats",
+      "lane": "real",
+      "status": "planned",
+      "entrypoint": "specific_test_script/real-formats-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": true
+    },
+    {
+      "category": "real-business",
+      "lane": "real",
+      "status": "planned",
+      "entrypoint": "specific_test_script/real-business-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": true
+    },
+    {
+      "category": "real-evaluation",
+      "lane": "real",
+      "status": "planned",
+      "entrypoint": "specific_test_script/real-evaluation-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": true
+    }
+  ]
+}

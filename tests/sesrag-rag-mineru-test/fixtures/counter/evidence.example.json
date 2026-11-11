@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "unverified",
+  "capability": "embedding",
+  "model": "qwen3.7-text-embedding",
+  "revision": "deployment_20261030_unverified_counter",
+  "algorithm": null,
+  "source": null,
+  "applicable_limits": {},
+  "calibration_results": [],
+  "note": "必须提供真实依据与边界校准，禁止只改status"
+}

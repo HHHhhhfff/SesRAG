@@ -1,0 +1,70 @@
+[
+  {
+    "kind": "embedding",
+    "profile_id": "mock-embedding",
+    "version": 1,
+    "config": {
+      "space": {
+        "model": "mock-384",
+        "revision": "sha256_v1",
+        "dimension": 384
+      }
+    }
+  },
+  {
+    "kind": "rerank",
+    "profile_id": "mock-rerank",
+    "version": 1,
+    "config": {}
+  },
+  {
+    "kind": "parser",
+    "profile_id": "local-text",
+    "version": 1,
+    "config": {
+      "parser_kind": "local",
+      "formats": [
+        ".txt",
+        ".md"
+      ],
+      "output_protocol": "local_structure_v1"
+    }
+  },
+  {
+    "kind": "parser",
+    "profile_id": "mineru-office",
+    "version": 2,
+    "config": {
+      "parser_kind": "mineru",
+      "formats": [
+        ".doc",
+        ".docx",
+        ".pdf",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx"
+      ],
+      "output_protocol": "mineru_cloud_v4_office_text_v1",
+      "verified_formats": [
+        ".doc",
+        ".docx",
+        ".pdf",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx"
+      ],
+      "protocol_evidence": "PR-003 real office samples 2026-10-30; see tests/fixtures/rag-v3/provider-observations.json"
+    }
+  },
+  {
+    "kind": "retrieval",
+    "profile_id": "default-retrieval",
+    "version": 1,
+    "config": {
+      "rerank_profile_id": "mock-rerank",
+      "rerank_profile_version": 1
+    }
+  }
+]

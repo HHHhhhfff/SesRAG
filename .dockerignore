@@ -26,3 +26,12 @@ tests/sesrag-persistent-session-workspace-test/tmp
 tests/sesrag-persistent-session-workspace-test/node_modules
 tests/sesrag-persistent-session-workspace-test/.cache
 tests/sesrag-persistent-session-workspace-test/compose/.env.workspace-test.local
+# 私有源和本轮运行数据不能进入任何产品或工具构建上下文。
+docs/secret
+tests/sesrag-rag-mineru-test/runtime
+tests/sesrag-rag-mineru-test/runtime-inputs
+tests/sesrag-rag-mineru-test/tmp
+tests/sesrag-rag-mineru-test/artifacts
+tests/sesrag-rag-mineru-test/.cache
+tests/sesrag-rag-mineru-test/node_modules
+tests/sesrag-rag-mineru-test/compose/.env.rag-test.local

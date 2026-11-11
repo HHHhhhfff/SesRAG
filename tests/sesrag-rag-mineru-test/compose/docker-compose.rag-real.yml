@@ -1,0 +1,83 @@
+# Compose 2.24.4+；真实通道必须消除local入口、控制面和假凭据。
+x-real-env: &real-env
+  DATABASE_URL: postgresql+psycopg://rag_test:${TEST_PASSWORD}@postgres:5432/rag_test
+  REDIS_URL: redis://redis:6379/0
+  REDIS_ENABLED: "true"
+  OWNER_ID: rag-test-owner-a
+  UPLOAD_DIR: /data/uploads
+  RAG_ARTIFACT_DIR: /data/artifacts
+  RAG_TMP_DIR: /data/scratch
+  MOCK_PROVIDER: "true"
+  MINERU_ENABLED: ${MINERU_ENABLED:-false}
+  MINERU_API_KEY: ${MINERU_API_KEY:-}
+  MINERU_STATE_ENCRYPTION_KEY: ${MINERU_STATE_ENCRYPTION_KEY:-}
+  MINERU_STORAGE_HOST_ALLOWLIST: ${MINERU_STORAGE_HOST_ALLOWLIST:-}
+  MODEL_API_KEY: ${MODEL_API_KEY:-}
+  RAG_EMBEDDING_API_KEY: ${RAG_EMBEDDING_API_KEY:-}
+  RAG_RERANK_API_KEY: ${RAG_RERANK_API_KEY:-}
+  PYTHONPATH: /suite:/app
+  TEST_LANE: real
+x-real-volumes: &real-volumes
+  - uploads:/data/uploads
+  - artifacts:/data/artifacts
+  - scratch:/data/scratch
+  - ${SUITE_DIR}/helpers:/suite/helpers:ro
+  - ${RUN_DIR}/config:/config:ro
+services:
+  migrate:
+    environment: !override {<<: *real-env}
+    volumes: !override
+      - uploads:/data/uploads
+      - artifacts:/data/artifacts
+      - scratch:/data/scratch
+      - ${SUITE_DIR}/helpers:/suite/helpers:ro
+      - ${RUN_DIR}/config:/config:ro
+  profile-init:
+    environment: !override {<<: *real-env}
+    volumes: !override
+      - uploads:/data/uploads
+      - artifacts:/data/artifacts
+      - scratch:/data/scratch
+      - ${SUITE_DIR}/helpers:/suite/helpers:ro
+      - ${RUN_DIR}/config:/config:ro
+  api:
+    environment: !override {<<: *real-env}
+    volumes: !override
+      - uploads:/data/uploads
+      - artifacts:/data/artifacts
+      - scratch:/data/scratch
+      - ${SUITE_DIR}/helpers:/suite/helpers:ro
+      - ${RUN_DIR}/config:/config:ro
+    command: !override [uvicorn, backend.app:app, --host, 0.0.0.0, --port, "8000"]
+    depends_on: !override
+      profile-init: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+  worker:
+    environment: !override {<<: *real-env}
+    volumes: !override
+      - uploads:/data/uploads
+      - artifacts:/data/artifacts
+      - scratch:/data/scratch
+      - ${SUITE_DIR}/helpers:/suite/helpers:ro
+      - ${RUN_DIR}/config:/config:ro
+    command: !override [python, -m, backend.workers.main]
+    depends_on: !override
+      profile-init: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+  tools:
+    environment: !override {<<: *real-env}
+    volumes: !override
+      - uploads:/data/uploads
+      - artifacts:/data/artifacts
+      - scratch:/data/scratch
+      - ${SUITE_DIR}/helpers:/suite/helpers:ro
+      - ${SUITE_DIR}/fixtures:/suite/fixtures:ro
+      - ${SUITE_DIR}/schemas:/suite/schemas:ro
+      - ${SUITE_DIR}/specific_test_script:/suite/specific_test_script:ro
+      - ${SUITE_DIR}/manifest.json:/suite/manifest.json:ro
+      - ${RUN_DIR}/config:/config:ro
+      - ${RUN_DIR}/tools-private.json:/run/secrets/tools-private.json:ro
+      - ${INPUT_DIR}:/inputs:ro
+      - ${REPORT_DIR}:/reports
+networks:
+  testnet: {internal: false}
