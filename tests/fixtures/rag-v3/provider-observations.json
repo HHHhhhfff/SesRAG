@@ -1,0 +1,96 @@
+{
+  "mode": "read_existing_remote_results_after_host_review",
+  "office": {
+    "knowledge-scan.pdf": {
+      "state": "parsed",
+      "format": ".pdf",
+      "characters": 60,
+      "blocks": 1,
+      "text_sha256": "da0db68cce1068f7cb80ac91b0b2119b83161c0c4083bcb22e3e889f10491220",
+      "verified_source_positions": 1,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    },
+    "knowledge.docx": {
+      "state": "parsed",
+      "format": ".docx",
+      "characters": 1691,
+      "blocks": 42,
+      "text_sha256": "f14f428d8a1f5182fbefcb552cd1abb324493d6d8b71ab2aaecad40e1cabab4b",
+      "verified_source_positions": 0,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    },
+    "knowledge.pdf": {
+      "state": "parsed",
+      "format": ".pdf",
+      "characters": 1500,
+      "blocks": 40,
+      "text_sha256": "ddb532f5281fb22e0ec42a176a8529e39b223b34d7db013d891b65d3352f1ea7",
+      "verified_source_positions": 20,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    },
+    "knowledge.pptx": {
+      "state": "parsed",
+      "format": ".pptx",
+      "characters": 470,
+      "blocks": 12,
+      "text_sha256": "661b543a584974acc841a9c2bae857e647af1481f5979bb1630a93e1130bd2e1",
+      "verified_source_positions": 0,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    },
+    "knowledge.xls": {
+      "state": "parsed",
+      "format": ".xls",
+      "characters": 1561,
+      "blocks": 1,
+      "text_sha256": "f805f18d1e961e5f0e88da84a99c12e60ccd26ce764f94230025598da82f31a6",
+      "verified_source_positions": 0,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    },
+    "knowledge.xlsx": {
+      "state": "parsed",
+      "format": ".xlsx",
+      "characters": 1561,
+      "blocks": 1,
+      "text_sha256": "f805f18d1e961e5f0e88da84a99c12e60ccd26ce764f94230025598da82f31a6",
+      "verified_source_positions": 0,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    },
+    "public-slides.ppt": {
+      "state": "parsed",
+      "format": ".ppt",
+      "characters": 188,
+      "blocks": 7,
+      "text_sha256": "133f4b1799993f99c46467a20cc3b29c8f6191f97b59d50171cd0fd44ad2532b",
+      "verified_source_positions": 0,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    },
+    "public-word.doc": {
+      "state": "parsed",
+      "format": ".doc",
+      "characters": 47,
+      "blocks": 1,
+      "text_sha256": "a727b36ed55790b7e8a710b16156a1243159a8767e846f8c87b7e80f7b03f218",
+      "verified_source_positions": 0,
+      "protocol": "mineru_cloud_v4_office_text_v1"
+    }
+  },
+  "date": "2026-10-30",
+  "evidence_scope": "真实精准API原批次只读下载及当前Normalizer；不代表整轮效果验收",
+  "models": {
+    "embedding": {
+      "state": "protocol_passed",
+      "documents": 2,
+      "query_vectors": 1,
+      "dimension": 1024,
+      "counter_status": "unverified"
+    },
+    "rerank": {
+      "state": "protocol_passed",
+      "ranking": [
+        0,
+        1
+      ],
+      "counter_status": "unverified"
+    }
+  }
+}

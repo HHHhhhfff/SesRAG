@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RefreshCw, Square } from 'lucide-vue-next'
-import type { RunDetail } from '../types/api-v2'
+import type { RunDetail } from '../types/api-v3'
 defineProps<{ run: RunDetail | null; loading?: boolean; readonly?: boolean; hasProfile?: boolean; hasPendingOperation?: boolean }>()
 const emit = defineEmits<{ cancel: []; retry: []; regenerate: [] }>()
 </script>

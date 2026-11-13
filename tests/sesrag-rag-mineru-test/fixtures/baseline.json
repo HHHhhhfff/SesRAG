@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "owner": "rag-test-owner-a",
+  "other_owner": "rag-test-owner-b",
+  "default_embedding": {
+    "profile_id": "mock-embedding",
+    "version": 1
+  },
+  "default_retrieval": {
+    "profile_id": "default-retrieval",
+    "version": 1
+  },
+  "seed_sql_required": false
+}

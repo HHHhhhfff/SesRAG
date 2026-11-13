@@ -1,0 +1,5 @@
+{
+  "name": "sesrag-rag-mineru-test-tools", "private": true, "version": "1.0.0",
+  "type": "module", "engines": {"node": ">=22.13.0"},
+  "dependencies": {"playwright": "1.58.2"}
+}

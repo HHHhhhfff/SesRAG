@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "purpose": "固定边界材料种子，不是已校准证据；扩展到实际声明上限后逐能力验证",
+  "texts": ["短中文事实", "A short English fact.", "混合 mixed 123 🙂 é", "\n \t", "表格|项目|数值\n|ALPHA|37|"],
+  "capabilities": ["embedding-document", "embedding-query", "embedding-batch", "rerank-query-documents", "generation-messages"],
+  "limits_to_check": ["单输入字节和实际模型token", "16条批量", "rerank组合请求", "临界值与超1", "离线词表hash及框架开销"],
+  "verified": false
+}

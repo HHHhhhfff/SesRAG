@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "run_id", "category", "lane", "fingerprints", "addresses", "resources", "report_dir", "budget", "allowed_operations"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "pattern": "^rag-[a-z0-9-]{8,80}$"},
+    "category": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,40}$"},
+    "lane": {"enum": ["local", "real"]},
+    "fingerprints": {"type": "object", "additionalProperties": {"type": "string"}},
+    "addresses": {"type": "object", "additionalProperties": {"type": "string"}},
+    "resources": {"type": "object", "additionalProperties": {"type": ["string", "array"]}},
+    "report_dir": {"type": "string"},
+    "budget": {"type": "object"},
+    "real_capabilities": {"type": "array", "uniqueItems": true, "items": {"enum": ["mineru", "embedding", "rerank", "generation"]}},
+    "allowed_operations": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  }
+}

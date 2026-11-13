@@ -34,6 +34,17 @@ class Settings(BaseSettings):
     model_api_key: str | None = None
     model_name: str | None = None
     embedding_model_name: str | None = None
+    mineru_enabled: bool = False
+    mineru_api_key: str | None = Field(default=None, repr=False)
+    mineru_state_encryption_key: str | None = Field(default=None, repr=False)
+    mineru_storage_host_allowlist: str = ""
+    rag_artifact_dir: str = "/data/rag-artifacts"
+    rag_tmp_dir: str = "/data/rag-tmp"
+    rag_storage_budget_bytes: int = Field(default=10 * 1024**3, ge=512 * 1024**2)
+    # 至少容纳一个384MiB槽位，避免接受配置后队列容量恒为0。
+    rag_tmp_budget_bytes: int = Field(default=1024**3, ge=384 * 1024**2)
+    rag_pipeline_concurrency: int = Field(default=1, ge=1, le=4)
+    rag_bootstrap_config: str | None = None
 
     @model_validator(mode="after")
     def validate_combinations(self) -> Self:

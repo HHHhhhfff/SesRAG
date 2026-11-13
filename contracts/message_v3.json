@@ -1,0 +1,455 @@
+{
+  "$defs": {
+    "CitationV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "default": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "context_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Context Evidence Ids",
+          "type": "array"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/Location"
+          },
+          "maxItems": 1000,
+          "title": "Locations",
+          "type": "array"
+        },
+        "dense_score": {
+          "title": "Dense Score",
+          "type": "number"
+        },
+        "rerank_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Score"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "document_id",
+        "index_batch_id",
+        "context_evidence_ids",
+        "locations",
+        "dense_score"
+      ],
+      "title": "CitationV2",
+      "type": "object"
+    },
+    "EvidenceCitation": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/EvidenceLocation"
+          },
+          "title": "Locations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "document_id",
+        "chunk_id",
+        "filename",
+        "start_offset",
+        "end_offset",
+        "score",
+        "index_batch_id",
+        "locations"
+      ],
+      "title": "EvidenceCitation",
+      "type": "object"
+    },
+    "EvidenceLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "line",
+            "paragraph"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "number": {
+          "minimum": 1,
+          "title": "Number",
+          "type": "integer"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "number",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "EvidenceLocation",
+      "type": "object"
+    },
+    "LegacyCitation": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "document_id",
+        "chunk_id",
+        "filename",
+        "start_offset",
+        "end_offset",
+        "score"
+      ],
+      "title": "LegacyCitation",
+      "type": "object"
+    },
+    "Location": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "line",
+            "paragraph",
+            "table_cell",
+            "page",
+            "slide",
+            "sheet_range",
+            "block"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "source",
+            "normalized"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "verified",
+            "block_only"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number"
+        },
+        "end_number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Number"
+        },
+        "block_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "sheet_name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet Name"
+        },
+        "cell_range": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell Range"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "row": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "origin",
+        "quality",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "Location",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "thread_id": {
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "branch_id": {
+      "title": "Branch Id",
+      "type": "string"
+    },
+    "seq": {
+      "title": "Seq",
+      "type": "integer"
+    },
+    "role": {
+      "enum": [
+        "user",
+        "assistant"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "run_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Run Id"
+    },
+    "citation_schema_version": {
+      "enum": [
+        1,
+        2
+      ],
+      "title": "Citation Schema Version",
+      "type": "integer"
+    },
+    "citations": {
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/CitationV2"
+          },
+          {
+            "$ref": "#/$defs/EvidenceCitation"
+          },
+          {
+            "$ref": "#/$defs/LegacyCitation"
+          }
+        ]
+      },
+      "maxItems": 100,
+      "title": "Citations",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message_id",
+    "thread_id",
+    "branch_id",
+    "seq",
+    "role",
+    "source",
+    "content",
+    "status",
+    "run_id",
+    "citation_schema_version",
+    "citations",
+    "created_at"
+  ],
+  "title": "Message",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/message_v3.json"
+}

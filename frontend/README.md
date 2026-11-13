@@ -1,5 +1,19 @@
 # SesRAG 前端
 
+## v0.3 RAG 工作台
+
+新工作台的消息、Run、Context、Event和文档使用`src/api/v3/`与生成的`types/api-v3.ts`；Thread/Branch/Models元数据继续复用v2。下文ADR-002说明保留为旧会话能力背景，文档v1入口仅作兼容调用，不是新UI默认入口。
+
+- `stores/rag.ts`及`components/RagPanel.vue`：知识库管理、策略／独立模型空间、后续Run配置、过滤与独立检索诊断。诊断不创建聊天消息。
+- `stores/documents.ts`及`components/DocumentUploader.vue`：九格式固定提示、每次办公外发确认、有界状态刷新、旧active与最新构建分别显示、查看已发布切片。确定性4xx拒绝后可改正输入；网络未知上传沿用原文件和幂等键，未确认重建冻结原参数、授权和幂等键，通过“重试原重建”恢复，确认前拒绝其他重建且仅可在原知识库重试。未决重建最多保留一个，刷新页面会清除浏览器内存中的恢复身份。切片分页按文档、active批次及请求代数隔离迟到响应，同游标请求合并并按chunk身份去重。
+- `components/EvidenceViewer.vue`：经受权接口读取固定Bundle文本／组件／位置，来源缺失明确显示，迟到响应不能覆盖已切换身份。
+- `events/rag-event-stream.ts`：三代事件补放和v3 SSE传输，HTTP与SSE统一使用`events/generated/run-event-validator.js`校验正式`contracts/run_event_v3.json`联合契约（含历史v1/v2分支），非法载荷以`EVENT_SCHEMA_INVALID`拒绝，仍由run store唯一seq入口去重；Event不能直接宣布终态。
+- `markdown/render.ts`：统一DOMPurify清洗；阻断远程图片、iframe、script、svg、样式及危险协议，不自动拉取文档资产。
+- `tests/rag-workspace.test.ts`：本轮固定路由、逐次授权、已知拒绝恢复、迟到诊断和恶意Markdown组件／store回归，不作为完整浏览器或效果验收证明。
+- `tests/documents.test.ts`与`tests/rag-event-stream.test.ts`：未决重建同键恢复、跨库边界、切片并发／迟到隔离和正式事件Schema负例，以及HTTP/SSE拒绝路径回归。
+
+新能力启用和真实服务限制见[v0.3 Runbook](../docs/runbooks/rag-v3-development.md)，正式字段见[接口文档](../docs/接口文档.md)。
+
 重试/重新生成默认沿用来源Run的模型快照；只有查看该Run后在模型控件手动切换，才发送显式覆盖。全局保存的模型偏好只用于新消息选择，不自动覆盖旧Run。工作台自动观察只选当前Branch的Run，继承祖先Run保留为历史；侧栏摘要由服务端事实刷新并按最近更新时间排序。
 
 Demo 使用 Vue 3、TypeScript、Vite、Pinia 和单页原生组件；无需 Router 或 UI 库。Markdown 由 marked 解析并经 DOMPurify 清洗，不能直接渲染模型原始 HTML。
@@ -13,7 +27,8 @@ Demo 使用 Vue 3、TypeScript、Vite、Pinia 和单页原生组件；无需 Rou
 - `src/markdown/render.ts` 是保存正文与流式草稿的唯一清洗入口；每次 marked 渲染后均使用 DOMPurify，原文与清洗后的 DOM 保持分离。
 - `src/events/run-event-stream.ts` 连接 SSE 并补放 HTTP，只将事件交给同一去重入口，关闭后丢弃迟到数据。
 - `src/components/` 展示消息、状态、引用和文档；引用按钮支持 Enter/Space 展开批次、基础位置与 chunk offset。
-- `scripts/generate-api-types.mjs` 从 `../contracts/*_v1.json` 与 `*_v2.json` 可重复生成 v1 `src/types/api.ts` 和独立 v2 `src/types/api-v2.ts`；默认同时检查两代漂移，显式临时 `--output` 保留 v1 兼容，可指定 `--version v2` 检查 v2。仅使用项目 Node 标准库；未知 Schema 结构显式报错。
+- `scripts/generate-api-types.mjs` 从 `../contracts/*_v1.json`、`*_v2.json`和`*_v3.json`可重复生成三代类型；默认检查三代漂移，显式临时`--output`保留v1兼容，可用`--version`选择版本。类型生成仅使用项目Node标准库，未知Schema结构显式报错。
+- `scripts/generate-event-validator.mjs`使用锁定的Ajv 2020及ajv-formats完整编译正式RunEvent联合契约，再由esbuild打包为浏览器可直接导入的ESM与类型声明；事件类型监听列表也从Schema生成，生成检查覆盖Schema及生成器变化。`generate:api`／`check:api`的npm前置脚本自动同时生成／检查事件校验器，也可单独运行`generate:events`／`check:events`。`events/generated/`由脚本维护，勿手改；浏览器不动态编译Schema、不访问远程Schema、不自动补默认值或删除未知字段。
 
 Run 事件只触发 GET，终态和失败以 Run/Thread 返回事实为准；临时 assistant 不写入 Thread 消息。完成消息存在时不追加历史 delta。事件按 `run_id + seq` 去重并按 seq 排序，重连和终态补放使用已连续收到的 seq 游标，不取消 Run。自动连接尝试最多重试 3 次，延时 0.5/1/2 秒；耗尽后保留手动重连。切 Thread/Run 和卸载关闭连接、清理 timer 并使旧回调/HTTP 失效。
 
@@ -40,11 +55,15 @@ Vite 代理 `/api` 和 `/health`。宿主默认目标 `http://127.0.0.1:8000`，
 
 ## 类型与质量检查
 
+v0.3的`components/rag-labels.ts`只将服务端持久阶段转为中文，`styles.css`约束RAG表单与长证据换行，不在显示层推断终态。`api/v3/rag.ts`／`stores/rag.ts`／`RagPanel.vue`／`EvidenceViewer.vue`承担库、策略、独立诊断与证据；正式接口见接口文档，当前验收限制见PR-003。
+
 `tests/thread-store.test.ts` 是 WS-DEF-001 的8项store/侧栏/页面回归，覆盖互斥视图、归档移动、首屏外偏好、空视图、新建、共享游标去重、迟到响应及当前视图读取失败的可见错误与恢复；正式浏览器验收由 PRD-002 独立套件UI_015～018执行。
 
 ```powershell
 npm run generate:api --prefix frontend
 npm run check:api --prefix frontend
+npm run generate:events --prefix frontend
+npm run check:events --prefix frontend
 npm run typecheck --prefix frontend
 npm run build --prefix frontend
 npm run lint --prefix frontend

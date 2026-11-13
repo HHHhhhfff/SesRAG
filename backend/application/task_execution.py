@@ -30,8 +30,10 @@ async def lock_execution(session, task_id, worker_id, generation):
     if task is None:
         raise ExecutionStopped()
     run = await queue.lock_run(session, task.run_id) if task.run_id else None
-    if not queue.lease_valid(task) or (
-        run is not None and (run.status in queue.TERMINAL or run.cancel_requested_at)
+    if (
+        not queue.lease_valid(task)
+        or task.cancel_requested_at
+        or (run is not None and (run.status in queue.TERMINAL or run.cancel_requested_at))
     ):
         raise ExecutionStopped()
     return task, run
@@ -106,6 +108,21 @@ async def complete_run(session, task_id, worker_id, generation, answer, citation
     # 终态写入会清空 Task 租约，保留本代原时间用于发布前校验。
     lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
     thread.next_message_seq += 1
+    if run.execution_schema_version == 3:
+        from backend.api.schemas.v3.sessions import CitationV2
+        from backend.db.models import ContextPlanModel
+
+        plan = await session.get(ContextPlanModel, run.context_plan_id)
+        citations = (
+            [
+                CitationV2.model_validate(
+                    {key: value for key, value in item.items() if key in CitationV2.model_fields}
+                ).model_dump(mode="json")
+                for item in plan.selected_evidence
+            ]
+            if plan
+            else []
+        )
     assistant = MessageModel(
         message_id=str(uuid4()),
         thread_id=thread.thread_id,
@@ -117,9 +134,26 @@ async def complete_run(session, task_id, worker_id, generation, answer, citation
         status="completed",
         run_id=run.run_id,
         citations_json=citations,
+        citation_schema_version=2 if run.execution_schema_version == 3 else 1,
     )
     session.add(assistant)
     await session.flush()
+    if run.execution_schema_version == 3:
+        from backend.db.rag_models import MessageCitationLinkModel
+
+        for index, citation in enumerate(citations, 1):
+            for identity in citation["context_evidence_ids"]:
+                session.add(
+                    MessageCitationLinkModel(
+                        message_id=assistant.message_id,
+                        context_evidence_id=identity,
+                        label=str(index),
+                    )
+                )
+    else:
+        from backend.application.legacy_rag import protect_legacy_items
+
+        await protect_legacy_items(session, citations, message_id=assistant.message_id)
     branch.head_message_id = assistant.message_id
     branch.version += 1
     run.assistant_message_id = assistant.message_id

@@ -1,5 +1,13 @@
 # SesRAG 契约
 
+## v0.3 契约
+
+`backend.tools.export_rag_contracts` 从严格v3 DTO导出 `knowledge_base_v3`、`document_v3`、`index_build_v3`、`rag_profile_v3`、`retrieval_v3`、`evidence_v2`、`citation_v2`、`message_v3`、`run_v3`、`context_plan_v3`、`run_event_v3`、`api_responses_v3`、`rag_binding_v3`、`tool_v1`、`tool_rag_search_input_v1`和`tool_rag_search_result_v2`。API包装内含严格的三代事件联合，不能将data导出为任意字典。
+
+后端导出／只读检查分别为`python -m backend.tools.export_rag_contracts`及同命令加`--check`；之后`npm run generate:api --prefix frontend`同步三代类型，`npm run check:api --prefix frontend`检查漂移。前端v3类型来自`api_responses_v3.json`的定义，独立单资源Schema用于外部消费和动态验证，不手写第二套字段。新增字段的完整语义只维护在[正式接口文档 §8](../docs/接口文档.md#8-v03-rag-与-mineru接口)。
+
+旧v1/v2契约不扩展新事件或Citation字段；新Message以citation_schema_version明确区分数组分支。`tests/api/test_rag_contracts_v3.py`覆盖导出漂移、JSON Schema有效性、事件版本和额外能力URL拒绝。
+
 `evidence_v1.json` 约束新增引用的文档、chunk、不可变批次、分数和基础位置；旧历史记录不重写。
 
 `run_event_v1.json` 同时约束 Event envelope 和11种 type/data 联合。领取身份、重试错误/attempt、检索身份/位置、增量text、终态message/citations各自严格校验；retrieval不含filename，与完整Citation不同。后端写入 PostgreSQL 的 `RunEvent`、SSE 输出和前端 `RunEvent` 类型都必须保持该契约的字段语义。

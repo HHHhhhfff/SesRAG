@@ -57,7 +57,7 @@ async def process_run_task(
     async with session_factory() as session:
         _, initial_run = await lock_execution(session, task_id, worker_id, generation)
         schema = initial_run.execution_schema_version
-    if schema == 2:
+    if schema in {2, 3}:
         from backend.application.session_execution import process_session_run
 
         return await process_session_run(

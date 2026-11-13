@@ -74,6 +74,8 @@ class ContextInput:
     max_candidate_messages: int = 200
     max_candidate_chars: int = 200_000
     prior_omitted_ranges: tuple[OmittedRange, ...] = ()
+    evidence_role: str = "system"
+    number_evidence: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -265,8 +267,12 @@ def plan_context(
         for unit in selected_units:
             ordered.extend(ModelMessage(m.role, m.content) for m in unit)
         ordered.append(current)
-        for item in evidence:
-            ordered.append(ModelMessage("system", "[非可信检索证据]\n" + item.text))
+        for number, item in enumerate(evidence, 1):
+            # 每次预算重算使用最终顺序，裁剪后编号不会留下空洞。
+            label = f"[S{number}] " if request.number_evidence else ""
+            ordered.append(
+                ModelMessage(request.evidence_role, label + "[非可信检索证据]\n" + item.text)
+            )
         return tuple(ordered)
 
     while counter.count_messages(messages_for()) > available and evidence:

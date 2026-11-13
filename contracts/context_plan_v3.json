@@ -1,0 +1,591 @@
+{
+  "$defs": {
+    "Location": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "line",
+            "paragraph",
+            "table_cell",
+            "page",
+            "slide",
+            "sheet_range",
+            "block"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "source",
+            "normalized"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "verified",
+            "block_only"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number"
+        },
+        "end_number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Number"
+        },
+        "block_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "sheet_name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet Name"
+        },
+        "cell_range": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell Range"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "row": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "origin",
+        "quality",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "Location",
+      "type": "object"
+    },
+    "MessageRange": {
+      "additionalProperties": false,
+      "properties": {
+        "from_seq": {
+          "minimum": 1,
+          "title": "From Seq",
+          "type": "integer"
+        },
+        "to_seq": {
+          "minimum": 1,
+          "title": "To Seq",
+          "type": "integer"
+        },
+        "count": {
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        },
+        "reason": {
+          "enum": [
+            "outside_candidate_window",
+            "budget_trimmed",
+            "summarized"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_seq",
+        "to_seq",
+        "count",
+        "reason"
+      ],
+      "title": "MessageRange",
+      "type": "object"
+    },
+    "OmittedBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "reason": {
+          "const": "budget_trimmed",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "reason"
+      ],
+      "title": "OmittedBundle",
+      "type": "object"
+    },
+    "OmittedMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "budget_trimmed",
+            "summarized",
+            "incomplete_turn"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message_id",
+        "reason"
+      ],
+      "title": "OmittedMessage",
+      "type": "object"
+    },
+    "SelectedBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "default": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "context_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Context Evidence Ids",
+          "type": "array"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/Location"
+          },
+          "maxItems": 1000,
+          "title": "Locations",
+          "type": "array"
+        },
+        "dense_score": {
+          "title": "Dense Score",
+          "type": "number"
+        },
+        "rerank_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Score"
+        },
+        "content_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "document_id",
+        "index_batch_id",
+        "context_evidence_ids",
+        "locations",
+        "dense_score",
+        "content_hash"
+      ],
+      "title": "SelectedBundle",
+      "type": "object"
+    },
+    "SourceSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message_id",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "SourceSegment",
+      "type": "object"
+    },
+    "SummaryMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "summary_id": {
+          "minLength": 1,
+          "title": "Summary Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "covered_message_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Covered Message Ids",
+          "type": "array"
+        },
+        "from_seq": {
+          "minimum": 1,
+          "title": "From Seq",
+          "type": "integer"
+        },
+        "to_seq": {
+          "minimum": 1,
+          "title": "To Seq",
+          "type": "integer"
+        },
+        "source_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Source Hash",
+          "type": "string"
+        },
+        "source_segments": {
+          "items": {
+            "$ref": "#/$defs/SourceSegment"
+          },
+          "maxItems": 200,
+          "title": "Source Segments",
+          "type": "array"
+        },
+        "summary_policy_version": {
+          "minLength": 1,
+          "title": "Summary Policy Version",
+          "type": "string"
+        },
+        "source_run_id": {
+          "minLength": 1,
+          "title": "Source Run Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "summary_id",
+        "thread_id",
+        "branch_id",
+        "covered_message_ids",
+        "from_seq",
+        "to_seq",
+        "source_hash",
+        "source_segments",
+        "summary_policy_version",
+        "source_run_id",
+        "created_at"
+      ],
+      "title": "SummaryMetadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "estimated_input_tokens": {
+      "minimum": 0,
+      "title": "Estimated Input Tokens",
+      "type": "integer"
+    },
+    "reserved_output_tokens": {
+      "minimum": 1,
+      "title": "Reserved Output Tokens",
+      "type": "integer"
+    },
+    "safety_margin_tokens": {
+      "minimum": 0,
+      "title": "Safety Margin Tokens",
+      "type": "integer"
+    },
+    "context_window_tokens": {
+      "minimum": 1,
+      "title": "Context Window Tokens",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "budget_exceeded"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 3,
+      "default": 3,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "context_plan_id": {
+      "minLength": 1,
+      "title": "Context Plan Id",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "task_id": {
+      "minLength": 1,
+      "title": "Task Id",
+      "type": "string"
+    },
+    "generation": {
+      "minimum": 1,
+      "title": "Generation",
+      "type": "integer"
+    },
+    "attempt": {
+      "minimum": 1,
+      "title": "Attempt",
+      "type": "integer"
+    },
+    "thread_id": {
+      "minLength": 1,
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "branch_id": {
+      "minLength": 1,
+      "title": "Branch Id",
+      "type": "string"
+    },
+    "anchor_message_id": {
+      "minLength": 1,
+      "title": "Anchor Message Id",
+      "type": "string"
+    },
+    "selected_message_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 200,
+      "title": "Selected Message Ids",
+      "type": "array"
+    },
+    "omitted_messages": {
+      "items": {
+        "$ref": "#/$defs/OmittedMessage"
+      },
+      "maxItems": 200,
+      "title": "Omitted Messages",
+      "type": "array"
+    },
+    "omitted_ranges": {
+      "items": {
+        "$ref": "#/$defs/MessageRange"
+      },
+      "maxItems": 200,
+      "title": "Omitted Ranges",
+      "type": "array"
+    },
+    "summaries": {
+      "items": {
+        "$ref": "#/$defs/SummaryMetadata"
+      },
+      "maxItems": 200,
+      "title": "Summaries",
+      "type": "array"
+    },
+    "trim_policy_version": {
+      "minLength": 1,
+      "title": "Trim Policy Version",
+      "type": "string"
+    },
+    "counter_version": {
+      "minLength": 1,
+      "title": "Counter Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "selected_evidence": {
+      "items": {
+        "$ref": "#/$defs/SelectedBundle"
+      },
+      "maxItems": 100,
+      "title": "Selected Evidence",
+      "type": "array"
+    },
+    "omitted_evidence": {
+      "items": {
+        "$ref": "#/$defs/OmittedBundle"
+      },
+      "maxItems": 100,
+      "title": "Omitted Evidence",
+      "type": "array"
+    }
+  },
+  "required": [
+    "estimated_input_tokens",
+    "reserved_output_tokens",
+    "safety_margin_tokens",
+    "context_window_tokens",
+    "status",
+    "context_plan_id",
+    "run_id",
+    "task_id",
+    "generation",
+    "attempt",
+    "thread_id",
+    "branch_id",
+    "anchor_message_id",
+    "selected_message_ids",
+    "omitted_messages",
+    "omitted_ranges",
+    "summaries",
+    "trim_policy_version",
+    "counter_version",
+    "created_at",
+    "selected_evidence",
+    "omitted_evidence"
+  ],
+  "title": "ContextPlan",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/context_plan_v3.json"
+}

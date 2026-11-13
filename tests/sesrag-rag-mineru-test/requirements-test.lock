@@ -1,0 +1,27 @@
+# 工具镜像补充依赖；不改变产品依赖。
+attrs==25.4.0
+jsonschema==4.25.1
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+rpds-py==0.30.0
+typing_extensions==4.16.0
+PyYAML==6.0.3
+# 后续quality/受控数据库测试工具；不安装到项目.venv。
+pytest==8.4.2
+pytest-asyncio==0.26.0
+aiosqlite==0.22.1
+ruff==0.16.10
+packaging==26.3
+pluggy==1.6.0
+iniconfig==2.3.0
+colorama==0.4.6
+pygments==2.21.0
+# 后续QLT类型检查；与项目运行依赖分离并锁定传递依赖。
+mypy==1.20.2
+mypy_extensions==1.1.0
+pathspec==1.1.1
+librt==0.16.0
+
+# 独立原源标注审计，仅测试工具使用。
+xlrd==2.0.2
+pypdf==6.11.0

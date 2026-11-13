@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ApiError } from '../api/http'
-import { createBranch, createIdempotencyKey, createThread, getThread, listBranches, listThreads, patchThread, sendMessage } from '../api/v2/threads'
-import type { Branch, ThreadDetail, ThreadSummary } from '../types/api-v2'
-import type { BranchCreate, MessageCreate } from '../types/api-v2'
+import { createBranch, createIdempotencyKey, createThread, listBranches, listThreads, patchThread } from '../api/v2/threads'
+import type { Branch, ThreadDetail, ThreadSummary } from '../types/api-v3'
+import type { BranchCreate } from '../types/api-v2'
+import type { MessageCreate, RagSelection } from '../types/api-v3'
+import { getThread, sendMessage } from '../api/v3/sessions'
 
 const readIdentity = (key: string) => { try { const value = localStorage.getItem(key); return value || null } catch { return null } }
 const writeIdentity = (key: string, value: string | null) => { try { if (value) localStorage.setItem(key, value); else localStorage.removeItem(key) } catch { /* 隐私模式不可用时仅保留内存状态。 */ } }
@@ -115,12 +117,12 @@ export const useThreadStore = defineStore('thread', {
       const branch = await createBranch(pending.threadId, pending.payload, pending.key)
       if (epoch === this.epoch && detail.branch.branch_id === this.selectedBranchId) { this.pendingFork = null; await this.selectThread(detail.thread.thread_id, branch.branch_id) }
     },
-    async ask(content: string, profile?: { profile_id: string; version: number }) {
+    async ask(content: string, profile?: { profile_id: string; version: number }, rag: RagSelection = { enabled: false }) {
       const detail = this.active; const epoch = this.epoch
       if (!detail || detail.thread.archived_at || !content.trim() || content.trim().length > 20000) return null
       const submission = ++this.submissionVersion; const branchId = detail.branch.branch_id
       const isCurrent = () => epoch === this.epoch && submission === this.submissionVersion && branchId === this.selectedBranchId
-      const payload: MessageCreate = { branch_id: branchId, content: content.trim(), expected_version: detail.branch.version, ...(profile ? { model_profile_id: profile.profile_id, model_profile_version: profile.version } : {}) }
+      const payload: MessageCreate = { rag, branch_id: branchId, content: content.trim(), expected_version: detail.branch.version, ...(profile ? { model_profile_id: profile.profile_id, model_profile_version: profile.version } : {}) }
       const old = this.pendingMessage
       const pending = old && old.threadId === detail.thread.thread_id && JSON.stringify(old.payload) === JSON.stringify(payload) ? old : { key: createIdempotencyKey(), threadId: detail.thread.thread_id, payload }
       this.pendingMessage = pending

@@ -1,0 +1,2562 @@
+{
+  "schema_version": 1,
+  "categories": [
+    {
+      "category": "catalog",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/catalog-tests.py",
+      "cases": [
+        {
+          "case_id": "CAT_001",
+          "requirements": [
+            "RAG-001"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-001"
+          ]
+        },
+        {
+          "case_id": "CAT_002",
+          "requirements": [
+            "RAG-001"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-002"
+          ]
+        },
+        {
+          "case_id": "CAT_003",
+          "requirements": [
+            "RAG-001"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-003"
+          ]
+        },
+        {
+          "case_id": "CAT_004",
+          "requirements": [
+            "RAG-001",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-004"
+          ]
+        },
+        {
+          "case_id": "CAT_005",
+          "requirements": [
+            "RAG-001"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-005"
+          ]
+        },
+        {
+          "case_id": "CAT_006",
+          "requirements": [
+            "RAG-001",
+            "RAG-021"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-006"
+          ]
+        },
+        {
+          "case_id": "CAT_007",
+          "requirements": [
+            "RAG-002"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-007"
+          ]
+        },
+        {
+          "case_id": "CAT_008",
+          "requirements": [
+            "RAG-002",
+            "RAG-018"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-008"
+          ]
+        },
+        {
+          "case_id": "CAT_009",
+          "requirements": [
+            "RAG-002",
+            "RAG-018"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-009"
+          ]
+        },
+        {
+          "case_id": "CAT_010",
+          "requirements": [
+            "RAG-009",
+            "RAG-018",
+            "RAG-026",
+            "RAG-035"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-010"
+          ]
+        },
+        {
+          "case_id": "CAT_011",
+          "requirements": [
+            "RAG-035",
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-011"
+          ]
+        },
+        {
+          "case_id": "CAT_012",
+          "requirements": [
+            "RAG-033",
+            "RAG-035",
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-012"
+          ]
+        },
+        {
+          "case_id": "CAT_013",
+          "requirements": [
+            "RAG-005",
+            "RAG-018",
+            "RAG-026",
+            "NFR-001",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-013"
+          ]
+        },
+        {
+          "case_id": "CAT_014",
+          "requirements": [
+            "RAG-016",
+            "RAG-018",
+            "RAG-026",
+            "RAG-044"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-014"
+          ]
+        },
+        {
+          "case_id": "CAT_015",
+          "requirements": [
+            "RAG-004",
+            "RAG-009",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-015"
+          ]
+        },
+        {
+          "case_id": "CAT_017",
+          "requirements": [
+            "RAG-030",
+            "RAG-044",
+            "NFR-004",
+            "NFR-012"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-017"
+          ]
+        },
+        {
+          "case_id": "CAT_018",
+          "requirements": [
+            "RAG-001",
+            "RAG-005",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-CAT-018"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "ingestion",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/ingestion-tests.py",
+      "cases": [
+        {
+          "case_id": "INP_001",
+          "requirements": [
+            "RAG-003"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-001"
+          ]
+        },
+        {
+          "case_id": "INP_002",
+          "requirements": [
+            "RAG-003",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-002"
+          ]
+        },
+        {
+          "case_id": "INP_003",
+          "requirements": [
+            "RAG-003"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-003"
+          ]
+        },
+        {
+          "case_id": "INP_004",
+          "requirements": [
+            "RAG-003",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-004"
+          ]
+        },
+        {
+          "case_id": "INP_005",
+          "requirements": [
+            "RAG-003",
+            "RAG-015"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-005"
+          ]
+        },
+        {
+          "case_id": "INP_006",
+          "requirements": [
+            "RAG-003",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-006"
+          ]
+        },
+        {
+          "case_id": "INP_007",
+          "requirements": [
+            "RAG-003",
+            "RAG-043",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-007"
+          ]
+        },
+        {
+          "case_id": "INP_008",
+          "requirements": [
+            "RAG-003",
+            "RAG-010"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-008"
+          ]
+        },
+        {
+          "case_id": "INP_009",
+          "requirements": [
+            "RAG-004",
+            "RAG-015",
+            "RAG-043",
+            "NFR-012"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-009"
+          ]
+        },
+        {
+          "case_id": "INP_010",
+          "requirements": [
+            "RAG-004",
+            "RAG-022",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-010"
+          ]
+        },
+        {
+          "case_id": "INP_011",
+          "requirements": [
+            "RAG-004",
+            "RAG-009"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-011"
+          ]
+        },
+        {
+          "case_id": "INP_012",
+          "requirements": [
+            "RAG-004",
+            "RAG-013",
+            "NFR-012"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-012"
+          ]
+        },
+        {
+          "case_id": "INP_013",
+          "requirements": [
+            "RAG-006",
+            "RAG-009",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-013"
+          ]
+        },
+        {
+          "case_id": "INP_014",
+          "requirements": [
+            "RAG-005"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-014"
+          ]
+        },
+        {
+          "case_id": "INP_015",
+          "requirements": [
+            "RAG-006",
+            "RAG-021"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-015"
+          ]
+        },
+        {
+          "case_id": "INP_016",
+          "requirements": [
+            "RAG-006",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-016"
+          ]
+        },
+        {
+          "case_id": "INP_017",
+          "requirements": [
+            "RAG-006",
+            "RAG-022"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-017"
+          ]
+        },
+        {
+          "case_id": "INP_018",
+          "requirements": [
+            "RAG-006",
+            "RAG-022"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-018"
+          ]
+        },
+        {
+          "case_id": "INP_019",
+          "requirements": [
+            "RAG-020",
+            "RAG-022"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-019"
+          ]
+        },
+        {
+          "case_id": "INP_020",
+          "requirements": [
+            "RAG-009",
+            "RAG-022"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-020"
+          ]
+        },
+        {
+          "case_id": "INP_021",
+          "requirements": [
+            "RAG-006",
+            "RAG-013",
+            "RAG-022"
+          ],
+          "test_points": [
+            "TQ-RAG-INP-021"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "mineru",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/mineru-tests.py",
+      "cases": [
+        {
+          "case_id": "MIN_001",
+          "requirements": [
+            "RAG-007"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-001"
+          ]
+        },
+        {
+          "case_id": "MIN_002",
+          "requirements": [
+            "RAG-007",
+            "NFR-001",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-002"
+          ]
+        },
+        {
+          "case_id": "MIN_003",
+          "requirements": [
+            "RAG-007",
+            "RAG-010"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-003"
+          ]
+        },
+        {
+          "case_id": "MIN_004",
+          "requirements": [
+            "RAG-008"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-004"
+          ]
+        },
+        {
+          "case_id": "MIN_005",
+          "requirements": [
+            "RAG-008",
+            "RAG-020"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-005"
+          ]
+        },
+        {
+          "case_id": "MIN_006",
+          "requirements": [
+            "RAG-012",
+            "RAG-013",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-006"
+          ]
+        },
+        {
+          "case_id": "MIN_007",
+          "requirements": [
+            "RAG-009",
+            "RAG-012"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-007"
+          ]
+        },
+        {
+          "case_id": "MIN_008",
+          "requirements": [
+            "RAG-012",
+            "RAG-013"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-008"
+          ]
+        },
+        {
+          "case_id": "MIN_009",
+          "requirements": [
+            "RAG-012"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-009"
+          ]
+        },
+        {
+          "case_id": "MIN_010",
+          "requirements": [
+            "RAG-012",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-010"
+          ]
+        },
+        {
+          "case_id": "MIN_011",
+          "requirements": [
+            "RAG-013",
+            "RAG-014",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-011"
+          ]
+        },
+        {
+          "case_id": "MIN_012",
+          "requirements": [
+            "RAG-012",
+            "RAG-013",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-012"
+          ]
+        },
+        {
+          "case_id": "MIN_013",
+          "requirements": [
+            "RAG-013",
+            "RAG-020"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-013"
+          ]
+        },
+        {
+          "case_id": "MIN_014",
+          "requirements": [
+            "RAG-010",
+            "RAG-013"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-014"
+          ]
+        },
+        {
+          "case_id": "MIN_015",
+          "requirements": [
+            "RAG-014"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-015"
+          ]
+        },
+        {
+          "case_id": "MIN_016",
+          "requirements": [
+            "RAG-014",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-016"
+          ]
+        },
+        {
+          "case_id": "MIN_017",
+          "requirements": [
+            "RAG-014",
+            "RAG-020",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-017"
+          ]
+        },
+        {
+          "case_id": "MIN_018",
+          "requirements": [
+            "RAG-012",
+            "RAG-014"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-018"
+          ]
+        },
+        {
+          "case_id": "MIN_019",
+          "requirements": [
+            "RAG-009",
+            "RAG-012",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-019"
+          ]
+        },
+        {
+          "case_id": "MIN_020",
+          "requirements": [
+            "RAG-011",
+            "RAG-012",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-020"
+          ]
+        },
+        {
+          "case_id": "MIN_021",
+          "requirements": [
+            "RAG-011",
+            "RAG-013",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-021"
+          ]
+        },
+        {
+          "case_id": "MIN_022",
+          "requirements": [
+            "RAG-008",
+            "RAG-031",
+            "NFR-005"
+          ],
+          "test_points": [
+            "TQ-RAG-MIN-022"
+          ]
+        },
+        {
+          "case_id": "PAR_001",
+          "requirements": [
+            "RAG-011",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-001"
+          ]
+        },
+        {
+          "case_id": "PAR_002",
+          "requirements": [
+            "RAG-011",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-002"
+          ]
+        },
+        {
+          "case_id": "PAR_003",
+          "requirements": [
+            "RAG-011",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-003"
+          ]
+        },
+        {
+          "case_id": "PAR_004",
+          "requirements": [
+            "RAG-011",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-004"
+          ]
+        },
+        {
+          "case_id": "PAR_005",
+          "requirements": [
+            "RAG-011",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-005"
+          ]
+        },
+        {
+          "case_id": "PAR_006",
+          "requirements": [
+            "RAG-011",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-006"
+          ]
+        },
+        {
+          "case_id": "PAR_007",
+          "requirements": [
+            "RAG-010"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-007"
+          ]
+        },
+        {
+          "case_id": "PAR_008",
+          "requirements": [
+            "RAG-010",
+            "RAG-015"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-008"
+          ]
+        },
+        {
+          "case_id": "PAR_009",
+          "requirements": [
+            "RAG-010",
+            "RAG-015"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-009"
+          ]
+        },
+        {
+          "case_id": "PAR_012",
+          "requirements": [
+            "RAG-010",
+            "RAG-017",
+            "RAG-030"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-012"
+          ]
+        },
+        {
+          "case_id": "PAR_013",
+          "requirements": [
+            "RAG-010",
+            "RAG-017",
+            "RAG-030",
+            "RAG-042"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-013"
+          ]
+        },
+        {
+          "case_id": "PAR_014",
+          "requirements": [
+            "RAG-010"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-014"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 2,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "chunking",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/chunking-tests.py",
+      "cases": [
+        {
+          "case_id": "PAR_010",
+          "requirements": [
+            "RAG-015",
+            "RAG-017",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-010"
+          ]
+        },
+        {
+          "case_id": "PAR_011",
+          "requirements": [
+            "RAG-015",
+            "RAG-016",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-PAR-011"
+          ]
+        },
+        {
+          "case_id": "CHK_001",
+          "requirements": [
+            "RAG-016"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-001"
+          ]
+        },
+        {
+          "case_id": "CHK_002",
+          "requirements": [
+            "RAG-016"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-002"
+          ]
+        },
+        {
+          "case_id": "CHK_003",
+          "requirements": [
+            "RAG-016"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-003"
+          ]
+        },
+        {
+          "case_id": "CHK_004",
+          "requirements": [
+            "RAG-016"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-004"
+          ]
+        },
+        {
+          "case_id": "CHK_005",
+          "requirements": [
+            "RAG-016"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-005"
+          ]
+        },
+        {
+          "case_id": "CHK_006",
+          "requirements": [
+            "RAG-016",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-006"
+          ]
+        },
+        {
+          "case_id": "CHK_007",
+          "requirements": [
+            "RAG-017"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-007"
+          ]
+        },
+        {
+          "case_id": "CHK_008",
+          "requirements": [
+            "RAG-017",
+            "RAG-030"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-008"
+          ]
+        },
+        {
+          "case_id": "CHK_009",
+          "requirements": [
+            "RAG-017",
+            "RAG-020",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-009"
+          ]
+        },
+        {
+          "case_id": "CHK_010",
+          "requirements": [
+            "RAG-011",
+            "RAG-016",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-CHK-010"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "vectors",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/vectors-tests.py",
+      "cases": [
+        {
+          "case_id": "VEC_001",
+          "requirements": [
+            "RAG-018"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-001"
+          ]
+        },
+        {
+          "case_id": "VEC_002",
+          "requirements": [
+            "RAG-019"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-002"
+          ]
+        },
+        {
+          "case_id": "VEC_003",
+          "requirements": [
+            "RAG-019"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-003"
+          ]
+        },
+        {
+          "case_id": "VEC_004",
+          "requirements": [
+            "RAG-002",
+            "RAG-019"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-004"
+          ]
+        },
+        {
+          "case_id": "VEC_005",
+          "requirements": [
+            "RAG-016",
+            "RAG-019",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-005"
+          ]
+        },
+        {
+          "case_id": "VEC_006",
+          "requirements": [
+            "RAG-002",
+            "RAG-018"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-006"
+          ]
+        },
+        {
+          "case_id": "VEC_007",
+          "requirements": [
+            "RAG-019",
+            "RAG-020",
+            "RAG-028"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-007"
+          ]
+        },
+        {
+          "case_id": "VEC_008",
+          "requirements": [
+            "RAG-002",
+            "RAG-018",
+            "RAG-019"
+          ],
+          "test_points": [
+            "TQ-RAG-VEC-008"
+          ]
+        },
+        {
+          "case_id": "IDX_001",
+          "requirements": [
+            "RAG-009",
+            "RAG-017",
+            "RAG-020"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-001"
+          ]
+        },
+        {
+          "case_id": "IDX_002",
+          "requirements": [
+            "RAG-008",
+            "RAG-020",
+            "RAG-024"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-002"
+          ]
+        },
+        {
+          "case_id": "IDX_003",
+          "requirements": [
+            "RAG-017",
+            "RAG-020",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-003"
+          ]
+        },
+        {
+          "case_id": "IDX_004",
+          "requirements": [
+            "RAG-019",
+            "RAG-020"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-004"
+          ]
+        },
+        {
+          "case_id": "IDX_005",
+          "requirements": [
+            "RAG-020",
+            "RAG-022",
+            "RAG-040"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-005"
+          ]
+        },
+        {
+          "case_id": "IDX_006",
+          "requirements": [
+            "RAG-012",
+            "RAG-020",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-006"
+          ]
+        },
+        {
+          "case_id": "IDX_007",
+          "requirements": [
+            "RAG-020",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-007"
+          ]
+        },
+        {
+          "case_id": "IDX_008",
+          "requirements": [
+            "RAG-012",
+            "RAG-017",
+            "RAG-020"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-008"
+          ]
+        },
+        {
+          "case_id": "IDX_009",
+          "requirements": [
+            "RAG-017",
+            "RAG-020",
+            "RAG-040"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-009"
+          ]
+        },
+        {
+          "case_id": "IDX_010",
+          "requirements": [
+            "RAG-020",
+            "RAG-024",
+            "RAG-035"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-010"
+          ]
+        },
+        {
+          "case_id": "IDX_011",
+          "requirements": [
+            "RAG-020",
+            "RAG-021",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-IDX-011"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "retrieval",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/retrieval-tests.py",
+      "cases": [
+        {
+          "case_id": "RET_001",
+          "requirements": [
+            "RAG-024",
+            "RAG-032"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-001"
+          ]
+        },
+        {
+          "case_id": "RET_002",
+          "requirements": [
+            "RAG-005",
+            "RAG-024"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-002"
+          ]
+        },
+        {
+          "case_id": "RET_003",
+          "requirements": [
+            "RAG-024",
+            "RAG-033"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-003"
+          ]
+        },
+        {
+          "case_id": "RET_004",
+          "requirements": [
+            "RAG-024",
+            "RAG-035",
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-004"
+          ]
+        },
+        {
+          "case_id": "RET_005",
+          "requirements": [
+            "RAG-024",
+            "RAG-028",
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-005"
+          ]
+        },
+        {
+          "case_id": "RET_006",
+          "requirements": [
+            "RAG-024",
+            "RAG-025",
+            "RAG-028"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-006"
+          ]
+        },
+        {
+          "case_id": "RET_007",
+          "requirements": [
+            "RAG-023",
+            "NFR-007",
+            "NFR-008"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-007"
+          ]
+        },
+        {
+          "case_id": "RET_008",
+          "requirements": [
+            "RAG-002",
+            "RAG-023",
+            "RAG-024"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-008"
+          ]
+        },
+        {
+          "case_id": "RET_009",
+          "requirements": [
+            "RAG-023",
+            "RAG-025",
+            "NFR-007"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-009"
+          ]
+        },
+        {
+          "case_id": "RET_010",
+          "requirements": [
+            "RAG-025"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-010"
+          ]
+        },
+        {
+          "case_id": "RET_011",
+          "requirements": [
+            "RAG-027"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-011"
+          ]
+        },
+        {
+          "case_id": "RET_012",
+          "requirements": [
+            "RAG-026",
+            "RAG-027"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-012"
+          ]
+        },
+        {
+          "case_id": "RET_013",
+          "requirements": [
+            "RAG-026",
+            "RAG-027"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-013"
+          ]
+        },
+        {
+          "case_id": "RET_014",
+          "requirements": [
+            "RAG-026",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-014"
+          ]
+        },
+        {
+          "case_id": "RET_015",
+          "requirements": [
+            "RAG-028"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-015"
+          ]
+        },
+        {
+          "case_id": "RET_016",
+          "requirements": [
+            "RAG-028"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-016"
+          ]
+        },
+        {
+          "case_id": "RET_017",
+          "requirements": [
+            "RAG-028",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-017"
+          ]
+        },
+        {
+          "case_id": "RET_019",
+          "requirements": [
+            "RAG-032",
+            "RAG-041"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-019"
+          ]
+        },
+        {
+          "case_id": "RET_020",
+          "requirements": [
+            "RAG-033",
+            "RAG-041"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-020"
+          ]
+        },
+        {
+          "case_id": "RET_021",
+          "requirements": [
+            "RAG-028",
+            "RAG-031",
+            "RAG-032"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-021"
+          ]
+        },
+        {
+          "case_id": "RET_022",
+          "requirements": [
+            "RAG-031",
+            "RAG-034",
+            "NFR-005"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-022"
+          ]
+        },
+        {
+          "case_id": "RET_023",
+          "requirements": [
+            "RAG-024",
+            "RAG-025",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-RET-023"
+          ]
+        },
+        {
+          "case_id": "ENH_001",
+          "requirements": [
+            "RAG-024",
+            "RAG-029"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-001"
+          ]
+        },
+        {
+          "case_id": "ENH_002",
+          "requirements": [
+            "RAG-029"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-002"
+          ]
+        },
+        {
+          "case_id": "ENH_003",
+          "requirements": [
+            "RAG-029",
+            "RAG-030",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-003"
+          ]
+        },
+        {
+          "case_id": "ENH_004",
+          "requirements": [
+            "RAG-017",
+            "RAG-029",
+            "RAG-030"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-004"
+          ]
+        },
+        {
+          "case_id": "ENH_005",
+          "requirements": [
+            "RAG-030"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-005"
+          ]
+        },
+        {
+          "case_id": "ENH_006",
+          "requirements": [
+            "RAG-021",
+            "RAG-033",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-006"
+          ]
+        },
+        {
+          "case_id": "ENH_007",
+          "requirements": [
+            "RAG-021",
+            "RAG-030"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-007"
+          ]
+        },
+        {
+          "case_id": "ENH_008",
+          "requirements": [
+            "RAG-030",
+            "RAG-042",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-008"
+          ]
+        },
+        {
+          "case_id": "ENH_009",
+          "requirements": [
+            "RAG-021",
+            "RAG-030",
+            "RAG-042"
+          ],
+          "test_points": [
+            "TQ-RAG-ENH-009"
+          ]
+        },
+        {
+          "case_id": "EVAL_004",
+          "requirements": [
+            "RAG-029",
+            "RAG-030",
+            "RAG-045"
+          ],
+          "test_points": [
+            "TQ-RAG-EVAL-004"
+          ]
+        },
+        {
+          "case_id": "EVAL_005",
+          "requirements": [
+            "RAG-030",
+            "RAG-045"
+          ],
+          "test_points": [
+            "TQ-RAG-EVAL-005"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "execution",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/execution-tests.py",
+      "cases": [
+        {
+          "case_id": "CTX_001",
+          "requirements": [
+            "RAG-030",
+            "RAG-031",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-001"
+          ]
+        },
+        {
+          "case_id": "CTX_002",
+          "requirements": [
+            "RAG-030"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-002"
+          ]
+        },
+        {
+          "case_id": "CTX_003",
+          "requirements": [
+            "RAG-030",
+            "RAG-031"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-003"
+          ]
+        },
+        {
+          "case_id": "CTX_004",
+          "requirements": [
+            "RAG-033",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-004"
+          ]
+        },
+        {
+          "case_id": "CTX_005",
+          "requirements": [
+            "RAG-030",
+            "RAG-037",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-005"
+          ]
+        },
+        {
+          "case_id": "CTX_006",
+          "requirements": [
+            "RAG-030",
+            "RAG-042"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-006"
+          ]
+        },
+        {
+          "case_id": "CTX_007",
+          "requirements": [
+            "RAG-030",
+            "RAG-045"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-007"
+          ]
+        },
+        {
+          "case_id": "CTX_008",
+          "requirements": [
+            "RAG-030",
+            "RAG-034"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-008"
+          ]
+        },
+        {
+          "case_id": "CTX_009",
+          "requirements": [
+            "RAG-031",
+            "RAG-034",
+            "RAG-037"
+          ],
+          "test_points": [
+            "TQ-RAG-CTX-009"
+          ]
+        },
+        {
+          "case_id": "EXE_001",
+          "requirements": [
+            "RAG-032",
+            "RAG-035",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-001"
+          ]
+        },
+        {
+          "case_id": "EXE_002",
+          "requirements": [
+            "RAG-035",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-002"
+          ]
+        },
+        {
+          "case_id": "EXE_003",
+          "requirements": [
+            "RAG-032"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-003"
+          ]
+        },
+        {
+          "case_id": "EXE_004",
+          "requirements": [
+            "RAG-032",
+            "RAG-033",
+            "NFR-006"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-004"
+          ]
+        },
+        {
+          "case_id": "EXE_005",
+          "requirements": [
+            "RAG-034"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-005"
+          ]
+        },
+        {
+          "case_id": "EXE_006",
+          "requirements": [
+            "RAG-034",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-006"
+          ]
+        },
+        {
+          "case_id": "EXE_007",
+          "requirements": [
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-007"
+          ]
+        },
+        {
+          "case_id": "EXE_008",
+          "requirements": [
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-008"
+          ]
+        },
+        {
+          "case_id": "EXE_009",
+          "requirements": [
+            "RAG-035",
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-009"
+          ]
+        },
+        {
+          "case_id": "EXE_010",
+          "requirements": [
+            "RAG-036",
+            "RAG-038"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-010"
+          ]
+        },
+        {
+          "case_id": "EXE_011",
+          "requirements": [
+            "RAG-037",
+            "NFR-004",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-011"
+          ]
+        },
+        {
+          "case_id": "EXE_012",
+          "requirements": [
+            "RAG-037"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-012"
+          ]
+        },
+        {
+          "case_id": "EXE_013",
+          "requirements": [
+            "RAG-037",
+            "NFR-003"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-013"
+          ]
+        },
+        {
+          "case_id": "EXE_014",
+          "requirements": [
+            "RAG-034",
+            "RAG-037"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-014"
+          ]
+        },
+        {
+          "case_id": "EXE_015",
+          "requirements": [
+            "RAG-034",
+            "RAG-037"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-015"
+          ]
+        },
+        {
+          "case_id": "EXE_016",
+          "requirements": [
+            "RAG-012",
+            "RAG-034",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-016"
+          ]
+        },
+        {
+          "case_id": "EXE_017",
+          "requirements": [
+            "RAG-012",
+            "NFR-004",
+            "NFR-008"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-017"
+          ]
+        },
+        {
+          "case_id": "EXE_018",
+          "requirements": [
+            "RAG-035",
+            "RAG-036"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-018"
+          ]
+        },
+        {
+          "case_id": "EXE_019",
+          "requirements": [
+            "RAG-037",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-EXE-019"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 2,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "workspace",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/workspace-tests.py",
+      "cases": [
+        {
+          "case_id": "UI_001",
+          "requirements": [
+            "RAG-039"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-001"
+          ]
+        },
+        {
+          "case_id": "UI_002",
+          "requirements": [
+            "RAG-039",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-002"
+          ]
+        },
+        {
+          "case_id": "UI_003",
+          "requirements": [
+            "RAG-039",
+            "NFR-012"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-003"
+          ]
+        },
+        {
+          "case_id": "UI_004",
+          "requirements": [
+            "RAG-040",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-004"
+          ]
+        },
+        {
+          "case_id": "UI_005",
+          "requirements": [
+            "RAG-008",
+            "RAG-040",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-005"
+          ]
+        },
+        {
+          "case_id": "UI_006",
+          "requirements": [
+            "RAG-006",
+            "RAG-039"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-006"
+          ]
+        },
+        {
+          "case_id": "UI_007",
+          "requirements": [
+            "RAG-006",
+            "RAG-022",
+            "RAG-040"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-007"
+          ]
+        },
+        {
+          "case_id": "UI_008",
+          "requirements": [
+            "RAG-025",
+            "RAG-041"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-008"
+          ]
+        },
+        {
+          "case_id": "UI_009",
+          "requirements": [
+            "RAG-031",
+            "RAG-041"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-009"
+          ]
+        },
+        {
+          "case_id": "UI_010",
+          "requirements": [
+            "RAG-035",
+            "RAG-041",
+            "RAG-042"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-010"
+          ]
+        },
+        {
+          "case_id": "UI_011",
+          "requirements": [
+            "RAG-040",
+            "RAG-041",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-011"
+          ]
+        },
+        {
+          "case_id": "UI_012",
+          "requirements": [
+            "RAG-037"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-012"
+          ]
+        },
+        {
+          "case_id": "UI_013",
+          "requirements": [
+            "RAG-042",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-013"
+          ]
+        },
+        {
+          "case_id": "UI_014",
+          "requirements": [
+            "RAG-042",
+            "NFR-002"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-014"
+          ]
+        },
+        {
+          "case_id": "UI_015",
+          "requirements": [
+            "RAG-040",
+            "RAG-041",
+            "RAG-042",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-015"
+          ]
+        },
+        {
+          "case_id": "UI_016",
+          "requirements": [
+            "RAG-040",
+            "RAG-042",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-016"
+          ]
+        },
+        {
+          "case_id": "UI_017",
+          "requirements": [
+            "RAG-037",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-017"
+          ]
+        },
+        {
+          "case_id": "UI_018",
+          "requirements": [
+            "RAG-014",
+            "RAG-040"
+          ],
+          "test_points": [
+            "TQ-RAG-UI-018"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "compatibility",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/compatibility-tests.py",
+      "cases": [
+        {
+          "case_id": "CMP_001",
+          "requirements": [
+            "RAG-038",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-001"
+          ]
+        },
+        {
+          "case_id": "CMP_002",
+          "requirements": [
+            "RAG-038"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-002"
+          ]
+        },
+        {
+          "case_id": "CMP_003",
+          "requirements": [
+            "RAG-015",
+            "RAG-021",
+            "RAG-038"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-003"
+          ]
+        },
+        {
+          "case_id": "CMP_004",
+          "requirements": [
+            "RAG-038"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-004"
+          ]
+        },
+        {
+          "case_id": "CMP_005",
+          "requirements": [
+            "RAG-038",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-005"
+          ]
+        },
+        {
+          "case_id": "CMP_006",
+          "requirements": [
+            "RAG-001",
+            "RAG-038",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-006"
+          ]
+        },
+        {
+          "case_id": "CMP_007",
+          "requirements": [
+            "RAG-002",
+            "RAG-018",
+            "RAG-038"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-007"
+          ]
+        },
+        {
+          "case_id": "CMP_008",
+          "requirements": [
+            "RAG-002",
+            "RAG-038"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-008"
+          ]
+        },
+        {
+          "case_id": "CMP_009",
+          "requirements": [
+            "RAG-021",
+            "RAG-038"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-009"
+          ]
+        },
+        {
+          "case_id": "CMP_010",
+          "requirements": [
+            "RAG-038",
+            "NFR-010",
+            "NFR-012"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-010"
+          ]
+        },
+        {
+          "case_id": "CMP_011",
+          "requirements": [
+            "RAG-038",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-011"
+          ]
+        },
+        {
+          "case_id": "CMP_012",
+          "requirements": [
+            "RAG-021",
+            "RAG-038",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-012"
+          ]
+        },
+        {
+          "case_id": "CMP_013",
+          "requirements": [
+            "RAG-038",
+            "RAG-042",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-013"
+          ]
+        },
+        {
+          "case_id": "CMP_014",
+          "requirements": [
+            "RAG-038",
+            "NFR-003",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-CMP-014"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "lifecycle",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/lifecycle-tests.py",
+      "cases": [
+        {
+          "case_id": "LIF_001",
+          "requirements": [
+            "RAG-020",
+            "RAG-046",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-001"
+          ]
+        },
+        {
+          "case_id": "LIF_002",
+          "requirements": [
+            "NFR-004",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-002"
+          ]
+        },
+        {
+          "case_id": "LIF_003",
+          "requirements": [
+            "RAG-021",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-003"
+          ]
+        },
+        {
+          "case_id": "LIF_004",
+          "requirements": [
+            "RAG-021",
+            "RAG-046",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-004"
+          ]
+        },
+        {
+          "case_id": "LIF_005",
+          "requirements": [
+            "RAG-021",
+            "RAG-046",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-005"
+          ]
+        },
+        {
+          "case_id": "LIF_006",
+          "requirements": [
+            "RAG-020",
+            "RAG-021",
+            "NFR-003",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-006"
+          ]
+        },
+        {
+          "case_id": "LIF_007",
+          "requirements": [
+            "RAG-011",
+            "RAG-014",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-007"
+          ]
+        },
+        {
+          "case_id": "LIF_008",
+          "requirements": [
+            "RAG-021",
+            "RAG-041",
+            "NFR-009"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-008"
+          ]
+        },
+        {
+          "case_id": "LIF_009",
+          "requirements": [
+            "RAG-021",
+            "RAG-041",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-009"
+          ]
+        },
+        {
+          "case_id": "LIF_010",
+          "requirements": [
+            "RAG-013",
+            "RAG-021",
+            "RAG-022"
+          ],
+          "test_points": [
+            "TQ-RAG-LIF-010"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "performance",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/performance-tests.py",
+      "cases": [
+        {
+          "case_id": "EVAL_001",
+          "requirements": [
+            "RAG-045",
+            "NFR-007"
+          ],
+          "test_points": [
+            "TQ-RAG-EVAL-001"
+          ]
+        },
+        {
+          "case_id": "EVAL_007",
+          "requirements": [
+            "RAG-023",
+            "NFR-008"
+          ],
+          "test_points": [
+            "TQ-RAG-EVAL-007"
+          ]
+        },
+        {
+          "case_id": "EVAL_008",
+          "requirements": [
+            "RAG-031",
+            "NFR-005",
+            "NFR-008"
+          ],
+          "test_points": [
+            "TQ-RAG-EVAL-008"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "quality",
+      "lane": "local",
+      "status": "ready",
+      "entrypoint": "specific_test_script/quality-tests.py",
+      "cases": [
+        {
+          "case_id": "REAL_012",
+          "requirements": [
+            "RAG-043",
+            "RAG-044",
+            "NFR-007"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-012"
+          ]
+        },
+        {
+          "case_id": "QLT_001",
+          "requirements": [
+            "RAG-005",
+            "RAG-011",
+            "RAG-031",
+            "RAG-035",
+            "NFR-001",
+            "NFR-005"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-001"
+          ]
+        },
+        {
+          "case_id": "QLT_002",
+          "requirements": [
+            "RAG-044",
+            "NFR-001"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-002"
+          ]
+        },
+        {
+          "case_id": "QLT_003",
+          "requirements": [
+            "RAG-032",
+            "RAG-037",
+            "RAG-038",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-003"
+          ]
+        },
+        {
+          "case_id": "QLT_004",
+          "requirements": [
+            "RAG-038",
+            "NFR-006",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-004"
+          ]
+        },
+        {
+          "case_id": "QLT_005",
+          "requirements": [
+            "RAG-037",
+            "NFR-010"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-005"
+          ]
+        },
+        {
+          "case_id": "QLT_006",
+          "requirements": [
+            "NFR-006",
+            "NFR-007"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-006"
+          ]
+        },
+        {
+          "case_id": "QLT_007",
+          "requirements": [
+            "NFR-007"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-007"
+          ]
+        },
+        {
+          "case_id": "QLT_008",
+          "requirements": [
+            "RAG-031",
+            "RAG-040",
+            "NFR-011"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-008"
+          ]
+        },
+        {
+          "case_id": "QLT_009",
+          "requirements": [
+            "RAG-032",
+            "RAG-033",
+            "NFR-006"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-009"
+          ]
+        },
+        {
+          "case_id": "QLT_010",
+          "requirements": [
+            "RAG-004",
+            "NFR-012"
+          ],
+          "test_points": [
+            "TQ-RAG-QLT-010"
+          ]
+        }
+      ],
+      "timeout_seconds": 3600,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": false
+    },
+    {
+      "category": "real-formats",
+      "lane": "real",
+      "status": "ready",
+      "entrypoint": "specific_test_script/real-formats-tests.py",
+      "cases": [
+        {
+          "case_id": "REAL_001",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-001"
+          ]
+        },
+        {
+          "case_id": "REAL_002",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-002"
+          ]
+        },
+        {
+          "case_id": "REAL_003",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-003"
+          ]
+        },
+        {
+          "case_id": "REAL_004",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-004"
+          ]
+        },
+        {
+          "case_id": "REAL_005",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-005"
+          ]
+        },
+        {
+          "case_id": "REAL_006",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-006"
+          ]
+        },
+        {
+          "case_id": "REAL_007",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-007"
+          ]
+        },
+        {
+          "case_id": "REAL_008",
+          "requirements": [
+            "RAG-010",
+            "RAG-015",
+            "RAG-043"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-008"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": true
+    },
+    {
+      "category": "real-business",
+      "lane": "real",
+      "status": "ready",
+      "entrypoint": "specific_test_script/real-business-tests.py",
+      "cases": [
+        {
+          "case_id": "REAL_009",
+          "requirements": [
+            "RAG-032",
+            "RAG-037",
+            "RAG-044",
+            "NFR-012"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-009"
+          ]
+        },
+        {
+          "case_id": "REAL_011",
+          "requirements": [
+            "RAG-007",
+            "RAG-013",
+            "RAG-014",
+            "RAG-044",
+            "NFR-001",
+            "NFR-004"
+          ],
+          "test_points": [
+            "TQ-RAG-REAL-011"
+          ]
+        }
+      ],
+      "timeout_seconds": 1800,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": true
+    },
+    {
+      "category": "real-evaluation",
+      "lane": "real",
+      "status": "planned",
+      "entrypoint": "specific_test_script/real-evaluation-tests.py",
+      "cases": [],
+      "timeout_seconds": 900,
+      "workers": 1,
+      "dependencies": [],
+      "may_charge": true
+    }
+  ]
+}

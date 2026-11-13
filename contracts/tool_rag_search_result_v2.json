@@ -1,0 +1,45 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "execution_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Execution Id",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "ok",
+        "empty",
+        "degraded"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "bundle_ids": {
+      "items": {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Bundle Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "execution_id",
+    "mode",
+    "bundle_ids"
+  ],
+  "title": "SearchToolResult",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/tool_rag_search_result_v2.json"
+}

@@ -1,0 +1,7344 @@
+{
+  "$defs": {
+    "BlockSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "title": "Block Id",
+          "type": "string"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block_id",
+        "start",
+        "end"
+      ],
+      "title": "BlockSegment",
+      "type": "object"
+    },
+    "Branch": {
+      "additionalProperties": false,
+      "properties": {
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "parent_branch_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parent Branch Id"
+        },
+        "fork_message_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Fork Message Id"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "is_default": {
+          "title": "Is Default",
+          "type": "boolean"
+        },
+        "head_message_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Head Message Id"
+        },
+        "version": {
+          "minimum": 0,
+          "title": "Version",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch_id",
+        "thread_id",
+        "parent_branch_id",
+        "fork_message_id",
+        "name",
+        "is_default",
+        "head_message_id",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "Branch",
+      "type": "object"
+    },
+    "BuildCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "parse": {
+          "$ref": "#/$defs/ParseRequest",
+          "default": {
+            "parser_profile_id": null,
+            "parser_profile_version": null,
+            "cloud_consent": null,
+            "consent_version": null,
+            "acknowledge_duplicate_cost": false
+          }
+        },
+        "chunker": {
+          "$ref": "#/$defs/ChunkPolicy",
+          "default": {
+            "mode": "structure_v1",
+            "size": 800,
+            "overlap": 120,
+            "max_chunks": 50000
+          }
+        }
+      },
+      "title": "BuildCreate",
+      "type": "object"
+    },
+    "CancelledData": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "const": "user_requested",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "CancelledData",
+      "type": "object"
+    },
+    "CancelledDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "const": "user_requested",
+          "title": "Reason",
+          "type": "string"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "attempt": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Attempt"
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Generation"
+        }
+      },
+      "required": [
+        "reason",
+        "task_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "CancelledDataV2",
+      "type": "object"
+    },
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "dense_score": {
+          "title": "Dense Score",
+          "type": "number"
+        },
+        "rerank_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Score"
+        },
+        "rerank_input_start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Input Start"
+        },
+        "rerank_input_end": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Input End"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "document_id",
+        "index_batch_id",
+        "dense_score"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "Chunk": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "text": {
+          "maxLength": 16000,
+          "title": "Text",
+          "type": "string"
+        },
+        "start_offset": {
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/Location"
+          },
+          "maxItems": 1000,
+          "title": "Locations",
+          "type": "array"
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Hash"
+        },
+        "space_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space Id"
+        },
+        "dimension": {
+          "anyOf": [
+            {
+              "maximum": 2000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimension"
+        },
+        "block_segments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BlockSegment"
+          },
+          "maxItems": 100000,
+          "title": "Block Segments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "document_id",
+        "index_batch_id",
+        "seq",
+        "text",
+        "start_offset",
+        "end_offset",
+        "locations"
+      ],
+      "title": "Chunk",
+      "type": "object"
+    },
+    "ChunkList": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Chunk"
+          },
+          "maxItems": 20,
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "ChunkList",
+      "type": "object"
+    },
+    "ChunkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "structure_v1",
+          "enum": [
+            "structure_v1",
+            "character_v1"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "size": {
+          "default": 800,
+          "maximum": 16000,
+          "minimum": 1,
+          "title": "Size",
+          "type": "integer"
+        },
+        "overlap": {
+          "default": 120,
+          "maximum": 15999,
+          "minimum": 0,
+          "title": "Overlap",
+          "type": "integer"
+        },
+        "max_chunks": {
+          "default": 50000,
+          "maximum": 50000,
+          "minimum": 1,
+          "title": "Max Chunks",
+          "type": "integer"
+        }
+      },
+      "title": "ChunkPolicy",
+      "type": "object"
+    },
+    "CitationV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "default": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "context_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Context Evidence Ids",
+          "type": "array"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/Location"
+          },
+          "maxItems": 1000,
+          "title": "Locations",
+          "type": "array"
+        },
+        "dense_score": {
+          "title": "Dense Score",
+          "type": "number"
+        },
+        "rerank_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Score"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "document_id",
+        "index_batch_id",
+        "context_evidence_ids",
+        "locations",
+        "dense_score"
+      ],
+      "title": "CitationV2",
+      "type": "object"
+    },
+    "CompactedDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "summary": {
+          "$ref": "#/$defs/SummaryMetadata"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "summary"
+      ],
+      "title": "CompactedDataV2",
+      "type": "object"
+    },
+    "CompletedData": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EvidenceCitation"
+              },
+              {
+                "$ref": "#/$defs/LegacyCitation"
+              }
+            ]
+          },
+          "title": "Citations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "message_id",
+        "citations"
+      ],
+      "title": "CompletedData",
+      "type": "object"
+    },
+    "CompletedDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EvidenceCitation"
+              },
+              {
+                "$ref": "#/$defs/LegacyCitation"
+              }
+            ]
+          },
+          "title": "Citations",
+          "type": "array"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message_id",
+        "citations",
+        "task_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "CompletedDataV2",
+      "type": "object"
+    },
+    "CompletedDataV3": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "message_id": {
+          "title": "Message Id",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/CitationV2"
+          },
+          "maxItems": 100,
+          "title": "Citations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "message_id",
+        "citations"
+      ],
+      "title": "CompletedDataV3",
+      "type": "object"
+    },
+    "ContextPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "estimated_input_tokens": {
+          "minimum": 0,
+          "title": "Estimated Input Tokens",
+          "type": "integer"
+        },
+        "reserved_output_tokens": {
+          "minimum": 1,
+          "title": "Reserved Output Tokens",
+          "type": "integer"
+        },
+        "safety_margin_tokens": {
+          "minimum": 0,
+          "title": "Safety Margin Tokens",
+          "type": "integer"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "budget_exceeded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 3,
+          "default": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "context_plan_id": {
+          "minLength": 1,
+          "title": "Context Plan Id",
+          "type": "string"
+        },
+        "run_id": {
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "thread_id": {
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "anchor_message_id": {
+          "minLength": 1,
+          "title": "Anchor Message Id",
+          "type": "string"
+        },
+        "selected_message_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Selected Message Ids",
+          "type": "array"
+        },
+        "omitted_messages": {
+          "items": {
+            "$ref": "#/$defs/OmittedMessage"
+          },
+          "maxItems": 200,
+          "title": "Omitted Messages",
+          "type": "array"
+        },
+        "omitted_ranges": {
+          "items": {
+            "$ref": "#/$defs/MessageRange"
+          },
+          "maxItems": 200,
+          "title": "Omitted Ranges",
+          "type": "array"
+        },
+        "summaries": {
+          "items": {
+            "$ref": "#/$defs/SummaryMetadata"
+          },
+          "maxItems": 200,
+          "title": "Summaries",
+          "type": "array"
+        },
+        "trim_policy_version": {
+          "minLength": 1,
+          "title": "Trim Policy Version",
+          "type": "string"
+        },
+        "counter_version": {
+          "minLength": 1,
+          "title": "Counter Version",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "selected_evidence": {
+          "items": {
+            "$ref": "#/$defs/SelectedBundle"
+          },
+          "maxItems": 100,
+          "title": "Selected Evidence",
+          "type": "array"
+        },
+        "omitted_evidence": {
+          "items": {
+            "$ref": "#/$defs/OmittedBundle"
+          },
+          "maxItems": 100,
+          "title": "Omitted Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "estimated_input_tokens",
+        "reserved_output_tokens",
+        "safety_margin_tokens",
+        "context_window_tokens",
+        "status",
+        "context_plan_id",
+        "run_id",
+        "task_id",
+        "generation",
+        "attempt",
+        "thread_id",
+        "branch_id",
+        "anchor_message_id",
+        "selected_message_ids",
+        "omitted_messages",
+        "omitted_ranges",
+        "summaries",
+        "trim_policy_version",
+        "counter_version",
+        "created_at",
+        "selected_evidence",
+        "omitted_evidence"
+      ],
+      "title": "ContextPlan",
+      "type": "object"
+    },
+    "ContextPlanSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "estimated_input_tokens": {
+          "minimum": 0,
+          "title": "Estimated Input Tokens",
+          "type": "integer"
+        },
+        "reserved_output_tokens": {
+          "minimum": 1,
+          "title": "Reserved Output Tokens",
+          "type": "integer"
+        },
+        "safety_margin_tokens": {
+          "minimum": 0,
+          "title": "Safety Margin Tokens",
+          "type": "integer"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "budget_exceeded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "context_plan_id": {
+          "minLength": 1,
+          "title": "Context Plan Id",
+          "type": "string"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "selected_message_count": {
+          "minimum": 0,
+          "title": "Selected Message Count",
+          "type": "integer"
+        },
+        "omitted_message_count": {
+          "minimum": 0,
+          "title": "Omitted Message Count",
+          "type": "integer"
+        },
+        "summary_count": {
+          "minimum": 0,
+          "title": "Summary Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "estimated_input_tokens",
+        "reserved_output_tokens",
+        "safety_margin_tokens",
+        "context_window_tokens",
+        "status",
+        "context_plan_id",
+        "generation",
+        "attempt",
+        "selected_message_count",
+        "omitted_message_count",
+        "summary_count"
+      ],
+      "title": "ContextPlanSummary",
+      "type": "object"
+    },
+    "ContextResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextPlan"
+            },
+            {
+              "$ref": "#/$defs/LegacyContextPlan"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Plan"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "plan",
+        "reason"
+      ],
+      "title": "ContextResponse",
+      "type": "object"
+    },
+    "ControlIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "attempt": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Attempt"
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Generation"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "ControlIdentity",
+      "type": "object"
+    },
+    "CreatedDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "attempt": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Attempt"
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Generation"
+        },
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "enum": [
+            "initial",
+            "user_retry",
+            "regenerate",
+            "branch_continue"
+          ],
+          "title": "Operation Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message_id",
+        "task_id",
+        "attempt",
+        "generation",
+        "branch_id",
+        "operation_kind"
+      ],
+      "title": "CreatedDataV2",
+      "type": "object"
+    },
+    "DeltaData": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "DeltaData",
+      "type": "object"
+    },
+    "DeltaDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "text",
+        "task_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "DeltaDataV2",
+      "type": "object"
+    },
+    "DiagnosticCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "query": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Query",
+          "type": "string"
+        },
+        "knowledge_base_id": {
+          "title": "Knowledge Base Id",
+          "type": "string"
+        },
+        "retrieval_profile_id": {
+          "default": "default-retrieval",
+          "title": "Retrieval Profile Id",
+          "type": "string"
+        },
+        "retrieval_profile_version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Retrieval Profile Version",
+          "type": "integer"
+        },
+        "overrides": {
+          "$ref": "#/$defs/RetrievalOverrides",
+          "default": {
+            "top_k": null,
+            "rerank_enabled": null,
+            "neighbor_radius": null
+          }
+        },
+        "filters": {
+          "$ref": "#/$defs/RetrievalFilters",
+          "default": {
+            "document_ids": null,
+            "extensions": null,
+            "tags_all": []
+          }
+        }
+      },
+      "required": [
+        "query",
+        "knowledge_base_id"
+      ],
+      "title": "DiagnosticCreate",
+      "type": "object"
+    },
+    "Document": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "knowledge_base_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Knowledge Base Id"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "extension": {
+          "title": "Extension",
+          "type": "string"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "content_hash": {
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "metadata_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Metadata Version",
+          "type": "integer"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Tags",
+          "type": "array"
+        },
+        "availability": {
+          "enum": [
+            "none",
+            "ready",
+            "reindex_required"
+          ],
+          "title": "Availability",
+          "type": "string"
+        },
+        "active_index_batch_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Active Index Batch Id"
+        },
+        "latest_build": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IndexBuild"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "knowledge_base_id",
+        "filename",
+        "extension",
+        "size_bytes",
+        "content_hash",
+        "tags",
+        "availability",
+        "active_index_batch_id",
+        "latest_build",
+        "created_at"
+      ],
+      "title": "Document",
+      "type": "object"
+    },
+    "DocumentList": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Document"
+          },
+          "maxItems": 200,
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "DocumentList",
+      "type": "object"
+    },
+    "DocumentPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tags"
+      ],
+      "title": "DocumentPatch",
+      "type": "object"
+    },
+    "ErrorAttemptData": {
+      "additionalProperties": false,
+      "properties": {
+        "error_code": {
+          "title": "Error Code",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 0,
+          "title": "Attempt",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "error_code",
+        "attempt"
+      ],
+      "title": "ErrorAttemptData",
+      "type": "object"
+    },
+    "EventList": {
+      "additionalProperties": false,
+      "properties": {
+        "events": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventV1RunCreated"
+              },
+              {
+                "$ref": "#/$defs/EventV1TaskQueued"
+              },
+              {
+                "$ref": "#/$defs/EventV1TaskLeased"
+              },
+              {
+                "$ref": "#/$defs/EventV1RunStarted"
+              },
+              {
+                "$ref": "#/$defs/EventV1RetrievalCompleted"
+              },
+              {
+                "$ref": "#/$defs/EventV1AnswerDelta"
+              },
+              {
+                "$ref": "#/$defs/EventV1TaskRetryScheduled"
+              },
+              {
+                "$ref": "#/$defs/EventV1MessageCompleted"
+              },
+              {
+                "$ref": "#/$defs/EventV1RunSucceeded"
+              },
+              {
+                "$ref": "#/$defs/EventV1RunFailed"
+              },
+              {
+                "$ref": "#/$defs/EventV1RunCancelled"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunCreated"
+              },
+              {
+                "$ref": "#/$defs/EventV2TaskQueued"
+              },
+              {
+                "$ref": "#/$defs/EventV2TaskLeased"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunStarted"
+              },
+              {
+                "$ref": "#/$defs/EventV2RetrievalCompleted"
+              },
+              {
+                "$ref": "#/$defs/EventV2AnswerDelta"
+              },
+              {
+                "$ref": "#/$defs/EventV2TaskRetryScheduled"
+              },
+              {
+                "$ref": "#/$defs/EventV2MessageCompleted"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunSucceeded"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunFailed"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunCancelled"
+              },
+              {
+                "$ref": "#/$defs/EventV2ContextPlanned"
+              },
+              {
+                "$ref": "#/$defs/EventV2ContextCompacted"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunCancelling"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunRetryCreated"
+              },
+              {
+                "$ref": "#/$defs/EventV2RunRegenerated"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunCreated"
+              },
+              {
+                "$ref": "#/$defs/EventV3TaskQueued"
+              },
+              {
+                "$ref": "#/$defs/EventV3TaskLeased"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunStarted"
+              },
+              {
+                "$ref": "#/$defs/EventV3RetrievalCompleted"
+              },
+              {
+                "$ref": "#/$defs/EventV3AnswerDelta"
+              },
+              {
+                "$ref": "#/$defs/EventV3TaskRetryScheduled"
+              },
+              {
+                "$ref": "#/$defs/EventV3MessageCompleted"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunSucceeded"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunFailed"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunCancelled"
+              },
+              {
+                "$ref": "#/$defs/EventV3ContextPlanned"
+              },
+              {
+                "$ref": "#/$defs/EventV3ContextCompacted"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunCancelling"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunRetryCreated"
+              },
+              {
+                "$ref": "#/$defs/EventV3RunRegenerated"
+              },
+              {
+                "$ref": "#/$defs/EventV3ToolStarted"
+              },
+              {
+                "$ref": "#/$defs/EventV3ToolStage"
+              },
+              {
+                "$ref": "#/$defs/EventV3ToolCompleted"
+              },
+              {
+                "$ref": "#/$defs/EventV3ToolFailed"
+              },
+              {
+                "$ref": "#/$defs/EventV3ToolCancelled"
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "title": "Events",
+          "type": "array"
+        },
+        "next_after_seq": {
+          "minimum": 0,
+          "title": "Next After Seq",
+          "type": "integer"
+        },
+        "has_more": {
+          "title": "Has More",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "events",
+        "next_after_seq",
+        "has_more"
+      ],
+      "title": "EventList",
+      "type": "object"
+    },
+    "EventV1AnswerDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "answer.delta",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/DeltaData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1AnswerDelta",
+      "type": "object"
+    },
+    "EventV1MessageCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "message.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CompletedData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1MessageCompleted",
+      "type": "object"
+    },
+    "EventV1RetrievalCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "retrieval.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RetrievalData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1RetrievalCompleted",
+      "type": "object"
+    },
+    "EventV1RunCancelled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.cancelled",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CancelledData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1RunCancelled",
+      "type": "object"
+    },
+    "EventV1RunCreated": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.created",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/MessageIdData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1RunCreated",
+      "type": "object"
+    },
+    "EventV1RunFailed": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ErrorAttemptData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1RunFailed",
+      "type": "object"
+    },
+    "EventV1RunStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.started",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/TaskIdData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1RunStarted",
+      "type": "object"
+    },
+    "EventV1RunSucceeded": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.succeeded",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/MessageIdData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1RunSucceeded",
+      "type": "object"
+    },
+    "EventV1TaskLeased": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.leased",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/LeasedData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1TaskLeased",
+      "type": "object"
+    },
+    "EventV1TaskQueued": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.queued",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/TaskIdData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1TaskQueued",
+      "type": "object"
+    },
+    "EventV1TaskRetryScheduled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.retry_scheduled",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ErrorAttemptData"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV1TaskRetryScheduled",
+      "type": "object"
+    },
+    "EventV2AnswerDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "answer.delta",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/DeltaDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2AnswerDelta",
+      "type": "object"
+    },
+    "EventV2ContextCompacted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "context.compacted",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CompactedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2ContextCompacted",
+      "type": "object"
+    },
+    "EventV2ContextPlanned": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "context.planned",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/PlannedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2ContextPlanned",
+      "type": "object"
+    },
+    "EventV2MessageCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "message.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CompletedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2MessageCompleted",
+      "type": "object"
+    },
+    "EventV2RetrievalCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "retrieval.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RetrievalDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RetrievalCompleted",
+      "type": "object"
+    },
+    "EventV2RunCancelled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.cancelled",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CancelledDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunCancelled",
+      "type": "object"
+    },
+    "EventV2RunCancelling": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.cancelling",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CancelledDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunCancelling",
+      "type": "object"
+    },
+    "EventV2RunCreated": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.created",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CreatedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunCreated",
+      "type": "object"
+    },
+    "EventV2RunFailed": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/FailedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunFailed",
+      "type": "object"
+    },
+    "EventV2RunRegenerated": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.regenerated",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RelatedRunDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunRegenerated",
+      "type": "object"
+    },
+    "EventV2RunRetryCreated": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.retry_created",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RelatedRunDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunRetryCreated",
+      "type": "object"
+    },
+    "EventV2RunStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.started",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ExecutionIdentity"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunStarted",
+      "type": "object"
+    },
+    "EventV2RunSucceeded": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.succeeded",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/SucceededDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2RunSucceeded",
+      "type": "object"
+    },
+    "EventV2TaskLeased": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.leased",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/LeasedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2TaskLeased",
+      "type": "object"
+    },
+    "EventV2TaskQueued": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.queued",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ControlIdentity"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2TaskQueued",
+      "type": "object"
+    },
+    "EventV2TaskRetryScheduled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.retry_scheduled",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RetryDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV2TaskRetryScheduled",
+      "type": "object"
+    },
+    "EventV3AnswerDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "answer.delta",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/DeltaDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3AnswerDelta",
+      "type": "object"
+    },
+    "EventV3ContextCompacted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "context.compacted",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CompactedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3ContextCompacted",
+      "type": "object"
+    },
+    "EventV3ContextPlanned": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "context.planned",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/PlannedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3ContextPlanned",
+      "type": "object"
+    },
+    "EventV3MessageCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "message.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CompletedDataV3"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3MessageCompleted",
+      "type": "object"
+    },
+    "EventV3RetrievalCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "retrieval.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RetrievalDataV3"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RetrievalCompleted",
+      "type": "object"
+    },
+    "EventV3RunCancelled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.cancelled",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CancelledDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunCancelled",
+      "type": "object"
+    },
+    "EventV3RunCancelling": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.cancelling",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CancelledDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunCancelling",
+      "type": "object"
+    },
+    "EventV3RunCreated": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.created",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/CreatedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunCreated",
+      "type": "object"
+    },
+    "EventV3RunFailed": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/FailedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunFailed",
+      "type": "object"
+    },
+    "EventV3RunRegenerated": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.regenerated",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RelatedRunDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunRegenerated",
+      "type": "object"
+    },
+    "EventV3RunRetryCreated": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.retry_created",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RelatedRunDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunRetryCreated",
+      "type": "object"
+    },
+    "EventV3RunStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.started",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ExecutionIdentity"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunStarted",
+      "type": "object"
+    },
+    "EventV3RunSucceeded": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "run.succeeded",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/SucceededDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3RunSucceeded",
+      "type": "object"
+    },
+    "EventV3TaskLeased": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.leased",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/LeasedDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3TaskLeased",
+      "type": "object"
+    },
+    "EventV3TaskQueued": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.queued",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ControlIdentity"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3TaskQueued",
+      "type": "object"
+    },
+    "EventV3TaskRetryScheduled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "task.retry_scheduled",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/RetryDataV2"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3TaskRetryScheduled",
+      "type": "object"
+    },
+    "EventV3ToolCancelled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "tool.cancelled",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ToolEvent"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3ToolCancelled",
+      "type": "object"
+    },
+    "EventV3ToolCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "tool.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ToolEvent"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3ToolCompleted",
+      "type": "object"
+    },
+    "EventV3ToolFailed": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "tool.failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ToolEvent"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3ToolFailed",
+      "type": "object"
+    },
+    "EventV3ToolStage": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "tool.stage",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ToolEvent"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3ToolStage",
+      "type": "object"
+    },
+    "EventV3ToolStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 3,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "type": {
+          "const": "tool.started",
+          "title": "Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ToolEvent"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "type",
+        "occurred_at",
+        "data"
+      ],
+      "title": "EventV3ToolStarted",
+      "type": "object"
+    },
+    "EvidenceBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "default": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 4000,
+          "title": "Text",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/EvidenceComponent"
+          },
+          "maxItems": 100,
+          "title": "Components",
+          "type": "array"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/Location"
+          },
+          "maxItems": 1000,
+          "title": "Locations",
+          "type": "array"
+        },
+        "dense_score": {
+          "title": "Dense Score",
+          "type": "number"
+        },
+        "rerank_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Score"
+        },
+        "next_offset": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Offset"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "document_id",
+        "index_batch_id",
+        "text",
+        "components",
+        "locations",
+        "dense_score",
+        "next_offset"
+      ],
+      "title": "EvidenceBundle",
+      "type": "object"
+    },
+    "EvidenceCitation": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/EvidenceLocation"
+          },
+          "title": "Locations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "document_id",
+        "chunk_id",
+        "filename",
+        "start_offset",
+        "end_offset",
+        "score",
+        "index_batch_id",
+        "locations"
+      ],
+      "title": "EvidenceCitation",
+      "type": "object"
+    },
+    "EvidenceComponent": {
+      "additionalProperties": false,
+      "properties": {
+        "component_id": {
+          "title": "Component Id",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "start_offset": {
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "content_hash": {
+          "title": "Content Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "component_id",
+        "chunk_id",
+        "start_offset",
+        "end_offset",
+        "content_hash"
+      ],
+      "title": "EvidenceComponent",
+      "type": "object"
+    },
+    "EvidenceLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "line",
+            "paragraph"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "number": {
+          "minimum": 1,
+          "title": "Number",
+          "type": "integer"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "number",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "EvidenceLocation",
+      "type": "object"
+    },
+    "ExecutionIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "ExecutionIdentity",
+      "type": "object"
+    },
+    "FailedDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "attempt": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Attempt"
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Generation"
+        },
+        "error_code": {
+          "minLength": 1,
+          "title": "Error Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "error_code"
+      ],
+      "title": "FailedDataV2",
+      "type": "object"
+    },
+    "IndexBuild": {
+      "additionalProperties": false,
+      "properties": {
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "knowledge_base_id": {
+          "title": "Knowledge Base Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "building",
+            "waiting",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "parse": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ParseOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "chunk_count": {
+          "maximum": 50000,
+          "minimum": 0,
+          "title": "Chunk Count",
+          "type": "integer"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "operation_status": {
+          "anyOf": [
+            {
+              "const": "cancelling",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operation Status"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "index_batch_id",
+        "document_id",
+        "knowledge_base_id",
+        "state",
+        "stage",
+        "task_id",
+        "parse",
+        "chunk_count",
+        "error_code",
+        "created_at"
+      ],
+      "title": "IndexBuild",
+      "type": "object"
+    },
+    "KnowledgeBase": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledge_base_id": {
+          "title": "Knowledge Base Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "is_default": {
+          "title": "Is Default",
+          "type": "boolean"
+        },
+        "embedding_space_id": {
+          "title": "Embedding Space Id",
+          "type": "string"
+        },
+        "embedding_profile_id": {
+          "title": "Embedding Profile Id",
+          "type": "string"
+        },
+        "embedding_profile_version": {
+          "title": "Embedding Profile Version",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "knowledge_base_id",
+        "name",
+        "enabled",
+        "is_default",
+        "embedding_space_id",
+        "embedding_profile_id",
+        "embedding_profile_version",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "KnowledgeBase",
+      "type": "object"
+    },
+    "KnowledgeBaseCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "embedding_profile_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Embedding Profile Id",
+          "type": "string"
+        },
+        "embedding_profile_version": {
+          "minimum": 1,
+          "title": "Embedding Profile Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "embedding_profile_id",
+        "embedding_profile_version"
+      ],
+      "title": "KnowledgeBaseCreate",
+      "type": "object"
+    },
+    "KnowledgeBaseList": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/KnowledgeBase"
+          },
+          "maxItems": 200,
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "KnowledgeBaseList",
+      "type": "object"
+    },
+    "KnowledgeBasePatch": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        }
+      },
+      "title": "KnowledgeBasePatch",
+      "type": "object"
+    },
+    "LeasedData": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "worker_id": {
+          "minLength": 1,
+          "title": "Worker Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "task_id",
+        "worker_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "LeasedData",
+      "type": "object"
+    },
+    "LeasedDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "worker_id": {
+          "minLength": 1,
+          "title": "Worker Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "worker_id"
+      ],
+      "title": "LeasedDataV2",
+      "type": "object"
+    },
+    "LegacyCitation": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "document_id",
+        "chunk_id",
+        "filename",
+        "start_offset",
+        "end_offset",
+        "score"
+      ],
+      "title": "LegacyCitation",
+      "type": "object"
+    },
+    "LegacyContextPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "estimated_input_tokens": {
+          "minimum": 0,
+          "title": "Estimated Input Tokens",
+          "type": "integer"
+        },
+        "reserved_output_tokens": {
+          "minimum": 1,
+          "title": "Reserved Output Tokens",
+          "type": "integer"
+        },
+        "safety_margin_tokens": {
+          "minimum": 0,
+          "title": "Safety Margin Tokens",
+          "type": "integer"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "budget_exceeded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "context_plan_id": {
+          "minLength": 1,
+          "title": "Context Plan Id",
+          "type": "string"
+        },
+        "run_id": {
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "thread_id": {
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "anchor_message_id": {
+          "minLength": 1,
+          "title": "Anchor Message Id",
+          "type": "string"
+        },
+        "selected_message_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Selected Message Ids",
+          "type": "array"
+        },
+        "omitted_messages": {
+          "items": {
+            "$ref": "#/$defs/OmittedMessage"
+          },
+          "maxItems": 200,
+          "title": "Omitted Messages",
+          "type": "array"
+        },
+        "omitted_ranges": {
+          "items": {
+            "$ref": "#/$defs/MessageRange"
+          },
+          "maxItems": 200,
+          "title": "Omitted Ranges",
+          "type": "array"
+        },
+        "summaries": {
+          "items": {
+            "$ref": "#/$defs/SummaryMetadata"
+          },
+          "maxItems": 200,
+          "title": "Summaries",
+          "type": "array"
+        },
+        "selected_evidence": {
+          "items": {
+            "$ref": "#/$defs/SelectedEvidence"
+          },
+          "maxItems": 200,
+          "title": "Selected Evidence",
+          "type": "array"
+        },
+        "trim_policy_version": {
+          "minLength": 1,
+          "title": "Trim Policy Version",
+          "type": "string"
+        },
+        "counter_version": {
+          "minLength": 1,
+          "title": "Counter Version",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 2,
+          "default": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "estimated_input_tokens",
+        "reserved_output_tokens",
+        "safety_margin_tokens",
+        "context_window_tokens",
+        "status",
+        "context_plan_id",
+        "run_id",
+        "task_id",
+        "generation",
+        "attempt",
+        "thread_id",
+        "branch_id",
+        "anchor_message_id",
+        "selected_message_ids",
+        "omitted_messages",
+        "omitted_ranges",
+        "summaries",
+        "selected_evidence",
+        "trim_policy_version",
+        "counter_version",
+        "created_at"
+      ],
+      "title": "LegacyContextPlan",
+      "type": "object"
+    },
+    "Location": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "line",
+            "paragraph",
+            "table_cell",
+            "page",
+            "slide",
+            "sheet_range",
+            "block"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "source",
+            "normalized"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "verified",
+            "block_only"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number"
+        },
+        "end_number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Number"
+        },
+        "block_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "sheet_name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet Name"
+        },
+        "cell_range": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell Range"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "row": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "origin",
+        "quality",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "Location",
+      "type": "object"
+    },
+    "Message": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "title": "Message Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Run Id"
+        },
+        "citation_schema_version": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Citation Schema Version",
+          "type": "integer"
+        },
+        "citations": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CitationV2"
+              },
+              {
+                "$ref": "#/$defs/EvidenceCitation"
+              },
+              {
+                "$ref": "#/$defs/LegacyCitation"
+              }
+            ]
+          },
+          "maxItems": 100,
+          "title": "Citations",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message_id",
+        "thread_id",
+        "branch_id",
+        "seq",
+        "role",
+        "source",
+        "content",
+        "status",
+        "run_id",
+        "citation_schema_version",
+        "citations",
+        "created_at"
+      ],
+      "title": "Message",
+      "type": "object"
+    },
+    "MessageCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "model_profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Profile Id"
+        },
+        "model_profile_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Profile Version"
+        },
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "content": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "expected_version": {
+          "minimum": 0,
+          "title": "Expected Version",
+          "type": "integer"
+        },
+        "rag": {
+          "$ref": "#/$defs/RagSelection",
+          "default": {
+            "enabled": false,
+            "knowledge_base_id": null,
+            "retrieval_profile_id": null,
+            "retrieval_profile_version": null,
+            "overrides": {
+              "neighbor_radius": null,
+              "rerank_enabled": null,
+              "top_k": null
+            },
+            "filters": {
+              "document_ids": null,
+              "extensions": null,
+              "tags_all": []
+            }
+          }
+        }
+      },
+      "required": [
+        "branch_id",
+        "content",
+        "expected_version"
+      ],
+      "title": "MessageCreate",
+      "type": "object"
+    },
+    "MessageIdData": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message_id"
+      ],
+      "title": "MessageIdData",
+      "type": "object"
+    },
+    "MessageRange": {
+      "additionalProperties": false,
+      "properties": {
+        "from_seq": {
+          "minimum": 1,
+          "title": "From Seq",
+          "type": "integer"
+        },
+        "to_seq": {
+          "minimum": 1,
+          "title": "To Seq",
+          "type": "integer"
+        },
+        "count": {
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        },
+        "reason": {
+          "enum": [
+            "outside_candidate_window",
+            "budget_trimmed",
+            "summarized"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_seq",
+        "to_seq",
+        "count",
+        "reason"
+      ],
+      "title": "MessageRange",
+      "type": "object"
+    },
+    "MessageRunResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "run_id": {
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "retry_waiting",
+            "cancelling",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch_id",
+        "message_id",
+        "run_id",
+        "task_id",
+        "status"
+      ],
+      "title": "MessageRunResponse",
+      "type": "object"
+    },
+    "ModelSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "display_name": {
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "provider_kind": {
+          "enum": [
+            "mock",
+            "openai_compatible"
+          ],
+          "title": "Provider Kind",
+          "type": "string"
+        },
+        "model_name": {
+          "minLength": 1,
+          "title": "Model Name",
+          "type": "string"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "minimum": 1,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "display_name",
+        "provider_kind",
+        "model_name",
+        "context_window_tokens",
+        "max_output_tokens"
+      ],
+      "title": "ModelSelection",
+      "type": "object"
+    },
+    "Omission": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 100,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "reason"
+      ],
+      "title": "Omission",
+      "type": "object"
+    },
+    "OmittedBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "reason": {
+          "const": "budget_trimmed",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "reason"
+      ],
+      "title": "OmittedBundle",
+      "type": "object"
+    },
+    "OmittedMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "budget_trimmed",
+            "summarized",
+            "incomplete_turn"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message_id",
+        "reason"
+      ],
+      "title": "OmittedMessage",
+      "type": "object"
+    },
+    "ParseOutcome": {
+      "additionalProperties": false,
+      "properties": {
+        "parse_job_id": {
+          "title": "Parse Job Id",
+          "type": "string"
+        },
+        "parser_profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parser Profile Id"
+        },
+        "parser_profile_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parser Profile Version"
+        },
+        "parser_hash": {
+          "title": "Parser Hash",
+          "type": "string"
+        },
+        "output_protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Protocol"
+        },
+        "parser_kind": {
+          "enum": [
+            "local",
+            "mineru"
+          ],
+          "title": "Parser Kind",
+          "type": "string"
+        },
+        "routing_policy_version": {
+          "title": "Routing Policy Version",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "waiting",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "remote_outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Remote Outcome"
+        },
+        "artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Artifact Id"
+        },
+        "poll_count": {
+          "maximum": 60,
+          "minimum": 0,
+          "title": "Poll Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "parse_job_id",
+        "parser_profile_id",
+        "parser_profile_version",
+        "parser_hash",
+        "output_protocol",
+        "parser_kind",
+        "routing_policy_version",
+        "state",
+        "stage",
+        "error_code",
+        "remote_outcome",
+        "artifact_id",
+        "poll_count"
+      ],
+      "title": "ParseOutcome",
+      "type": "object"
+    },
+    "ParseRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "parser_profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parser Profile Id"
+        },
+        "parser_profile_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parser Profile Version"
+        },
+        "cloud_consent": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cloud Consent"
+        },
+        "consent_version": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consent Version"
+        },
+        "acknowledge_duplicate_cost": {
+          "default": false,
+          "title": "Acknowledge Duplicate Cost",
+          "type": "boolean"
+        }
+      },
+      "title": "ParseRequest",
+      "type": "object"
+    },
+    "PlannedDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "plan": {
+          "$ref": "#/$defs/ContextPlanSummary"
+        },
+        "omitted_ranges": {
+          "items": {
+            "$ref": "#/$defs/MessageRange"
+          },
+          "maxItems": 200,
+          "title": "Omitted Ranges",
+          "type": "array"
+        },
+        "summary_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Summary Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "plan",
+        "omitted_ranges",
+        "summary_ids"
+      ],
+      "title": "PlannedDataV2",
+      "type": "object"
+    },
+    "RagProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "embedding",
+            "rerank",
+            "parser",
+            "retrieval"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "profile_id": {
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "unavailable_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unavailable Reason"
+        },
+        "formats": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 9,
+          "title": "Formats",
+          "type": "array"
+        },
+        "verified_formats": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 9,
+          "title": "Verified Formats",
+          "type": "array"
+        },
+        "space_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space Id"
+        },
+        "dimension": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimension"
+        }
+      },
+      "required": [
+        "kind",
+        "profile_id",
+        "version",
+        "available",
+        "unavailable_reason"
+      ],
+      "title": "RagProfile",
+      "type": "object"
+    },
+    "RagProfileList": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/RagProfile"
+          },
+          "maxItems": 200,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "RagProfileList",
+      "type": "object"
+    },
+    "RagSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "knowledge_base_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Knowledge Base Id"
+        },
+        "retrieval_profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Profile Id"
+        },
+        "retrieval_profile_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Profile Version"
+        },
+        "overrides": {
+          "$ref": "#/$defs/RetrievalOverrides",
+          "default": {
+            "top_k": null,
+            "rerank_enabled": null,
+            "neighbor_radius": null
+          }
+        },
+        "filters": {
+          "$ref": "#/$defs/RetrievalFilters",
+          "default": {
+            "document_ids": null,
+            "extensions": null,
+            "tags_all": []
+          }
+        }
+      },
+      "title": "RagSelection",
+      "type": "object"
+    },
+    "RagSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "execution_state": {
+          "enum": [
+            "not_started",
+            "running",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Execution State",
+          "type": "string"
+        },
+        "result_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "ok",
+                "empty",
+                "degraded"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Result Mode"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "view_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "View Id"
+        },
+        "knowledge_base_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Knowledge Base Id"
+        },
+        "retrieval_profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Profile Id"
+        },
+        "top_k": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top K"
+        },
+        "embedding_dimensions": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Embedding Dimensions"
+        }
+      },
+      "required": [
+        "enabled",
+        "execution_state",
+        "result_mode"
+      ],
+      "title": "RagSummary",
+      "type": "object"
+    },
+    "RelatedRunDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "attempt": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Attempt"
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Generation"
+        },
+        "parent_run_id": {
+          "minLength": 1,
+          "title": "Parent Run Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "user_message_id": {
+          "minLength": 1,
+          "title": "User Message Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "parent_run_id",
+        "branch_id",
+        "user_message_id"
+      ],
+      "title": "RelatedRunDataV2",
+      "type": "object"
+    },
+    "RetrievalData": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/RetrievalItem"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "count",
+        "items"
+      ],
+      "title": "RetrievalData",
+      "type": "object"
+    },
+    "RetrievalDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/RetrievalItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "count",
+        "items",
+        "task_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "RetrievalDataV2",
+      "type": "object"
+    },
+    "RetrievalDataV3": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "count": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "execution_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Execution Id"
+        },
+        "mode": {
+          "enum": [
+            "off",
+            "ok",
+            "empty",
+            "degraded"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "bundle_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Bundle Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "count",
+        "execution_id",
+        "mode",
+        "bundle_ids"
+      ],
+      "title": "RetrievalDataV3",
+      "type": "object"
+    },
+    "RetrievalExecution": {
+      "additionalProperties": false,
+      "properties": {
+        "execution_id": {
+          "title": "Execution Id",
+          "type": "string"
+        },
+        "view_id": {
+          "title": "View Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "run",
+            "diagnostic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled",
+            "interrupted"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "ok",
+                "empty",
+                "degraded"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Mode"
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "maxItems": 100,
+          "title": "Candidates",
+          "type": "array"
+        },
+        "bundle_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Bundle Ids",
+          "type": "array"
+        },
+        "omitted": {
+          "items": {
+            "$ref": "#/$defs/Omission"
+          },
+          "maxItems": 100,
+          "title": "Omitted",
+          "type": "array"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "timings_ms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "maxProperties": 10,
+          "title": "Timings Ms",
+          "type": "object"
+        },
+        "profile": {
+          "$ref": "#/$defs/RetrievalTraceProfile"
+        }
+      },
+      "required": [
+        "execution_id",
+        "view_id",
+        "origin",
+        "state",
+        "stage",
+        "mode",
+        "candidates",
+        "bundle_ids",
+        "omitted",
+        "error_code",
+        "timings_ms",
+        "profile"
+      ],
+      "title": "RetrievalExecution",
+      "type": "object"
+    },
+    "RetrievalFilters": {
+      "additionalProperties": false,
+      "properties": {
+        "document_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 1000,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Ids"
+        },
+        "extensions": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 9,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extensions"
+        },
+        "tags_all": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Tags All",
+          "type": "array"
+        }
+      },
+      "title": "RetrievalFilters",
+      "type": "object"
+    },
+    "RetrievalItem": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/EvidenceLocation"
+          },
+          "title": "Locations",
+          "type": "array"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "document_id",
+        "chunk_id",
+        "index_batch_id",
+        "locations",
+        "start_offset",
+        "end_offset",
+        "score"
+      ],
+      "title": "RetrievalItem",
+      "type": "object"
+    },
+    "RetrievalOverrides": {
+      "additionalProperties": false,
+      "properties": {
+        "top_k": {
+          "anyOf": [
+            {
+              "maximum": 20,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top K"
+        },
+        "rerank_enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Enabled"
+        },
+        "neighbor_radius": {
+          "anyOf": [
+            {
+              "maximum": 2,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Neighbor Radius"
+        }
+      },
+      "title": "RetrievalOverrides",
+      "type": "object"
+    },
+    "RetrievalTraceProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "retrieval_profile_id": {
+          "title": "Retrieval Profile Id",
+          "type": "string"
+        },
+        "retrieval_profile_version": {
+          "minimum": 1,
+          "title": "Retrieval Profile Version",
+          "type": "integer"
+        },
+        "candidate_k": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Candidate K",
+          "type": "integer"
+        },
+        "top_k": {
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "retrieval_profile_id",
+        "retrieval_profile_version",
+        "candidate_k",
+        "top_k"
+      ],
+      "title": "RetrievalTraceProfile",
+      "type": "object"
+    },
+    "RetryDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "error_code": {
+          "minLength": 1,
+          "title": "Error Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "error_code"
+      ],
+      "title": "RetryDataV2",
+      "type": "object"
+    },
+    "RunDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "user_message_id": {
+          "title": "User Message Id",
+          "type": "string"
+        },
+        "assistant_message_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Assistant Message Id"
+        },
+        "parent_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parent Run Id"
+        },
+        "operation_kind": {
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "execution_schema_version": {
+          "enum": [
+            1,
+            2,
+            3
+          ],
+          "title": "Execution Schema Version",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "retry_waiting",
+            "cancelling",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "legacy": {
+          "title": "Legacy",
+          "type": "boolean"
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SnapshotSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context_plan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextPlanSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Error Code"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelSelection"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "task": {
+          "$ref": "#/$defs/TaskSummary"
+        },
+        "rag_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RagSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "thread_id",
+        "branch_id",
+        "user_message_id",
+        "assistant_message_id",
+        "parent_run_id",
+        "operation_kind",
+        "execution_schema_version",
+        "status",
+        "legacy",
+        "snapshot",
+        "context_plan",
+        "last_error_code",
+        "model",
+        "task",
+        "rag_summary",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "RunDetail",
+      "type": "object"
+    },
+    "RunOperationCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "model_profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Profile Id"
+        },
+        "model_profile_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Profile Version"
+        }
+      },
+      "title": "RunOperationCreate",
+      "type": "object"
+    },
+    "RunSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "user_message_id": {
+          "title": "User Message Id",
+          "type": "string"
+        },
+        "assistant_message_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Assistant Message Id"
+        },
+        "parent_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parent Run Id"
+        },
+        "operation_kind": {
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "execution_schema_version": {
+          "enum": [
+            1,
+            2,
+            3
+          ],
+          "title": "Execution Schema Version",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "retry_waiting",
+            "cancelling",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "branch_id",
+        "user_message_id",
+        "assistant_message_id",
+        "parent_run_id",
+        "operation_kind",
+        "execution_schema_version",
+        "status",
+        "created_at"
+      ],
+      "title": "RunSummary",
+      "type": "object"
+    },
+    "SelectedBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "default": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "context_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Context Evidence Ids",
+          "type": "array"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/Location"
+          },
+          "maxItems": 1000,
+          "title": "Locations",
+          "type": "array"
+        },
+        "dense_score": {
+          "title": "Dense Score",
+          "type": "number"
+        },
+        "rerank_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Score"
+        },
+        "content_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "document_id",
+        "index_batch_id",
+        "context_evidence_ids",
+        "locations",
+        "dense_score",
+        "content_hash"
+      ],
+      "title": "SelectedBundle",
+      "type": "object"
+    },
+    "SelectedEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/EvidenceLocation"
+          },
+          "title": "Locations",
+          "type": "array"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        },
+        "content_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "chunk_id",
+        "index_batch_id",
+        "locations",
+        "start_offset",
+        "end_offset",
+        "score",
+        "content_hash"
+      ],
+      "title": "SelectedEvidence",
+      "type": "object"
+    },
+    "SnapshotSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "enum": [
+            2,
+            3
+          ],
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "context_policy_version": {
+          "title": "Context Policy Version",
+          "type": "string"
+        },
+        "counter_version": {
+          "title": "Counter Version",
+          "type": "string"
+        },
+        "context_window_tokens": {
+          "minimum": 1,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "reserved_output_tokens": {
+          "minimum": 1,
+          "title": "Reserved Output Tokens",
+          "type": "integer"
+        },
+        "safety_margin_tokens": {
+          "minimum": 0,
+          "title": "Safety Margin Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "context_policy_version",
+        "counter_version",
+        "context_window_tokens",
+        "reserved_output_tokens",
+        "safety_margin_tokens"
+      ],
+      "title": "SnapshotSummary",
+      "type": "object"
+    },
+    "SourceSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "start_offset": {
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message_id",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "SourceSegment",
+      "type": "object"
+    },
+    "SucceededDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message_id",
+        "task_id",
+        "attempt",
+        "generation"
+      ],
+      "title": "SucceededDataV2",
+      "type": "object"
+    },
+    "SummaryMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "summary_id": {
+          "minLength": 1,
+          "title": "Summary Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "covered_message_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Covered Message Ids",
+          "type": "array"
+        },
+        "from_seq": {
+          "minimum": 1,
+          "title": "From Seq",
+          "type": "integer"
+        },
+        "to_seq": {
+          "minimum": 1,
+          "title": "To Seq",
+          "type": "integer"
+        },
+        "source_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Source Hash",
+          "type": "string"
+        },
+        "source_segments": {
+          "items": {
+            "$ref": "#/$defs/SourceSegment"
+          },
+          "maxItems": 200,
+          "title": "Source Segments",
+          "type": "array"
+        },
+        "summary_policy_version": {
+          "minLength": 1,
+          "title": "Summary Policy Version",
+          "type": "string"
+        },
+        "source_run_id": {
+          "minLength": 1,
+          "title": "Source Run Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "summary_id",
+        "thread_id",
+        "branch_id",
+        "covered_message_ids",
+        "from_seq",
+        "to_seq",
+        "source_hash",
+        "source_segments",
+        "summary_policy_version",
+        "source_run_id",
+        "created_at"
+      ],
+      "title": "SummaryMetadata",
+      "type": "object"
+    },
+    "TaskIdData": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id"
+      ],
+      "title": "TaskIdData",
+      "type": "object"
+    },
+    "TaskSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "run",
+          "title": "Kind",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "leased",
+            "running",
+            "retry_waiting",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 0,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "worker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Worker Id"
+        },
+        "generation": {
+          "minimum": 0,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "lease_expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lease Expires At"
+        },
+        "last_error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Error Code"
+        }
+      },
+      "required": [
+        "task_id",
+        "kind",
+        "state",
+        "attempt",
+        "worker_id",
+        "generation",
+        "lease_expires_at",
+        "last_error_code"
+      ],
+      "title": "TaskSummary",
+      "type": "object"
+    },
+    "ThreadDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "thread": {
+          "$ref": "#/$defs/ThreadSummary"
+        },
+        "branch": {
+          "$ref": "#/$defs/Branch"
+        },
+        "branch_path": {
+          "items": {
+            "$ref": "#/$defs/Branch"
+          },
+          "title": "Branch Path",
+          "type": "array"
+        },
+        "messages": {
+          "items": {
+            "$ref": "#/$defs/Message"
+          },
+          "maxItems": 200,
+          "title": "Messages",
+          "type": "array"
+        },
+        "runs": {
+          "items": {
+            "$ref": "#/$defs/RunSummary"
+          },
+          "title": "Runs",
+          "type": "array"
+        },
+        "active_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Active Run Id"
+        },
+        "recent_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Recent Run Id"
+        },
+        "next_before_seq": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Before Seq"
+        },
+        "has_more": {
+          "title": "Has More",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "thread",
+        "branch",
+        "branch_path",
+        "messages",
+        "runs",
+        "active_run_id",
+        "recent_run_id",
+        "next_before_seq",
+        "has_more"
+      ],
+      "title": "ThreadDetail",
+      "type": "object"
+    },
+    "ThreadSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "thread_id": {
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "owner_id": {
+          "minLength": 1,
+          "title": "Owner Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "default_branch_id": {
+          "minLength": 1,
+          "title": "Default Branch Id",
+          "type": "string"
+        },
+        "conversation_version": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Conversation Version",
+          "type": "integer"
+        },
+        "archived_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Archived At"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "thread_id",
+        "owner_id",
+        "title",
+        "default_branch_id",
+        "conversation_version",
+        "archived_at",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "ThreadSummary",
+      "type": "object"
+    },
+    "ToolEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "call_id": {
+          "title": "Call Id",
+          "type": "string"
+        },
+        "execution_id": {
+          "title": "Execution Id",
+          "type": "string"
+        },
+        "tool_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Tool Version",
+          "type": "integer"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "ok",
+                "empty",
+                "degraded"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Count"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        }
+      },
+      "required": [
+        "task_id",
+        "attempt",
+        "generation",
+        "call_id",
+        "execution_id",
+        "stage"
+      ],
+      "title": "ToolEvent",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "KnowledgeBase": {
+      "$ref": "#/$defs/KnowledgeBase"
+    },
+    "KnowledgeBaseCreate": {
+      "$ref": "#/$defs/KnowledgeBaseCreate"
+    },
+    "KnowledgeBasePatch": {
+      "$ref": "#/$defs/KnowledgeBasePatch"
+    },
+    "KnowledgeBaseList": {
+      "$ref": "#/$defs/KnowledgeBaseList"
+    },
+    "Document": {
+      "$ref": "#/$defs/Document"
+    },
+    "BuildCreate": {
+      "$ref": "#/$defs/BuildCreate"
+    },
+    "ChunkPolicy": {
+      "$ref": "#/$defs/ChunkPolicy"
+    },
+    "DocumentPatch": {
+      "$ref": "#/$defs/DocumentPatch"
+    },
+    "DocumentList": {
+      "$ref": "#/$defs/DocumentList"
+    },
+    "IndexBuild": {
+      "$ref": "#/$defs/IndexBuild"
+    },
+    "ChunkList": {
+      "$ref": "#/$defs/ChunkList"
+    },
+    "RagProfileList": {
+      "$ref": "#/$defs/RagProfileList"
+    },
+    "DiagnosticCreate": {
+      "$ref": "#/$defs/DiagnosticCreate"
+    },
+    "RetrievalExecution": {
+      "$ref": "#/$defs/RetrievalExecution"
+    },
+    "EvidenceBundle": {
+      "$ref": "#/$defs/EvidenceBundle"
+    },
+    "MessageCreate": {
+      "$ref": "#/$defs/MessageCreate"
+    },
+    "RunDetail": {
+      "$ref": "#/$defs/RunDetail"
+    },
+    "ThreadDetail": {
+      "$ref": "#/$defs/ThreadDetail"
+    },
+    "ContextResponse": {
+      "$ref": "#/$defs/ContextResponse"
+    },
+    "RunOperationCreate": {
+      "$ref": "#/$defs/RunOperationCreate"
+    },
+    "MessageRunResponse": {
+      "$ref": "#/$defs/MessageRunResponse"
+    },
+    "event": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EventV1RunCreated"
+        },
+        {
+          "$ref": "#/$defs/EventV1TaskQueued"
+        },
+        {
+          "$ref": "#/$defs/EventV1TaskLeased"
+        },
+        {
+          "$ref": "#/$defs/EventV1RunStarted"
+        },
+        {
+          "$ref": "#/$defs/EventV1RetrievalCompleted"
+        },
+        {
+          "$ref": "#/$defs/EventV1AnswerDelta"
+        },
+        {
+          "$ref": "#/$defs/EventV1TaskRetryScheduled"
+        },
+        {
+          "$ref": "#/$defs/EventV1MessageCompleted"
+        },
+        {
+          "$ref": "#/$defs/EventV1RunSucceeded"
+        },
+        {
+          "$ref": "#/$defs/EventV1RunFailed"
+        },
+        {
+          "$ref": "#/$defs/EventV1RunCancelled"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunCreated"
+        },
+        {
+          "$ref": "#/$defs/EventV2TaskQueued"
+        },
+        {
+          "$ref": "#/$defs/EventV2TaskLeased"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunStarted"
+        },
+        {
+          "$ref": "#/$defs/EventV2RetrievalCompleted"
+        },
+        {
+          "$ref": "#/$defs/EventV2AnswerDelta"
+        },
+        {
+          "$ref": "#/$defs/EventV2TaskRetryScheduled"
+        },
+        {
+          "$ref": "#/$defs/EventV2MessageCompleted"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunSucceeded"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunFailed"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunCancelled"
+        },
+        {
+          "$ref": "#/$defs/EventV2ContextPlanned"
+        },
+        {
+          "$ref": "#/$defs/EventV2ContextCompacted"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunCancelling"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunRetryCreated"
+        },
+        {
+          "$ref": "#/$defs/EventV2RunRegenerated"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunCreated"
+        },
+        {
+          "$ref": "#/$defs/EventV3TaskQueued"
+        },
+        {
+          "$ref": "#/$defs/EventV3TaskLeased"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunStarted"
+        },
+        {
+          "$ref": "#/$defs/EventV3RetrievalCompleted"
+        },
+        {
+          "$ref": "#/$defs/EventV3AnswerDelta"
+        },
+        {
+          "$ref": "#/$defs/EventV3TaskRetryScheduled"
+        },
+        {
+          "$ref": "#/$defs/EventV3MessageCompleted"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunSucceeded"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunFailed"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunCancelled"
+        },
+        {
+          "$ref": "#/$defs/EventV3ContextPlanned"
+        },
+        {
+          "$ref": "#/$defs/EventV3ContextCompacted"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunCancelling"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunRetryCreated"
+        },
+        {
+          "$ref": "#/$defs/EventV3RunRegenerated"
+        },
+        {
+          "$ref": "#/$defs/EventV3ToolStarted"
+        },
+        {
+          "$ref": "#/$defs/EventV3ToolStage"
+        },
+        {
+          "$ref": "#/$defs/EventV3ToolCompleted"
+        },
+        {
+          "$ref": "#/$defs/EventV3ToolFailed"
+        },
+        {
+          "$ref": "#/$defs/EventV3ToolCancelled"
+        }
+      ],
+      "title": "Event"
+    },
+    "event_list": {
+      "$ref": "#/$defs/EventList"
+    }
+  },
+  "required": [
+    "KnowledgeBase",
+    "KnowledgeBaseCreate",
+    "KnowledgeBasePatch",
+    "KnowledgeBaseList",
+    "Document",
+    "BuildCreate",
+    "ChunkPolicy",
+    "DocumentPatch",
+    "DocumentList",
+    "IndexBuild",
+    "ChunkList",
+    "RagProfileList",
+    "DiagnosticCreate",
+    "RetrievalExecution",
+    "EvidenceBundle",
+    "MessageCreate",
+    "RunDetail",
+    "ThreadDetail",
+    "ContextResponse",
+    "RunOperationCreate",
+    "MessageRunResponse",
+    "event",
+    "event_list"
+  ],
+  "title": "RagApiCatalog",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/api_responses_v3.json"
+}

@@ -13,6 +13,14 @@
 
 正式测试方案至少说明：对应 PRD/ADR、版本和日期、测试边界、环境与隔离方式、目录和文件职责、总入口脚本、分类脚本协议、报告格式、失败语义、清理策略和分阶段退出条件。结果记录至少说明：实际环境、执行命令、结果、失败或跳过项、复现方式和剩余风险。未运行的检查不得写成通过。
 
+## RAG检索增强与MinerU接入（003）
+
+- [正式测试实施方案](003-SesRAG-RAG检索增强与MinerU接入-test-plan.md)：A～E环境工程已在独立`tests/sesrag-rag-mineru-test/`实施并演练；本机Compose、总入口、共享数据/工具和清理闭环已通过，248例用例设计已完成，14类脚本/229函数和10个ENV目标已接入并试跑。
+- 方案覆盖46项功能与12项非功能需求，区分local可控测试、真实MinerU/Embedding/rerank/生成业务闭环、逐格式验收及效果/性能。真实模型计数校准仍是明确前置，不以历史协议成功或Mock结果替代。
+- [测试点与需求覆盖矩阵](../../tests/sesrag-rag-mineru-test/测试点设计与需求覆盖矩阵.md)：248点、18类，覆盖46项功能和12项非功能需求，明确代码依据、可验证状态与受限原因；目录说明见[本轮README](../../tests/sesrag-rag-mineru-test/README.md)。
+- [测试用例设计](../../tests/sesrag-rag-mineru-test/test-cases.md)：248例与248点一一对应；L/K/R为224/5/10例，B/D为5/4例暂缓，均写明独立前置、数据组、流程、预期与代码定位。执行结果／复现／稳定性已按任务5实际证据回填，受限项仅填原因；分能力门禁已接入，真实计数校准与预算前提仍须满足。
+- 独立环境同源两轮Environment、故障及强停恢复演练通过，本轮容器/卷/网络/tag、runtime/tmp无残留，25项宿主工程自测通过；实际命令、排错与保留资源见[环境实施与验证记录](../../tests/sesrag-rag-mineru-test/环境实施与验证记录.md)。任务3～4已完成，最新本地联合209通过/10失败/0工程错误，真实1通过/1失败/8受限，ENV十例通过；详细审批、失败和命令见[任务3～4记录](../../tests/sesrag-rag-mineru-test/任务3-4实施与试跑记录.md)。任务5～6已完成，248例采用结果：220通过、13未通过、15暂不可验证；本机219例最终同源两轮各209通过/10失败/0工程错误，清理通过。ENV十例复用任务4最终工程审计；真实格式已执行DOCX/DOC/文本PDF，其余5例因已证实CDN本机DNS异常受限，真实生成另缺计数依据且网关额度不足。完整PRD验收未通过。 见[正式测试报告](../../tests/sesrag-rag-mineru-test/测试报告.md)及[缺陷报告](../../tests/sesrag-rag-mineru-test/缺陷报告.md)，没有把环境通过记为产品通过。
+
 ## 持久化会话与对话工作台（002）
 
 - [正式测试实施方案](002-SesRAG-持久化会话与对话工作台-test-plan.md)：已建立独立目录 `tests/sesrag-persistent-session-workspace-test/`、本机Compose、总入口、工具/数据、报告和清理恢复流程；实际命令、结果和限制见[环境实施与验证记录](../../tests/sesrag-persistent-session-workspace-test/环境实施与验证记录.md)。环境实施与产品用例验收分别判定。
@@ -20,3 +28,5 @@
 - [测试用例](../../tests/sesrag-persistent-session-workspace-test/test-cases.md)：104例结果/复现/稳定性312字段已按真实两轮回填。
 - [正式测试报告](../../tests/sesrag-persistent-session-workspace-test/测试报告.md)、[缺陷报告](../../tests/sesrag-persistent-session-workspace-test/缺陷报告.md)：两轮各104通过、0失败/受限/未运行/工程错误，清理通过；归档呈现等4项补充问题仍登记，不宣称PRD零差异。
 - 文件职责、命令与保留资源见[套件README](../../tests/sesrag-persistent-session-workspace-test/README.md)。本轮独立验收，不维护上一轮`tests/demo-smoke/`，不将旧结果改写成本轮结果。
+
+最终阶段计时复核：EVAL_008原断言经最终校审发现不充分；已在performance-tests.py补8阶段透明观测、已知20ms延迟、每阶段≥3样本及三组聚合统计。最终采用perf2／perf3两次同源定向补测，均退出0、清理通过；原完整两轮的弱断言passed不作本例充分证据。产品代码不变，其余本机用例仍采用local2／local3。

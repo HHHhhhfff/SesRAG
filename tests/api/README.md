@@ -1,5 +1,7 @@
 # API 回归验证
 
+PRD-003新增`test_rag_resources_v3.py`（知识库／本地入库、诊断、空范围、授权与旧DOCX升级、七天清理与410）、`test_rag_session_v3.py`（schema3事务、工具事件、计划／引用、重生成视图和旧客户端边界）、`test_rag_contracts_v3.py`（导出漂移、严格事件Schema及负例）。均使用隔离SQLite/TestClient；真实PG和Compose另由本轮独立入口验证，不复用上一轮正式验收目录。
+
 `test_document_limits.py` 验证上传只请求10MiB+1字节且413无文档/文件残留。该测试不代表multipart解析前的网络或spool磁盘配额。
 
 `test_core_api.py` 覆盖会话/消息/Run创建、幂等与上传拒绝；`test_foundation_health.py` 验证健康探测与安全错误；`test_foundation_public_fields.py` 验证公开source/created_at投影。

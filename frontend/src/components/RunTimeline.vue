@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import type { ContextPlan, RunDetail, RunEvent } from '../types/api-v2'
+import type { ContextResponse, RunDetail, RunEvent } from '../types/api-v3'
 import RunActions from './RunActions.vue'
 import ContextNotice from './ContextNotice.vue'
 
-const props = defineProps<{ run: RunDetail | null; events: RunEvent[]; connection: string; error: string; failureCode: string; contextDetail?: ContextPlan | null; readonly?: boolean; hasProfile?: boolean; operationPending?: boolean; hasPendingOperation?: boolean }>()
+const props = defineProps<{ run: RunDetail | null; events: RunEvent[]; connection: string; error: string; failureCode: string; contextDetail?: ContextResponse['plan']; readonly?: boolean; hasProfile?: boolean; operationPending?: boolean; hasPendingOperation?: boolean }>()
 const now = ref(Date.now())
 let timer: ReturnType<typeof setInterval> | undefined
 onMounted(() => { timer = setInterval(() => { now.value = Date.now() }, 1000) })
@@ -18,7 +18,7 @@ const failureDescription = computed(() => {
   return '上次尝试错误'
 })
 const emit = defineEmits<{ cancel: []; retry: []; regenerate: []; reconnect: [] }>()
-const publicEvents = new Set(['run.created', 'task.queued', 'task.leased', 'run.started', 'retrieval.completed', 'answer.delta', 'task.retry_scheduled', 'message.completed', 'run.succeeded', 'run.failed', 'run.cancelled', 'context.planned', 'context.compacted', 'run.cancelling', 'run.retry_created', 'run.regenerated'])
+const publicEvents = new Set(['run.created', 'task.queued', 'task.leased', 'run.started', 'retrieval.completed', 'answer.delta', 'task.retry_scheduled', 'message.completed', 'run.succeeded', 'run.failed', 'run.cancelled', 'context.planned', 'context.compacted', 'run.cancelling', 'run.retry_created', 'run.regenerated', 'tool.started', 'tool.stage', 'tool.completed', 'tool.failed', 'tool.cancelled'])
 </script>
 
 <template>

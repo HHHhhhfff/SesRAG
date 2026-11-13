@@ -1,0 +1,76 @@
+# PRD-003实施探针专用；无宿主端口，不读取开发.env，不挂载开发卷。
+x-app: &app
+  build:
+    context: ../..
+    dockerfile: docker/api/Dockerfile
+  environment: &env
+    DATABASE_URL: postgresql+psycopg://sesrag:${RAG_CHECK_PASSWORD:?isolated password required}@postgres:5432/sesrag
+    REDIS_URL: redis://redis:6379/0
+    REDIS_ENABLED: "true"
+    MOCK_PROVIDER: "true"
+    MINERU_ENABLED: "false"
+    UPLOAD_DIR: /data/uploads
+    RAG_ARTIFACT_DIR: /data/artifacts
+    RAG_TMP_DIR: /data/tmp
+    RAG_ISOLATION_MARKER: ${RAG_CHECK_PROJECT:?unique project required}
+    QUEUE_POLL_INTERVAL: "0.1"
+  volumes:
+    - uploads:/data/uploads
+    - artifacts:/data/artifacts
+    - scratch:/data/tmp
+    - ../../tests/integration:/app/checks:ro
+    - ../../docker/model-profiles.example.json:/app/config/models.json:ro
+  labels:
+    sesrag.purpose: rag-v3-implementation-check
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: sesrag
+      POSTGRES_USER: sesrag
+      POSTGRES_PASSWORD: ${RAG_CHECK_PASSWORD:?isolated password required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U sesrag -d sesrag]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  redis:
+    image: redis:7-alpine
+  migrate:
+    <<: *app
+    command: [python, -m, backend.tools.upgrade_rag_schema]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  worker:
+    <<: *app
+    command: [python, -m, backend.workers.main]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  frontend:
+    build:
+      context: ../..
+      dockerfile: docker/frontend/Dockerfile
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  pgdata:
+  uploads:
+  artifacts:
+  scratch:

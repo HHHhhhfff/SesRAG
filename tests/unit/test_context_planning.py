@@ -226,3 +226,37 @@ def test_candidate_character_limit_accepts_200000_and_trims_at_200001():
     assert exact.selected_message_ids == ("m1", "m2")
     assert overflow.selected_message_ids == ("m2",)
     assert overflow.omitted_ranges[0].reason == "outside_candidate_window"
+
+
+def test_v3_sources_are_numbered_after_sort_and_budget_trim():
+    from dataclasses import replace
+
+    request = ContextInput(
+        "t",
+        "b",
+        "u",
+        "q",
+        "s",
+        200,
+        1,
+        0,
+        (),
+        (
+            EvidenceInput("z", "low", 0.1, "L" * 150),
+            EvidenceInput("b", "second", 0.9, "second"),
+            EvidenceInput("a", "first", 0.9, "first"),
+        ),
+        evidence_role="user",
+        number_evidence=True,
+    )
+    plan = plan_context(request, Counter(), summarize=False)
+    assert plan.selected_evidence_ids == (("a", "first"), ("b", "second"))
+    messages = plan.provider_messages[2:]
+    assert messages[0].content == "[S1] [非可信检索证据]\nfirst"
+    assert messages[1].content == "[S2] [非可信检索证据]\nsecond"
+    assert plan.estimated_input_tokens == Counter().count_messages(plan.provider_messages)
+    tight = replace(request, context_window_tokens=36)
+    trimmed = plan_context(tight, Counter(), summarize=False)
+    assert trimmed.selected_evidence_ids == (("b", "second"),)
+    assert trimmed.provider_messages[-1].content.startswith("[S1] ")
+    assert trimmed.estimated_input_tokens + 1 <= 36

@@ -1,5 +1,6 @@
 import { apiFetch } from '../http'
 import type { Branch, BranchCreate, MessageCreate, MessageRunResponse, ThreadDetail, ThreadList, ThreadListQuery, ThreadPatch, ThreadSummary } from '../../types/api-v2'
+import type { ThreadDetail as ThreadDetailV3 } from '../../types/api-v3'
 
 export const createIdempotencyKey = () => crypto.randomUUID()
 
@@ -15,8 +16,11 @@ export function listThreads(params: ThreadListQuery = {}) {
 export function createThread(title = '新会话') {
   return apiFetch<ThreadSummary>('/api/v2/threads', { method: 'POST', body: JSON.stringify({ title }) })
 }
-export function getThread(threadId: string, params: { branch_id?: string; before_seq?: number; limit?: number } = {}) {
-  return apiFetch<ThreadDetail>(`/api/v2/threads/${encodeURIComponent(threadId)}${query(params)}`)
+type DetailQuery = { branch_id?: string; before_seq?: number; limit?: number }
+export function getThread(threadId: string, params: DetailQuery, version: 3): Promise<ThreadDetailV3>
+export function getThread(threadId: string, params?: DetailQuery, version?: 2): Promise<ThreadDetail>
+export function getThread(threadId: string, params: DetailQuery = {}, version: 2 | 3 = 2) {
+  return apiFetch<ThreadDetail | ThreadDetailV3>(`/api/v${version}/threads/${encodeURIComponent(threadId)}${query(params)}`)
 }
 export function patchThread(threadId: string, payload: ThreadPatch) {
   return apiFetch<ThreadSummary>(`/api/v2/threads/${encodeURIComponent(threadId)}`, { method: 'PATCH', body: JSON.stringify(payload) })

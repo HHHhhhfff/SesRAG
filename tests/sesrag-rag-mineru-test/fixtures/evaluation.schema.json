@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "corpus_hash", "questions"],
+  "properties": {
+    "schema_version": {"const": 1}, "corpus_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "questions": {"type": "array", "minItems": 25, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "query", "answerable", "expected_answer", "relevant_ranges", "language", "cross_chunk", "semantic_distractor"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1}, "query": {"type": "string", "minLength": 1},
+        "answerable": {"type": "boolean"}, "expected_answer": {"type": ["string", "null"]},
+        "language": {"enum": ["zh", "en", "mixed"]}, "cross_chunk": {"type": "boolean"}, "semantic_distractor": {"type": "boolean"},
+        "relevant_ranges": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["source_sha256", "artifact_sha256", "start", "end", "format"],
+          "properties": {
+            "source_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "artifact_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1},
+            "format": {"enum": ["txt", "md", "doc", "docx", "pdf", "xls", "xlsx", "ppt", "pptx"]}
+          }
+        }}
+      }
+    }}
+  }
+}

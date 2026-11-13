@@ -1,12 +1,12 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { cancelRun, getContext, getRun, regenerateRun, retryRun } from '../api/v2/runs'
+import { cancelRun, getContext, getRun, regenerateRun, retryRun } from '../api/v3/sessions'
 import { createIdempotencyKey } from '../api/v2/threads'
 import { failureCode as requestFailureCode, safeErrorCode } from '../api/http'
-import { openV2RunStream, replayV2Events } from '../events/run-event-stream'
+import { openV3RunStream, replayV3Events } from '../events/rag-event-stream'
 import { useThreadStore } from './thread'
 import { useModelStore } from './model'
-import type { ContextPlan, Message, RunDetail, RunEvent, RunOperationCreate } from '../types/api-v2'
+import type { ContextResponse, Message, RunDetail, RunEvent, RunOperationCreate } from '../types/api-v3'
 
 const terminal = (status: string) => ['succeeded', 'failed', 'cancelled'].includes(status)
 export const useRunStore = defineStore('run', () => {
@@ -16,22 +16,26 @@ export const useRunStore = defineStore('run', () => {
   const connection = ref('idle')
   const error = ref('')
   const context = ref<RunDetail['context_plan']>(null)
-  const contextDetail = ref<ContextPlan | null>(null)
+  const contextDetail = ref<ContextResponse['plan']>(null)
   const operationPending = ref(false)
   const pendingOperation = ref<{ key: string; kind: 'retry' | 'regenerate'; runId: string; threadId: string; branchId: string; payload: RunOperationCreate } | null>(null)
   let epoch = 0; let activeRunId: string | null = null; let activeThreadId: string | null = null; let activeBranchId: string | null = null
-  let stream: ReturnType<typeof openV2RunStream> | null = null; let retryTimer: ReturnType<typeof setTimeout> | undefined; let retries = 0; let refreshVersion = 0; let attemptKey = ''; let draftStartSeq = 0
+  let stream: ReturnType<typeof openV3RunStream> | null = null; let retryTimer: ReturnType<typeof setTimeout> | undefined; let retries = 0; let refreshVersion = 0; let attemptKey = ''; let draftStartSeq = 0
   let observedModelRevision = 0
   const threadStore = () => useThreadStore()
   const messages = computed<Message[]>(() => {
     const detail = threadStore().active
     if (!detail || !current.value || detail.thread.thread_id !== current.value.thread_id || detail.branch.branch_id !== current.value.branch_id) return detail?.messages ?? []
     const runId = current.value.run_id; const answer = detail.messages.find(item => item.run_id === runId && item.role === 'assistant')
-    const delta = events.value.filter(item => item.run_id === runId && item.seq > draftStartSeq && item.type === 'answer.delta' && typeof item.data.text === 'string' && (!attemptKey || item.data.generation === undefined || `${item.data.task_id}:${item.data.generation}:${item.data.attempt}` === attemptKey)).map(item => item.data.text).join('')
+    const delta = events.value.flatMap(item => {
+      if (item.run_id !== runId || item.seq <= draftStartSeq || item.type !== 'answer.delta') return []
+      if ('generation' in item.data && attemptKey && `${item.data.task_id}:${item.data.generation}:${item.data.attempt}` !== attemptKey) return []
+      return [item.data.text]
+    }).join('')
     if (answer?.status === 'completed' || current.value.status === 'succeeded') return detail.messages
     if (!delta) return detail.messages
     if (answer) return detail.messages.map(item => item.message_id === answer.message_id ? { ...item, content: (answer.status === 'generating' ? answer.content : '') + delta, status: 'generating' } : item)
-    return [...detail.messages, { message_id: `projection-${runId}`, thread_id: detail.thread.thread_id, branch_id: detail.branch.branch_id, seq: (detail.messages.at(-1)?.seq ?? 0) + 1, role: 'assistant', source: 'assistant_generation', created_at: events.value[0]?.occurred_at ?? '', content: delta, status: 'generating', run_id: runId, citations: [] }]
+    return [...detail.messages, { message_id: `projection-${runId}`, thread_id: detail.thread.thread_id, branch_id: detail.branch.branch_id, seq: (detail.messages.at(-1)?.seq ?? 0) + 1, role: 'assistant', source: 'assistant_generation', created_at: events.value[0]?.occurred_at ?? '', content: delta, status: 'generating', run_id: runId, citation_schema_version: 2, citations: [] }]
   })
   function stopTransport() { stream?.close(); stream = null; clearTimeout(retryTimer); retryTimer = undefined; connected.value = false }
   function reset() { epoch++; refreshVersion++; activeRunId = null; activeThreadId = null; activeBranchId = null; stopTransport(); current.value = null; events.value = []; context.value = null; contextDetail.value = null; connection.value = 'idle'; error.value = ''; retries = 0; attemptKey = ''; draftStartSeq = 0; operationPending.value = false; pendingOperation.value = null }
@@ -45,7 +49,7 @@ export const useRunStore = defineStore('run', () => {
     if (current.value && event.schema_version !== current.value.execution_schema_version) { error.value = 'EVENT_SCHEMA_UNSUPPORTED：运行与事件版本不一致'; return false }
     events.value.push(event); events.value.sort((a, b) => a.seq - b.seq)
     if ((event.type === 'task.leased' || event.type === 'run.started') && event.seq >= draftStartSeq) {
-      if (event.data.generation !== undefined) attemptKey = `${event.data.task_id}:${event.data.generation}:${event.data.attempt}`
+      if ('generation' in event.data && event.data.generation !== undefined) attemptKey = `${event.data.task_id}:${event.data.generation}:${event.data.attempt}`
       else attemptKey = ''
       draftStartSeq = event.seq
     }
@@ -62,7 +66,7 @@ export const useRunStore = defineStore('run', () => {
       if (detail.context_plan) void loadContext(runId, expectedEpoch)
       if (terminal(detail.status)) {
         stopTransport(); connection.value = 'complete'
-        await replayV2Events(runId, contiguousCursor(), event => { if (expectedEpoch === epoch && version === refreshVersion) append(event, false) })
+        await replayV3Events(runId, contiguousCursor(), event => { if (expectedEpoch === epoch && version === refreshVersion) append(event, false) })
         if (expectedEpoch === epoch && version === refreshVersion && activeThreadId && activeBranchId) await threadStore().refresh(activeThreadId, activeBranchId, threadStore().epoch, () => expectedEpoch === epoch && version === refreshVersion)
       }
     } catch (cause) { if (expectedEpoch === epoch && version === refreshVersion) error.value = `${requestFailureCode(cause, 'RUN_REFRESH_FAILED')}：无法刷新执行事实，请重新连接` }
@@ -74,7 +78,7 @@ export const useRunStore = defineStore('run', () => {
   function connect(runId: string, expectedEpoch: number) {
     if (epoch !== expectedEpoch) return
     stopTransport(); connection.value = 'connecting'; const afterSeq = contiguousCursor()
-    stream = openV2RunStream(runId, afterSeq, event => { if (epoch === expectedEpoch && event.run_id === activeRunId) append(event) }, cause => {
+    stream = openV3RunStream(runId, afterSeq, event => { if (epoch === expectedEpoch && event.run_id === activeRunId) append(event) }, cause => {
       if (epoch !== expectedEpoch) return
       if (cause) error.value = `${requestFailureCode(cause, 'EVENT_SCHEMA_INVALID')}：无法解析事件，请重新连接`
       connected.value = false; if (current.value && terminal(current.value.status)) { connection.value = 'complete'; return }
@@ -91,7 +95,7 @@ export const useRunStore = defineStore('run', () => {
       if (detail.thread_id !== selectedThread || detail.branch_id !== selectedBranch) { error.value = 'RUN_SCOPE_MISMATCH：执行不属于所选会话分支'; connection.value = 'disconnected'; return }
       activeThreadId = detail.thread_id; activeBranchId = detail.branch_id; current.value = detail; context.value = detail.context_plan
       if (detail.context_plan) void loadContext(runId, expectedEpoch)
-      await replayV2Events(runId, 0, event => { if (epoch === expectedEpoch) append(event, false) })
+      await replayV3Events(runId, 0, event => { if (epoch === expectedEpoch) append(event, false) })
       if (epoch === expectedEpoch) connect(runId, expectedEpoch)
     } catch (cause) { if (epoch === expectedEpoch) { connection.value = 'disconnected'; error.value = `${requestFailureCode(cause, 'RUN_READ_FAILED')}：无法读取执行事实，请重新连接` } }
   }

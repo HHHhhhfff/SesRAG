@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "plan": "Business",
+  "capabilities": ["mineru", "embedding", "rerank", "generation"],
+  "authorized": false,
+  "consent_version": "mineru-office-outbound-v1",
+  "files": [],
+  "config_files": {
+    "profiles.json": "profiles.real.json",
+    "models.json": "models.real.json"
+  },
+  "secret_file": "secrets.json",
+  "counter_evidence": [],
+  "budget": {
+    "cloud_jobs": 1,
+    "document_chunks": 128,
+    "queries": 2,
+    "reranks": 2,
+    "answers": 1,
+    "max_output_tokens": 512,
+    "timeout_seconds": 1200
+  },
+  "purpose": "仅模板；不是外发授权"
+}

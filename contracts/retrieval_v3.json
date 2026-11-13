@@ -1,0 +1,240 @@
+{
+  "$defs": {
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "index_batch_id": {
+          "title": "Index Batch Id",
+          "type": "string"
+        },
+        "dense_score": {
+          "title": "Dense Score",
+          "type": "number"
+        },
+        "rerank_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Score"
+        },
+        "rerank_input_start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Input Start"
+        },
+        "rerank_input_end": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Input End"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "document_id",
+        "index_batch_id",
+        "dense_score"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "Omission": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 100,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "reason"
+      ],
+      "title": "Omission",
+      "type": "object"
+    },
+    "RetrievalTraceProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "retrieval_profile_id": {
+          "title": "Retrieval Profile Id",
+          "type": "string"
+        },
+        "retrieval_profile_version": {
+          "minimum": 1,
+          "title": "Retrieval Profile Version",
+          "type": "integer"
+        },
+        "candidate_k": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Candidate K",
+          "type": "integer"
+        },
+        "top_k": {
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "retrieval_profile_id",
+        "retrieval_profile_version",
+        "candidate_k",
+        "top_k"
+      ],
+      "title": "RetrievalTraceProfile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "execution_id": {
+      "title": "Execution Id",
+      "type": "string"
+    },
+    "view_id": {
+      "title": "View Id",
+      "type": "string"
+    },
+    "origin": {
+      "enum": [
+        "run",
+        "diagnostic"
+      ],
+      "title": "Origin",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "stage": {
+      "title": "Stage",
+      "type": "string"
+    },
+    "mode": {
+      "anyOf": [
+        {
+          "enum": [
+            "ok",
+            "empty",
+            "degraded"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Mode"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/Candidate"
+      },
+      "maxItems": 100,
+      "title": "Candidates",
+      "type": "array"
+    },
+    "bundle_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Bundle Ids",
+      "type": "array"
+    },
+    "omitted": {
+      "items": {
+        "$ref": "#/$defs/Omission"
+      },
+      "maxItems": 100,
+      "title": "Omitted",
+      "type": "array"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Error Code"
+    },
+    "timings_ms": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "maxProperties": 10,
+      "title": "Timings Ms",
+      "type": "object"
+    },
+    "profile": {
+      "$ref": "#/$defs/RetrievalTraceProfile"
+    }
+  },
+  "required": [
+    "execution_id",
+    "view_id",
+    "origin",
+    "state",
+    "stage",
+    "mode",
+    "candidates",
+    "bundle_ids",
+    "omitted",
+    "error_code",
+    "timings_ms",
+    "profile"
+  ],
+  "title": "RetrievalExecution",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/retrieval_v3.json"
+}

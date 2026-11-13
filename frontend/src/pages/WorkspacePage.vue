@@ -14,8 +14,12 @@ import RunTimeline from '../components/RunTimeline.vue'
 import ThreadList from '../components/ThreadList.vue'
 import BranchSelector from '../components/BranchSelector.vue'
 import ModelSelector from '../components/ModelSelector.vue'
+import RagPanel from '../components/RagPanel.vue'
+import { useRagStore } from '../stores/rag'
 
 const threadStore = useThreadStore(); const runStore = useRunStore(); const documentStore = useDocumentStore(); const modelStore = useModelStore()
+const rag = useRagStore()
+watch(() => rag.selectedBase, () => { void documentStore.load() })
 const input = ref(''); const error = ref(''); const health = ref<HealthReady | null>(null); let disposed = false; let healthEpoch = 0; let submissionVersion = 0
 const editingTitle = ref(false); const titleDraft = ref('')
 const activeId = computed(() => threadStore.active?.thread.thread_id); const apiStatus = computed(() => health.value?.status === 'ok' ? 'ready' : health.value?.status ?? 'unknown'); const archived = computed(() => Boolean(threadStore.active?.thread.archived_at))
@@ -38,10 +42,10 @@ async function addThread() {
 async function action(operation: () => Promise<unknown>) { const epoch = threadStore.epoch; try { await operation() } catch (cause) { if (!disposed && epoch === threadStore.epoch) error.value = `${failureCode(cause, 'WORKSPACE_OPERATION_FAILED')}：操作失败，请重试` } }
 async function renameThread() { await action(() => threadStore.rename(titleDraft.value)); editingTitle.value = false }
 async function retryMessage() { await action(async () => { const result = await threadStore.retryPendingMessage(); if (result) await runStore.observe(result.run_id) }) }
-async function ask() { const content = input.value.trim(); if (!content || !threadStore.active || archived.value) return; const epoch = threadStore.epoch; const submission = ++submissionVersion; input.value = ''; try { const result = await threadStore.ask(content, modelStore.selected ?? undefined); if (!result || disposed || epoch !== threadStore.epoch || submission !== submissionVersion) return; await runStore.observe(result.run_id) } catch (cause) { if (!disposed && epoch === threadStore.epoch && submission === submissionVersion) error.value = `${failureCode(cause, 'MESSAGE_SEND_FAILED')}：请求失败，请重试` } }
-async function bootstrap() { void refreshHealth(); await modelStore.load(); try { await Promise.all([threadStore.loadThreads(), documentStore.load()]) } catch { if (!disposed) error.value = 'WORKSPACE_READ_FAILED：无法连接 API' } }
+async function ask() { const content = input.value.trim(); if (!content || !threadStore.active || archived.value) return; const epoch = threadStore.epoch; const submission = ++submissionVersion; input.value = ''; try { const result = await threadStore.ask(content, modelStore.selected ?? undefined, rag.selection()); if (!result || disposed || epoch !== threadStore.epoch || submission !== submissionVersion) return; await runStore.observe(result.run_id) } catch (cause) { if (!disposed && epoch === threadStore.epoch && submission === submissionVersion) error.value = `${failureCode(cause, 'MESSAGE_SEND_FAILED')}：请求失败，请重试` } }
+async function bootstrap() { void refreshHealth(); await modelStore.load(); await rag.load(); try { await Promise.all([threadStore.loadThreads(), documentStore.load()]) } catch { if (!disposed) error.value = 'WORKSPACE_READ_FAILED：无法连接 API' } }
 async function refreshHealth() { const epoch = ++healthEpoch; try { const response = await getHealth(); if (!disposed && epoch === healthEpoch) health.value = response } catch { if (!disposed && epoch === healthEpoch) health.value = null } }
-onMounted(bootstrap); onUnmounted(() => { disposed = true; runStore.reset(); threadStore.invalidate(); documentStore.stop() })
+onMounted(bootstrap); onUnmounted(() => { disposed = true; runStore.reset(); threadStore.invalidate(); documentStore.stop(); rag.stop() })
 </script>
 
 <template>
@@ -205,14 +209,8 @@ onMounted(bootstrap); onUnmounted(() => { disposed = true; runStore.reset(); thr
         @regenerate="runStore.regenerate"
         @reconnect="runStore.reconnect"
       />
-      <DocumentUploader
-        :documents="documentStore.items"
-        :loading="documentStore.loading"
-        :error="documentStore.error"
-        :paused="documentStore.paused"
-        @upload="documentStore.upload"
-        @refresh="documentStore.load"
-      />
+      <RagPanel />
+      <DocumentUploader />
     </aside>
   </main>
 </template>

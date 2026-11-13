@@ -1,0 +1,498 @@
+{
+  "$defs": {
+    "EmbeddingConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "adapter_kind": {
+          "default": "mock",
+          "enum": [
+            "mock",
+            "bailian"
+          ],
+          "title": "Adapter Kind",
+          "type": "string"
+        },
+        "space": {
+          "$ref": "#/$defs/EmbeddingSpace"
+        },
+        "base_url": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Url"
+        },
+        "config_ref": {
+          "anyOf": [
+            {
+              "const": "env:RAG_EMBEDDING_API_KEY",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Ref"
+        },
+        "max_input_bytes": {
+          "default": 8192,
+          "maximum": 8192,
+          "minimum": 4,
+          "title": "Max Input Bytes",
+          "type": "integer"
+        },
+        "batch_size": {
+          "default": 16,
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "counter_version": {
+          "default": "bounded_utf8_v1",
+          "title": "Counter Version",
+          "type": "string"
+        },
+        "counter_status": {
+          "default": "unverified",
+          "enum": [
+            "unverified",
+            "verified"
+          ],
+          "title": "Counter Status",
+          "type": "string"
+        },
+        "counter_evidence": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Counter Evidence"
+        }
+      },
+      "required": [
+        "space"
+      ],
+      "title": "EmbeddingConfig",
+      "type": "object"
+    },
+    "EmbeddingSpace": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "mock",
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Revision",
+          "type": "string"
+        },
+        "dimension": {
+          "maximum": 2000,
+          "minimum": 1,
+          "title": "Dimension",
+          "type": "integer"
+        },
+        "normalization": {
+          "default": "none",
+          "enum": [
+            "none",
+            "l2_float32_v1"
+          ],
+          "title": "Normalization",
+          "type": "string"
+        },
+        "metric": {
+          "const": "cosine",
+          "default": "cosine",
+          "title": "Metric",
+          "type": "string"
+        },
+        "purpose_mapping": {
+          "const": "identity_v1",
+          "default": "identity_v1",
+          "title": "Purpose Mapping",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "revision",
+        "dimension"
+      ],
+      "title": "EmbeddingSpace",
+      "type": "object"
+    },
+    "FrozenEmbedding": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "config": {
+          "$ref": "#/$defs/EmbeddingConfig"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "config"
+      ],
+      "title": "FrozenEmbedding",
+      "type": "object"
+    },
+    "FrozenRerank": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "config": {
+          "$ref": "#/$defs/RerankConfig"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "config"
+      ],
+      "title": "FrozenRerank",
+      "type": "object"
+    },
+    "FrozenRetrievalConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/RetrievalPolicy"
+        },
+        "retrieval_profile": {
+          "$ref": "#/$defs/FrozenRetrievalProfile"
+        },
+        "embedding": {
+          "$ref": "#/$defs/FrozenEmbedding"
+        },
+        "rerank": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FrozenRerank"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tool": {
+          "$ref": "#/$defs/RagToolBinding"
+        },
+        "view_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "View Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy",
+        "retrieval_profile",
+        "embedding",
+        "rerank",
+        "tool",
+        "view_id"
+      ],
+      "title": "FrozenRetrievalConfig",
+      "type": "object"
+    },
+    "FrozenRetrievalProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "config_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Config Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "config_hash"
+      ],
+      "title": "FrozenRetrievalProfile",
+      "type": "object"
+    },
+    "RagOn": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "view_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "View Id",
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/$defs/FrozenRetrievalConfig"
+        }
+      },
+      "required": [
+        "enabled",
+        "view_id",
+        "config"
+      ],
+      "title": "RagOn",
+      "type": "object"
+    },
+    "RagToolBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "const": "rag.search",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "const": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "RagToolBinding",
+      "type": "object"
+    },
+    "RerankConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "adapter_kind": {
+          "default": "mock",
+          "enum": [
+            "mock",
+            "bailian"
+          ],
+          "title": "Adapter Kind",
+          "type": "string"
+        },
+        "model": {
+          "default": "qwen3.7-text-rerank",
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "revision": {
+          "default": "v1",
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Revision",
+          "type": "string"
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endpoint"
+        },
+        "config_ref": {
+          "anyOf": [
+            {
+              "const": "env:RAG_RERANK_API_KEY",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Ref"
+        },
+        "max_query_bytes": {
+          "default": 2048,
+          "maximum": 2048,
+          "minimum": 4,
+          "title": "Max Query Bytes",
+          "type": "integer"
+        },
+        "max_document_bytes": {
+          "default": 4096,
+          "maximum": 4096,
+          "minimum": 4,
+          "title": "Max Document Bytes",
+          "type": "integer"
+        },
+        "max_request_bytes": {
+          "default": 65536,
+          "maximum": 65536,
+          "minimum": 8,
+          "title": "Max Request Bytes",
+          "type": "integer"
+        },
+        "counter_version": {
+          "default": "bounded_utf8_v1",
+          "title": "Counter Version",
+          "type": "string"
+        },
+        "counter_status": {
+          "default": "unverified",
+          "enum": [
+            "unverified",
+            "verified"
+          ],
+          "title": "Counter Status",
+          "type": "string"
+        },
+        "counter_evidence": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Counter Evidence"
+        }
+      },
+      "title": "RerankConfig",
+      "type": "object"
+    },
+    "RetrievalPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_k": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Candidate K",
+          "type": "integer"
+        },
+        "top_k": {
+          "default": 5,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Top K",
+          "type": "integer"
+        },
+        "rerank_enabled": {
+          "default": false,
+          "title": "Rerank Enabled",
+          "type": "boolean"
+        },
+        "failure_policy": {
+          "default": "fail",
+          "enum": [
+            "fail",
+            "dense_fallback"
+          ],
+          "title": "Failure Policy",
+          "type": "string"
+        },
+        "neighbor_radius": {
+          "default": 1,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Neighbor Radius",
+          "type": "integer"
+        },
+        "max_enhanced_chars": {
+          "default": 16000,
+          "maximum": 64000,
+          "minimum": 1,
+          "title": "Max Enhanced Chars",
+          "type": "integer"
+        }
+      },
+      "title": "RetrievalPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "query": {
+      "maxLength": 8192,
+      "minLength": 1,
+      "title": "Query",
+      "type": "string"
+    },
+    "binding": {
+      "$ref": "#/$defs/RagOn"
+    }
+  },
+  "required": [
+    "query",
+    "binding"
+  ],
+  "title": "SearchToolInput",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sesrag.local/contracts/tool_rag_search_input_v1.json"
+}

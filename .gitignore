@@ -15,6 +15,8 @@ frontend/node_modules/
 frontend/dist/
 .npm-cache/
 *.log
+# 私密文档
+docs/secret/
 # 本机隔离测试的凭据、报告、浏览器依赖和临时数据，不进入版本控制。
 tests/demo-smoke/runtime/
 tests/demo-smoke/artifacts/
@@ -28,3 +30,11 @@ tests/sesrag-persistent-session-workspace-test/tmp/
 tests/sesrag-persistent-session-workspace-test/node_modules/
 tests/sesrag-persistent-session-workspace-test/.cache/
 tests/sesrag-persistent-session-workspace-test/compose/.env.workspace-test.local
+# PRD-003独立临时测试：保留固定夹具/脚本，忽略运行副本与工具缓存。
+tests/sesrag-rag-mineru-test/runtime/
+tests/sesrag-rag-mineru-test/runtime-inputs/
+tests/sesrag-rag-mineru-test/tmp/
+tests/sesrag-rag-mineru-test/artifacts/
+tests/sesrag-rag-mineru-test/.cache/
+tests/sesrag-rag-mineru-test/node_modules/
+tests/sesrag-rag-mineru-test/compose/.env.rag-test.local

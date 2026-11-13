@@ -27,10 +27,15 @@ services:
       dockerfile: docker/api/Dockerfile
     environment:
       DATABASE_URL: ${DATABASE_URL:?运行时必须提供含安全凭据的数据库 DSN}
+      RAG_BOOTSTRAP_CONFIG: ${RAG_BOOTSTRAP_CONFIG:-}
+      OWNER_ID: ${OWNER_ID:-local-user}
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["alembic", "upgrade", "head"]
+    command: ["python", "-m", "backend.tools.upgrade_rag_schema"]
+    volumes:
+      - ./docker/rag-bootstrap.example.json:/app/config/rag-bootstrap.example.json:ro
+      - ./docker/rag-profiles.example.json:/app/config/rag-profiles.example.json:ro
 
   api:
     build:
@@ -60,8 +65,22 @@ services:
       WORKER_SHUTDOWN_GRACE: ${WORKER_SHUTDOWN_GRACE:-20}
       QUEUE_POLL_INTERVAL: ${QUEUE_POLL_INTERVAL:-1}
       SSE_POLL_INTERVAL: ${SSE_POLL_INTERVAL:-0.2}
+      MINERU_ENABLED: ${MINERU_ENABLED:-false}
+      MINERU_API_KEY: ${MINERU_API_KEY:-}
+      MINERU_STATE_ENCRYPTION_KEY: ${MINERU_STATE_ENCRYPTION_KEY:-}
+      MINERU_STORAGE_HOST_ALLOWLIST: ${MINERU_STORAGE_HOST_ALLOWLIST:-}
+      RAG_EMBEDDING_API_KEY: ${RAG_EMBEDDING_API_KEY:-}
+      RAG_RERANK_API_KEY: ${RAG_RERANK_API_KEY:-}
+      RAG_ARTIFACT_DIR: /data/rag-artifacts
+      RAG_TMP_DIR: /data/rag-tmp
+      RAG_STORAGE_BUDGET_BYTES: ${RAG_STORAGE_BUDGET_BYTES:-10737418240}
+      RAG_TMP_BUDGET_BYTES: ${RAG_TMP_BUDGET_BYTES:-1073741824}
+      RAG_PIPELINE_CONCURRENCY: ${RAG_PIPELINE_CONCURRENCY:-1}
     volumes:
       - uploads:/data/uploads
+      - rag_artifacts:/data/rag-artifacts
+      - rag_tmp:/data/rag-tmp
+      - ./docker/rag-profiles.example.json:/app/config/rag-profiles.example.json:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -101,8 +120,22 @@ services:
       WORKER_SHUTDOWN_GRACE: ${WORKER_SHUTDOWN_GRACE:-20}
       QUEUE_POLL_INTERVAL: ${QUEUE_POLL_INTERVAL:-1}
       SSE_POLL_INTERVAL: ${SSE_POLL_INTERVAL:-0.2}
+      MINERU_ENABLED: ${MINERU_ENABLED:-false}
+      MINERU_API_KEY: ${MINERU_API_KEY:-}
+      MINERU_STATE_ENCRYPTION_KEY: ${MINERU_STATE_ENCRYPTION_KEY:-}
+      MINERU_STORAGE_HOST_ALLOWLIST: ${MINERU_STORAGE_HOST_ALLOWLIST:-}
+      RAG_EMBEDDING_API_KEY: ${RAG_EMBEDDING_API_KEY:-}
+      RAG_RERANK_API_KEY: ${RAG_RERANK_API_KEY:-}
+      RAG_ARTIFACT_DIR: /data/rag-artifacts
+      RAG_TMP_DIR: /data/rag-tmp
+      RAG_STORAGE_BUDGET_BYTES: ${RAG_STORAGE_BUDGET_BYTES:-10737418240}
+      RAG_TMP_BUDGET_BYTES: ${RAG_TMP_BUDGET_BYTES:-1073741824}
+      RAG_PIPELINE_CONCURRENCY: ${RAG_PIPELINE_CONCURRENCY:-1}
     volumes:
       - uploads:/data/uploads
+      - rag_artifacts:/data/rag-artifacts
+      - rag_tmp:/data/rag-tmp
+      - ./docker/rag-profiles.example.json:/app/config/rag-profiles.example.json:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -124,4 +157,6 @@ services:
 volumes:
   postgres_data:
   uploads:
+  rag_artifacts:
+  rag_tmp:
 

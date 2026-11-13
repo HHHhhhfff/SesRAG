@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "coordinate_system",
+    "sources",
+    "questions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "coordinate_system": {
+      "const": "independent-source-projection-v1:zero-based-unicode-half-open"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 9,
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "format",
+          "source_sha256",
+          "projection_sha256"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "format": {
+            "enum": [
+              "txt",
+              "md",
+              "doc",
+              "docx",
+              "pdf",
+              "xls",
+              "xlsx",
+              "ppt",
+              "pptx"
+            ]
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "projection_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 25,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "query",
+          "answerable",
+          "expected_answer",
+          "ranges",
+          "language",
+          "cross_chunk",
+          "semantic_distractor",
+          "absence_basis"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "answerable": {
+            "type": "boolean"
+          },
+          "expected_answer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language": {
+            "enum": [
+              "zh",
+              "en"
+            ]
+          },
+          "cross_chunk": {
+            "type": "boolean"
+          },
+          "semantic_distractor": {
+            "type": "boolean"
+          },
+          "absence_basis": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ranges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_sha256",
+                "start",
+                "end",
+                "quote"
+              ],
+              "properties": {
+                "source_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

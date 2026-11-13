@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "from_revision": "0006_v2_run_guards",
+  "state": "planned",
+  "seed_sql": false,
+  "note": "后续compatibility用例自行定义最小旧状态，环境工程不伪造成功历史"
+}

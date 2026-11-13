@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.errors import PermanentTaskError
@@ -109,13 +109,26 @@ async def settle_failure(
     require_active: bool = False,
 ) -> bool:
     """调用方持有 Task 锁；Run/Document 与 Task 在同事务内结算。"""
+    if task.kind in {"index_build", "retrieval_diagnostic"}:
+        from backend.application.rag_task_execution import settle_rag_task
+
+        if require_active and not lease_valid(task):
+            return False
+        await settle_rag_task(
+            session,
+            task,
+            error_code,
+            retry=retry and not task.cancel_requested_at,
+            cancelled=bool(task.cancel_requested_at),
+        )
+        return True
     run = None
     document = None
     if task.run_id:
         run = await lock_run(session, task.run_id)
         if run.status in TERMINAL:
             return False
-        if run.execution_schema_version == 2 and run.cancel_requested_at:
+        if run.execution_schema_version >= 2 and run.cancel_requested_at:
             if require_active and not lease_valid(task):
                 return False
             await settle_cancelled(session, task, run)
@@ -131,6 +144,10 @@ async def settle_failure(
         ).scalar_one_or_none()
     if require_active and not lease_valid(task):
         return False
+    if run is not None:
+        from backend.application.rag_run_execution import settle_open_tools
+
+        await settle_open_tools(session, task, run, error_code)
     task.state = "retry_waiting" if retry else "failed"
     task.lease_expires_at = None
     task.last_error_code = error_code
@@ -159,6 +176,9 @@ async def settle_failure(
 
 async def settle_cancelled(session, task, run):
     """调用方已持有 Task/Run 锁，取消优先于错误、deadline 和回排。"""
+    from backend.application.rag_run_execution import settle_open_tools
+
+    await settle_open_tools(session, task, run, "TASK_CANCELLED", cancelled=True)
     run.status = task.state = "cancelled"
     task.lease_expires_at = None
     await append_event(session, run.run_id, "run.cancelled", {"reason": "user_requested"})
@@ -170,7 +190,7 @@ async def acknowledge_cancellation(session, task_id, worker_id, generation):
         await session.rollback()
         return False
     run = await lock_run(session, task.run_id)
-    if run.execution_schema_version != 2 or not run.cancel_requested_at or run.status in TERMINAL:
+    if run.execution_schema_version < 2 or not run.cancel_requested_at or run.status in TERMINAL:
         await session.rollback()
         return False
     lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
@@ -182,6 +202,22 @@ async def claim_next_task(
     session: AsyncSession, worker_id: str, settings: Settings
 ) -> TaskModel | None:
     now = utc_now()
+    from backend.application.rag_capacity import TMP_RESERVE
+    from backend.application.rag_operations import transaction_lock
+
+    # 跨Worker共享并发门限，外部等待已释放租约，不占运行槽。
+    await transaction_lock(session, "rag-pipeline-claim-v1")
+    running = await session.scalar(
+        select(func.count())
+        .select_from(TaskModel)
+        .where(
+            TaskModel.kind.in_(("index_build", "retrieval_diagnostic")),
+            TaskModel.state.in_(ACTIVE),
+            TaskModel.lease_expires_at > now,
+        )
+    )
+    capacity = min(settings.rag_pipeline_concurrency, settings.rag_tmp_budget_bytes // TMP_RESERVE)
+    running = int(running or 0)
     task = (
         await session.execute(
             select(TaskModel)
@@ -189,7 +225,20 @@ async def claim_next_task(
                 TaskModel.state == "queued",
                 TaskModel.available_at <= now,
                 TaskModel.deadline_at > now,
-                TaskModel.attempt < TaskModel.max_attempts,
+                or_(
+                    TaskModel.kind.not_in(("index_build", "retrieval_diagnostic")),
+                    literal(running < capacity),
+                ),
+                or_(
+                    and_(
+                        TaskModel.kind.in_(["index_build", "retrieval_diagnostic"]),
+                        TaskModel.failure_count < TaskModel.max_attempts,
+                    ),
+                    and_(
+                        TaskModel.kind.not_in(["index_build", "retrieval_diagnostic"]),
+                        TaskModel.attempt < TaskModel.max_attempts,
+                    ),
+                ),
             )
             .order_by(TaskModel.available_at, TaskModel.created_at)
             .with_for_update(skip_locked=True)
@@ -199,6 +248,12 @@ async def claim_next_task(
     ).scalar_one_or_none()
     if task is None:
         await session.rollback()
+        return None
+    if task.cancel_requested_at:
+        from backend.application.rag_task_execution import settle_rag_task
+
+        await settle_rag_task(session, task, "TASK_CANCELLED", cancelled=True)
+        await session.commit()
         return None
     # 等待 Run 锁期间不能消耗领取次数；全部锁取得后才建立新租约。
     if task.run_id:
@@ -252,7 +307,7 @@ async def renew_lease(
     session: AsyncSession, task_id: str, worker_id: str, generation: int, settings: Settings
 ) -> bool:
     task = await lock_owned_task(session, task_id, worker_id, generation)
-    if task is None:
+    if task is None or task.cancel_requested_at:
         await session.rollback()
         return False
     if task.run_id:
@@ -273,7 +328,7 @@ async def mark_running(
     session: AsyncSession, task_id: str, worker_id: str, generation: int
 ) -> bool:
     task = await lock_owned_task(session, task_id, worker_id, generation)
-    if task is None or task.state != "leased":
+    if task is None or task.cancel_requested_at or task.state != "leased":
         await session.rollback()
         return False
     if task.run_id:
@@ -315,10 +370,16 @@ async def schedule_retry(
     if task is None:
         await session.rollback()
         return False
-    retry = not permanent and task.attempt < task.max_attempts
+    if task.kind in {"index_build", "retrieval_diagnostic"}:
+        task.failure_count += 1
+        retry = not permanent and task.failure_count < task.max_attempts
+    else:
+        retry = not permanent and task.attempt < task.max_attempts
     lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
     task.available_at = utc_now() + timedelta(
-        seconds=retry_delay_seconds(task.attempt, settings.task_retry_base_delay)
+        seconds=min(60, retry_delay_seconds(task.failure_count, settings.task_retry_base_delay))
+        if task.kind in {"index_build", "retrieval_diagnostic"}
+        else retry_delay_seconds(task.attempt, settings.task_retry_base_delay)
     )
     if not await settle_failure(session, task, error_code, retry=retry, require_active=True):
         await session.rollback()
@@ -343,9 +404,20 @@ async def requeue_expired(session: AsyncSession) -> int:
                     or_(
                         TaskModel.deadline_at <= now,
                         (TaskModel.state.in_(ACTIVE) & (TaskModel.lease_expires_at <= now)),
-                        (TaskModel.state == "retry_waiting") & (TaskModel.available_at <= now),
+                        (TaskModel.state.in_(["retry_waiting", "waiting_external"]))
+                        & (TaskModel.available_at <= now),
                         (TaskModel.state == "queued")
-                        & (TaskModel.attempt >= TaskModel.max_attempts),
+                        & or_(
+                            and_(
+                                TaskModel.kind.in_(["index_build", "retrieval_diagnostic"]),
+                                TaskModel.failure_count >= TaskModel.max_attempts,
+                            ),
+                            and_(
+                                TaskModel.kind.not_in(["index_build", "retrieval_diagnostic"]),
+                                TaskModel.attempt >= TaskModel.max_attempts,
+                            ),
+                        ),
+                        TaskModel.cancel_requested_at.is_not(None),
                     ),
                 )
                 .order_by(TaskModel.task_id)
@@ -355,19 +427,34 @@ async def requeue_expired(session: AsyncSession) -> int:
         ).scalars()
     )
     for task in tasks:
+        is_rag = task.kind in {"index_build", "retrieval_diagnostic"}
+        if is_rag and task.cancel_requested_at:
+            from backend.application.rag_task_execution import settle_rag_task
+
+            await settle_rag_task(session, task, "TASK_CANCELLED", cancelled=True)
+            continue
+        if is_rag and task.state in ACTIVE:
+            task.failure_count += 1
         if task.run_id:
             run = await lock_run(session, task.run_id)
             if run.status in TERMINAL:
                 continue
-            if run.execution_schema_version == 2 and run.cancel_requested_at:
+            if run.execution_schema_version >= 2 and run.cancel_requested_at:
                 await settle_cancelled(session, task, run)
                 continue
         deadline = task.deadline_at.replace(tzinfo=timezone.utc) <= now
-        if deadline or task.attempt >= task.max_attempts:
+        exhausted = (
+            task.failure_count >= task.max_attempts if is_rag else task.attempt >= task.max_attempts
+        )
+        if deadline or exhausted:
             await settle_failure(
                 session, task, "TASK_DEADLINE_EXCEEDED" if deadline else "TASK_ATTEMPTS_EXHAUSTED"
             )
         else:
+            if task.run_id:
+                from backend.application.rag_run_execution import settle_open_tools
+
+                await settle_open_tools(session, task, run, "LEASE_EXPIRED")
             task.state = "queued"
             task.worker_id = None
             task.lease_expires_at = None

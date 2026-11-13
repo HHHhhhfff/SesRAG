@@ -1,0 +1,108 @@
+[
+  {
+    "kind": "embedding",
+    "profile_id": "mock-embedding",
+    "version": 1,
+    "config": {
+      "space": {
+        "model": "mock-384",
+        "revision": "sha256_v1",
+        "dimension": 384
+      }
+    }
+  },
+  {
+    "kind": "rerank",
+    "profile_id": "mock-rerank",
+    "version": 1,
+    "config": {}
+  },
+  {
+    "kind": "parser",
+    "profile_id": "local-text",
+    "version": 1,
+    "config": {
+      "parser_kind": "local",
+      "formats": [
+        ".txt",
+        ".md"
+      ],
+      "output_protocol": "local_structure_v1"
+    }
+  },
+  {
+    "kind": "parser",
+    "profile_id": "mineru-office",
+    "version": 2,
+    "config": {
+      "parser_kind": "mineru",
+      "formats": [
+        ".doc",
+        ".docx",
+        ".pdf",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx"
+      ],
+      "output_protocol": "mineru_cloud_v4_office_text_v1",
+      "verified_formats": [
+        ".doc",
+        ".docx",
+        ".pdf",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx"
+      ],
+      "protocol_evidence": "PR-003 real office samples 2026-10-30; see tests/fixtures/rag-v3/provider-observations.json"
+    }
+  },
+  {
+    "kind": "retrieval",
+    "profile_id": "default-retrieval",
+    "version": 1,
+    "config": {
+      "rerank_profile_id": "mock-rerank",
+      "rerank_profile_version": 1
+    }
+  },
+  {
+    "kind": "embedding",
+    "profile_id": "bailian-embedding",
+    "version": 1,
+    "config": {
+      "adapter_kind": "bailian",
+      "space": {
+        "provider": "bailian",
+        "model": "qwen3.7-text-embedding",
+        "revision": "deployment_20261030_unverified_counter",
+        "dimension": 1024,
+        "normalization": "l2_float32_v1"
+      },
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "config_ref": "env:RAG_EMBEDDING_API_KEY",
+      "counter_status": "unverified"
+    }
+  },
+  {
+    "kind": "rerank",
+    "profile_id": "bailian-rerank",
+    "version": 1,
+    "config": {
+      "adapter_kind": "bailian",
+      "endpoint": "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank",
+      "config_ref": "env:RAG_RERANK_API_KEY",
+      "counter_status": "unverified"
+    }
+  },
+  {
+    "kind": "retrieval",
+    "profile_id": "bailian-retrieval",
+    "version": 1,
+    "config": {
+      "rerank_profile_id": "bailian-rerank",
+      "rerank_profile_version": 1
+    }
+  }
+]

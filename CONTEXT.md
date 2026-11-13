@@ -72,6 +72,31 @@ ADR-002/PRD-002：v0.2持久化会话与工作台主体已实施；2026-10-23独
 | `VectorStorePort` | 以统一 Evidence/IndexedChunk DTO 提供候选替换和 Top-K 召回，由 application 承接事务。 | `backend/domain/ports/__init__.py`；`backend/infrastructure/rag/pgvector_store.py` | 当前代码及5b真实替换专项已审查；历史两轮纳入目标已复验；旧结果在上一版本/测试分支，不外推本轮验收 |
 | `ParserPort` | 将受限源标识/格式解析为纯文本和基础位置；默认子进程受输入/展开/时间限制，不是任意代码沙箱。 | `backend/domain/ports/__init__.py`；`backend/infrastructure/rag/parsers.py`、`parser_process.py` | 当前代码已接线；Windows 无 Linux RLIMIT，报告单列资源边界 |
 
+## PRD-003 的工程术语（v0.3）
+
+下列含义来源于[PRD-003](docs/prd/003-SesRAG-RAG检索增强与MinerU接入-PRD.md)及[ADR-003](docs/adr/003-sesrag-rag-mineru-implementation-plan.md)。九格式固定路由已经落地；工程实施、验证证据和真实模型计数／效果等受限项见[PR-003](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-PR.md)。工程存在不等于整轮正式验收通过。
+
+| 术语 | 统一含义 | 来源 | 当前状态 |
+| --- | --- | --- | --- |
+| `KnowledgeBase` | 同一 owner 下的逻辑文档分组和检索范围，绑定一个不可变 EmbeddingSpace；本轮不是审核、发布或跨租户共享平台。 | PRD-003 §4、§6 | 已实现工程基线；独立验收见PR-003 |
+| `ParseJob` | 固定源、格式路由及单一ParserProfile的持久解析业务，保存检查点／上游身份并关联唯一成功产物；未知提交本地失败且不自动重提，不等于Task物理attempt。 | PRD-003 §6/§7.1；ADR-003 §4/§6 | 已实现工程基线；独立验收见PR-003 |
+| `ParseInput` | 已验证不可变原源的内部引用；办公源原字节直传、本地只消费txt/md，不是转换产物或新增表。 | PRD-003 §6；ADR-003 §5/§6.1 | 已实现工程基线；独立验收见PR-003 |
+| `ParsedArtifact` / `ParsedBlock` | 安全归一化后的解析产物及其中有序结构块，保存文本与可靠来源映射；不将外部 Markdown 直接当可信页码或系统指令。 | PRD-003 §6 | 已实现工程基线；独立验收见PR-003 |
+| `IndexBuild` | 对现有 index batch 的持久化演进：一次冻结解析、切片和向量配置的不可变构建身份，成功后可成为 active，历史批次按引用保留。不是完整项目的 Document Version。 | PRD-003 §6、§7.2 | 已实现工程基线；独立验收见PR-003 |
+| `EmbeddingProfile` / `EmbeddingSpace` | 前者是版本化的非 Secret 向量化配置；后者标识模型/修订、维度、归一化和距离约定共同构成的可比较向量空间，不能仅凭同维度混查。 | PRD-003 §6 | 已实现工程基线；独立验收见PR-003 |
+| `RerankProfile` | 版本化的非 Secret 重排配置，规定输入、截断、返回候选身份与分数语义；独立于生成 ModelProfile 和 EmbeddingProfile。 | PRD-003 §6 | 已实现工程基线；独立验收见PR-003 |
+| `RetrievalProfile` | 版本化检索策略，约定候选数量、最终命中数、过滤、重排、邻近拼接和失败策略。 | PRD-003 §6、§7.3 | 已实现工程基线；独立验收见PR-003 |
+| `RetrievalView` | 新协议 Run 创建时冻结的知识库、过滤条件和可检索 IndexBuild 身份集合；冻结的是语料视图，不承诺外部模型输出逐字确定。 | PRD-003 §7.3 | 已实现工程基线；独立验收见PR-003 |
+| `RetrievalExecution` | 一次受控检索的持久关联与安全阶段记录；Run 内检索绑定 Task/generation，诊断检索不创建聊天 Run。其投影称 RAG Trace。 | PRD-003 §6、§7.3 | 已实现工程基线；独立验收见PR-003 |
+| `EvidenceBundle` | 对命中 Chunk 及同文档同批次邻近片段的有界拼接，保留每段来源和去重映射；最终引用仍须对应实际进入 ContextPlan 的内容。 | PRD-003 §6、§7.3 | 已实现工程基线；独立验收见PR-003 |
+| `ToolDefinition` / `ToolBinding` / `ToolCall` | 分别表示版本化工具能力、Run 的受控装配配置和一次调用事实；本轮只实现只读 `rag.search` 所需子集，不表示已有通用 Agent 工具平台。 | PRD-003 §6、§7.4 | 已实现工程基线；独立验收见PR-003 |
+| `ParserProfile` | 版本化解析配置，声明固定路线允许格式、模型／输出协议及预算；Job冻结一个Profile，恢复不按新默认选路，无转换器或回退Profile。 | ADR-003 §3/§4 | 已实现工程基线；独立验收见PR-003 |
+| `format_router_v1` | 按已验证格式固定解析路线：txt/md为local，七种办公格式为mineru；不由客户端切换，无解析回退。 | PRD-003 §7.1；ADR-003 §6.0 | 已实现工程基线；独立验收见PR-003 |
+| `InputCounter` | Embedding／rerank专属输入计数及有界配额能力，必须标明精确或有依据的保守策略；不同于生成模型的TokenCounter，不把字符／字节数伪称模型token。 | ADR-003 §3.2/§5 | 已实现字节配额与启用守卫；真实模型计数尚未验证 |
+| `ContextEvidence` | 某个ContextPlan实际使用的Bundle组件区间及hash，最终Citation v2只引用其已选择范围；关系外键同时承担历史保留保护。 | ADR-003 §4/§7.3 | 已实现工程基线；独立验收见PR-003 |
+| `RagOperation` | owner和操作范围内的入库／重建／诊断幂等记录，与会话SessionOperation分开；不代表外部服务提供请求去重。 | ADR-003 §4/§6.1 | 已实现工程基线；独立验收见PR-003 |
+| Task `waiting_external` / `failure_count` | 新index_build任务保存检查点后的可恢复让出状态及累计错误计数；正常等待不增加failure_count，attempt仍表示物理执行次数。旧run/index_document原attempt上限不变。 | ADR-003 §6.3 | 已实现工程基线；独立验收见PR-003 |
+
 ## 术语变更规则
 
 1. 新增稳定术语时，先在本文件增加含义、来源和状态，再更新 PRD/ADR、契约和代码引用。

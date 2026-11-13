@@ -1,0 +1,67 @@
+{
+  "purpose": "PRD-003独立输入；不代表真实解析通过",
+  "files": [
+    {
+      "file": "knowledge-scan.pdf",
+      "bytes": 15339,
+      "sha256": "bcbb5889454a26ee02a6e900edc012be05a3cea46a937dc0393b97ffdced1b79"
+    },
+    {
+      "file": "knowledge.docx",
+      "bytes": 37618,
+      "sha256": "afd642e67aed6ec5b8c0b66da7077f1fd6b366dc05decd06a93cf7a900ee56f3"
+    },
+    {
+      "file": "knowledge.md",
+      "bytes": 1635,
+      "sha256": "b2d234edf5802a18e8a6e4b04f376d443506e50940c75ace018f8e52f241a8bc"
+    },
+    {
+      "file": "knowledge.pdf",
+      "bytes": 3248,
+      "sha256": "c86fbf019758c5798cfd8f29e7127b003483ba1bef6f61b4d834d36bcee82247"
+    },
+    {
+      "file": "knowledge.pptx",
+      "bytes": 32662,
+      "sha256": "d345f08aaa4320c1a86c5bad7b7638be1ce5fd3f7cb98f7e9d94ef23802a64aa"
+    },
+    {
+      "file": "knowledge.txt",
+      "bytes": 1524,
+      "sha256": "56b604bc06386fe4436dd2912af3cb83f61facdd10c764e6e475eaf652edb75c"
+    },
+    {
+      "file": "knowledge.xls",
+      "bytes": 5632,
+      "sha256": "c5d9f7829628f60d34e370cd1fe3ed22135e37b9425991ea60aed7b95d5e2feb"
+    },
+    {
+      "file": "knowledge.xlsx",
+      "bytes": 5825,
+      "sha256": "2047f4c897d11f6d11a097a216c3c543ad7833c6e299e408da70c5b38572d25a"
+    },
+    {
+      "file": "public-slides.ppt",
+      "bytes": 15360,
+      "sha256": "e8fd4c38ad72ce3735acbca0b60dd5870fb60f819c169e3947d166f4f1bcc79d"
+    },
+    {
+      "file": "public-word.doc",
+      "bytes": 19456,
+      "sha256": "4876e828e62d490fa188c7c4e47013e2e0dfdf02f5903dfd374bc0d2b2049ca1"
+    }
+  ],
+  "third_party": [
+    {
+      "file": "public-word.doc",
+      "source": "https://raw.githubusercontent.com/apache/poi/trunk/test-data/document/simple.doc",
+      "license": "Apache-2.0"
+    },
+    {
+      "file": "public-slides.ppt",
+      "source": "https://raw.githubusercontent.com/apache/poi/trunk/test-data/slideshow/basic_test_ppt_file.ppt",
+      "license": "Apache-2.0"
+    }
+  ]
+}

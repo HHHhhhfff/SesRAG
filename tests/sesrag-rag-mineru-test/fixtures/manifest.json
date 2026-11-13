@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "source": "tests/fixtures/rag-v3/manifest.json",
+  "source_manifest_sha256": "77c2f1479be2532d8ac4202a5357e507d5c2556ea592d58a111779d084350c1d",
+  "dangerous_inputs_lane": "local",
+  "evaluation_status": "planned"
+}

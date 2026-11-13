@@ -13,10 +13,12 @@ export function safeErrorCode(value: unknown): string {
 
 export class ApiError extends Error {
   readonly code: string
+  readonly status: number
   constructor(code: unknown, status: number) {
     const safeCode = safeErrorCode(code)
     super(`${safeCode}：请求失败（${status}）`)
     this.code = safeCode
+    this.status = status
   }
 }
 

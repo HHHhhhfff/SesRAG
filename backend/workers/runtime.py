@@ -5,6 +5,7 @@ import os
 import signal
 from contextlib import suppress
 from functools import partial
+from time import monotonic
 from uuid import uuid4
 
 from backend.application.errors import ApplicationError
@@ -25,7 +26,9 @@ from backend.infrastructure.queue.adapter import PostgresQueue
 from backend.infrastructure.queue.postgres_queue import acknowledge_cancellation
 from backend.infrastructure.rag.parsers import SubprocessParser
 from backend.infrastructure.rag.pgvector_store import PgVectorStore
+from backend.workers.handlers.index_build_handler import process_index_build_task
 from backend.workers.handlers.index_handler import process_index_task
+from backend.workers.handlers.retrieval_diagnostic_handler import process_diagnostic_task
 from backend.workers.handlers.run_handler import process_run_task
 
 logger = logging.getLogger(__name__)
@@ -55,6 +58,7 @@ class WorkerRuntime:
         self.notifier = notifier
         self.worker_id = os.getenv("WORKER_ID") or f"worker-{uuid4()}"
         self.stop_event = asyncio.Event()
+        self._log_context: dict[str, str | None] = {}
         self.embedding_provider: EmbeddingPort | None = None
         self.model_provider: ModelProvider | None = None
         self.queue_factory = queue_factory or (lambda session: PostgresQueue(session, settings))
@@ -70,7 +74,13 @@ class WorkerRuntime:
     def vector_store(self, session) -> VectorStorePort:
         return self.vector_store_factory(session)
 
-    def log(self, action, task=None, error_code=None):
+    def log(self, action, task=None, error_code=None, *, stage=None, duration_ms=0):
+        context = self._log_context if task is not None else {}
+        # 日志处理器异常不能中断领取、续租或事实提交。
+        with suppress(Exception):
+            self._write_log(action, task, error_code, context, stage, duration_ms)
+
+    def _write_log(self, action, task, error_code, context, stage, duration_ms):
         logger.info(
             json.dumps(
                 {
@@ -78,15 +88,81 @@ class WorkerRuntime:
                     "message": "task claimed" if action == "claim" else f"task {action}",
                     "task_id": getattr(task, "task_id", None),
                     "run_id": getattr(task, "run_id", None),
-                    "document_id": getattr(task, "document_id", None),
+                    "document_id": context.get("document_id", getattr(task, "document_id", None)),
+                    "parse_job_id": context.get("parse_job_id"),
+                    "index_batch_id": getattr(task, "index_batch_id", None),
+                    "retrieval_execution_id": context.get(
+                        "retrieval_execution_id", getattr(task, "retrieval_execution_id", None)
+                    ),
                     "worker_id": self.worker_id,
                     "generation": getattr(task, "generation", None),
                     "attempt": getattr(task, "attempt", None),
                     "error_code": error_code,
+                    "stage": stage or action,
+                    "duration_ms": duration_ms,
                 },
                 ensure_ascii=False,
             )
         )
+
+    async def _load_log_context(self, task):
+        self._log_context = {}
+
+        async def load(session):
+            from sqlalchemy import select
+
+            from backend.db.rag_models import IndexBuildModel, RetrievalExecutionModel
+
+            context = {}
+            if task.kind == "index_build":
+                build = await session.get(IndexBuildModel, task.index_batch_id)
+                if build is not None:
+                    context.update(
+                        document_id=build.document_id,
+                        parse_job_id=build.parse_job_id,
+                        stage=build.stage,
+                    )
+            elif task.kind == "run":
+                execution_id = await session.scalar(
+                    select(RetrievalExecutionModel.execution_id).where(
+                        RetrievalExecutionModel.task_id == task.task_id,
+                        RetrievalExecutionModel.generation == task.generation,
+                    )
+                )
+                context["retrieval_execution_id"] = execution_id
+            return context
+
+        try:
+            self._log_context = await self._database(load)
+        except Exception:
+            # 旧任务与替代 Queue/Session 不必实现观测专用查询。
+            pass
+
+    async def _observed_dispatch(self, task):
+        from backend.application.stage_observation import observer
+
+        stage = self._log_context.get("stage", task.kind)
+
+        async def record(stage, duration, code):
+            current = asyncio.current_task()
+            # 退出后的观测只用已有身份，避免取消清理再次派生数据库任务。
+            if not self.stop_event.is_set() and not (current and current.cancelling()):
+                await self._load_log_context(task)
+            self.log("stage", task, code, stage=stage, duration_ms=duration)
+
+        token = observer.set(record)
+        started = monotonic()
+        code = None
+        try:
+            await self._dispatch(task)
+        except BaseException as exc:
+            code = getattr(exc, "code", "STAGE_FAILED")
+            raise
+        finally:
+            observer.reset(token)
+            elapsed = max(0, (monotonic() - started) * 1000)
+            with suppress(Exception):
+                await record(stage, elapsed, code)
 
     def request_stop(self) -> None:
         self.stop_event.set()
@@ -207,6 +283,14 @@ class WorkerRuntime:
                 self.parser,
                 self.vector_store,
             )
+        elif task.kind == "index_build":
+            await process_index_build_task(
+                self.session_factory, self.settings, task.task_id, self.worker_id, task.generation
+            )
+        elif task.kind == "retrieval_diagnostic":
+            await process_diagnostic_task(
+                self.session_factory, self.settings, task.task_id, self.worker_id, task.generation
+            )
         else:
             raise ApplicationError("UNKNOWN_TASK_KIND", "不支持的任务类型")
 
@@ -229,6 +313,7 @@ class WorkerRuntime:
             return False
         if task is None:
             return False
+        await self._load_log_context(task)
         self.log("claim", task)
         try:
             if self.stop_event.is_set():
@@ -245,7 +330,7 @@ class WorkerRuntime:
         except ExecutionStopped:
             await self._release(task)
             return True
-        execution = asyncio.create_task(self._dispatch(task))
+        execution = asyncio.create_task(self._observed_dispatch(task))
         lease = asyncio.create_task(self._lease_heartbeat(task, execution))
         stop = asyncio.create_task(self.stop_event.wait())
         try:
@@ -286,6 +371,24 @@ class WorkerRuntime:
         return True
 
     async def _ack_cancel(self, task):
+        if task.kind in {"index_build", "retrieval_diagnostic"}:
+
+            async def acknowledge_rag(session):
+                from backend.application.rag_task_execution import settle_rag_task
+                from backend.infrastructure.queue.postgres_queue import lock_owned_task
+
+                current = await lock_owned_task(
+                    session, task.task_id, task.worker_id, task.generation
+                )
+                if current is not None and current.cancel_requested_at:
+                    lease, deadline = current.lease_expires_at, current.deadline_at
+                    await settle_rag_task(session, current, "TASK_CANCELLED", cancelled=True)
+                    from backend.infrastructure.queue.postgres_queue import commit_authorized
+
+                    await commit_authorized(session, lease, deadline)
+
+            await self._database(acknowledge_rag)
+            return
         if task.kind != "run":
             return
         try:
