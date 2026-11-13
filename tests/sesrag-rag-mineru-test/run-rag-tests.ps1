@@ -11,7 +11,8 @@ param(
     [ValidateSet('Business','Acceptance')][string]$RealPlan = 'Business',
     [switch]$AllowRealRequests,
     [string]$LivePlan,
-    [ValidateSet('startup','child-failure','child-timeout')][string]$EngineeringFault
+    [ValidateSet('startup','child-failure','child-timeout')][string]$EngineeringFault,
+    [switch]$LifecycleAudit
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
@@ -32,5 +33,10 @@ if ($AllowRealRequests) { $taskArguments += '--allow-real-requests' }
 if ($LivePlan) { $taskArguments += @('--live-plan', $LivePlan) }
 if ($EngineeringFault) { $taskArguments += @('--engineering-fault', $EngineeringFault) }
 $env:PYTHONIOENCODING = 'utf-8'
+if ($LifecycleAudit) {
+    if ($Mode -ne 'Environment' -or -not $RunId -or $Categories -or $EngineeringFault) { throw 'LifecycleAudit仅供Environment且必须显式RunId前缀，不接受分类或单项故障。' }
+    & $taskPython (Join-Path $PSScriptRoot 'helpers/lifecycle_exercise.py') --prefix $RunId
+    exit $LASTEXITCODE
+}
 & $taskPython @taskArguments
 exit $LASTEXITCODE

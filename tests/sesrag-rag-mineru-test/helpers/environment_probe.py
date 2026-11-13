@@ -10,6 +10,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import httpx
+from helpers.baseline import baseline
 from sqlalchemy import text
 
 from backend.config import Settings
@@ -19,6 +20,9 @@ from backend.infrastructure.providers.context_counter import load_encoding_offli
 
 async def main():
     private = json.loads(Path("/run/secrets/tools-private.json").read_text())
+    fixture = baseline("/config/baseline.json")
+    if Settings().owner_id != fixture["owner"]:
+        raise ValueError("BASELINE_OWNER_CONFIG_MISMATCH")
     engine = create_engine(Settings())
     try:
         async with engine.connect() as conn:
@@ -30,10 +34,26 @@ async def main():
                 table: await conn.scalar(text(f"SELECT count(*) FROM {table}"))
                 for table in ("knowledge_bases", "embedding_profiles", "model_profiles")
             }
+            baseline_profiles = {}
+            for key, table in (
+                ("default_embedding", "embedding_profiles"),
+                ("default_retrieval", "retrieval_profiles"),
+            ):
+                row = fixture[key]
+                baseline_profiles[key] = bool(
+                    await conn.scalar(
+                        text(
+                            f"SELECT EXISTS (SELECT 1 FROM {table} "
+                            "WHERE profile_id=:profile_id AND version=:version)"
+                        ),
+                        row,
+                    )
+                )
         if (
-            revision != "0010_rag_task_and_run_protocol"
+            revision != "0011_rag_source_integrity"
             or not extension
             or any(not n for n in counts.values())
+            or not all(baseline_profiles.values())
         ):
             raise ValueError("SCHEMA_OR_PROFILE_NOT_READY")
     finally:
@@ -91,6 +111,19 @@ async def main():
         timeout=45,
         check=True,
     )
+    # 只核对后续质量脚本的离线依赖/源码，产品检查由任务3单独接入。
+    subprocess.run(["python", "-m", "pip", "check"], capture_output=True, check=True, timeout=30)
+    for source in (
+        "contracts/run_event_v3.json",
+        "frontend/package-lock.json",
+        "frontend/node_modules/typescript/package.json",
+        "frontend/scripts/generate-api-types.mjs",
+    ):
+        if not Path("/app", source).is_file():
+            raise ValueError("QUALITY_INPUT_MISSING")
+    node_version = subprocess.run(
+        ["node", "--version"], capture_output=True, text=True, check=True, timeout=10
+    ).stdout.strip()
     result = {
         "status": "passed",
         "product": "not_run",
@@ -111,9 +144,22 @@ async def main():
                 "pytest",
                 "pytest-asyncio",
                 "ruff",
+                "mypy",
             )
         },
         "offline_tokenizer": {"encoding": "cl100k_base", "sample_tokens": token_count},
+        "fixture_baseline": {
+            "owners": [fixture["owner"], fixture["other_owner"]],
+            "seed_sql_required": False,
+            "status": "validated",
+            "imported_profiles": baseline_profiles,
+        },
+        "quality_tools": {
+            "node": node_version,
+            "frontend_source": "present",
+            "contracts": "present",
+            "dependencies": "pip_check_passed",
+        },
         "transport_scope": "local受控，不证明真实DNS/TLS/模型/解析效果",
         "lane": private["lane"],
     }

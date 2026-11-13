@@ -70,7 +70,7 @@ async def database_checks(execution_id):
                 text("SELECT extversion FROM pg_extension WHERE extname='vector'")
             )
             revision = await session.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "0010_rag_task_and_run_protocol"
+            assert revision == "0011_rag_source_integrity"
             dimensions = (
                 (
                     await session.execute(

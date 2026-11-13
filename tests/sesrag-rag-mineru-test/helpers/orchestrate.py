@@ -31,6 +31,7 @@ from helpers.evidence import index, redact, save_log, scan
 from helpers.preflight import check_tools, real_gate, source_fingerprint
 from helpers.prepare_runtime import prepare
 from helpers.protocol import LOCAL, REAL, manifest, validate_result
+from helpers.resource_observation import ResourceSampler, performance_summary
 
 
 def compose_args(project, directory, lane):
@@ -90,6 +91,12 @@ def inspect_config(config, lane, project):
             "command"
         ] != ["python", "-m", "backend.workers.main"]:
             raise ValueError("REAL_ENTRYPOINT_INVALID")
+        for name in ("tools", "migrate", "profile-init"):
+            if any(
+                k.endswith("API_KEY") or k == "MINERU_STATE_ENCRYPTION_KEY"
+                for k in services[name].get("environment", {})
+            ):
+                raise ValueError("REAL_SECRET_IN_UNNECESSARY_SERVICE")
     return {
         "status": "passed",
         "lane": lane,
@@ -190,6 +197,13 @@ def summarize(root, report, secrets_list):
         f"环境：{report['environment']}；产品：{report['product']}；清理：{report['cleanup']}。\n\n"
     )
     text += "本结果只证明请求范围；Environment不计产品通过，Mock不证明真实效果。\n\n"
+    if "real_capabilities" in report:
+        text += "真实能力范围：" + ", ".join(report["real_capabilities"]) + "。"
+        text += (
+            "四能力范围。"
+            if report["full_business_scope"]
+            else "部分能力范围，不能认定完整真实业务闭环通过。"
+        ) + "\n\n"
     for error in report["reasons"]:
         text += f"- {error}\n"
     text += "\n缓存/冻结镜像归档/脱敏报告有意保留；本机清理不保证云端撤回或停止计费。\n"
@@ -224,11 +238,13 @@ def main(argv=None):
         parser.error("时间参数超界")
     if (
         args.categories
-        and args.mode != "Selected"
+        and args.mode not in {"Selected", "Real"}
         or args.mode == "Selected"
         and not args.categories
     ):
-        parser.error("Categories仅供Selected且必须明确")
+        parser.error("Categories仅供Selected/Real；Selected必须明确")
+    if args.mode == "Real" and (set(args.categories) - set(REAL)):
+        parser.error("Real仅接受真实分类")
     if args.mode != "Real" and (args.allow_real_requests or args.live_plan):
         parser.error("真实参数仅供Real")
     if args.mode == "Cleanup":
@@ -330,7 +346,7 @@ def main(argv=None):
         entries = manifest()
         requested = (
             args.categories
-            if args.mode == "Selected"
+            if args.mode in {"Selected", "Real"} and args.categories
             else LOCAL
             if args.mode == "All"
             else REAL
@@ -342,29 +358,7 @@ def main(argv=None):
         if len(requested) != len(set(requested)) or set(requested) - set(entries) - {"environment"}:
             raise ValueError("INVALID_CATEGORY_SELECTION")
         report["requested_categories"] = [c for c in requested if c != "environment"]
-        gate = None
-        if args.mode == "Real":
-            if not args.allow_real_requests or not args.live_plan:
-                codes.add(3)
-                report["reasons"].append(
-                    "REAL_REQUESTS_NOT_AUTHORIZED：必须显式开关及私有LivePlan，本轮无外发"
-                )
-                report["real"] = "blocked"
-                return finish(report, codes, ledger, ledger_path, root, secrets_list, fingerprints)
-            gate = real_gate(args.live_plan, args.real_plan)
-            write(
-                root / "real-gate.json",
-                {
-                    k: v
-                    for k, v in gate.items()
-                    if k not in {"secrets", "config_paths", "approved_files"}
-                },
-            )
-            if not gate["passed"]:
-                codes.add(3)
-                report["real"] = "blocked"
-                report["reasons"].extend(gate["reasons"])
-                return finish(report, codes, ledger, ledger_path, root, secrets_list, fingerprints)
+        # planned分类不能运行；先说明真实执行范围，避免无脚本时读取无必要Secret。
         planned = [
             category
             for category in requested
@@ -379,6 +373,31 @@ def main(argv=None):
         runnable = [c for c in requested if c not in planned]
         if not runnable:
             return finish(report, codes, ledger, ledger_path, root, secrets_list, fingerprints)
+        gate = None
+        if args.mode == "Real":
+            if not args.allow_real_requests or not args.live_plan:
+                codes.add(3)
+                report["reasons"].append(
+                    "REAL_REQUESTS_NOT_AUTHORIZED：必须显式开关及私有LivePlan，本轮无外发"
+                )
+                report["real"] = "blocked"
+                return finish(report, codes, ledger, ledger_path, root, secrets_list, fingerprints)
+            gate = real_gate(args.live_plan, args.real_plan)
+            report["real_capabilities"] = gate["capabilities"]
+            report["full_business_scope"] = gate["full_business_scope"]
+            write(
+                root / "real-gate.json",
+                {
+                    k: v
+                    for k, v in gate.items()
+                    if k not in {"secrets", "config_paths", "approved_files"}
+                },
+            )
+            if not gate["passed"]:
+                codes.add(3)
+                report["real"] = "blocked"
+                report["reasons"].extend(gate["reasons"])
+                return finish(report, codes, ledger, ledger_path, root, secrets_list, fingerprints)
         fingerprints = source_fingerprint()
         write(root / "fingerprints.json", fingerprints)
         # 固定输入校验和复制完成后才部署，危险数据仅local目录。
@@ -463,6 +482,38 @@ def main(argv=None):
                     save_log(output / "runner-selftests.log", raw, secrets_list)
                     if code:
                         raise ValueError("RUNNER_SELFTEST_FAILED")
+                    code, raw = command(
+                        [
+                            *prefix,
+                            "exec",
+                            "-T",
+                            "tools",
+                            "python",
+                            "-m",
+                            "helpers.selftest_preparation",
+                        ],
+                        check=False,
+                        timeout=120,
+                    )
+                    save_log(output / "preparation-selftests.log", raw, secrets_list)
+                    if code:
+                        raise ValueError("PREPARATION_SELFTEST_FAILED")
+                    code, raw = command(
+                        [
+                            *prefix,
+                            "exec",
+                            "-T",
+                            "tools",
+                            "python",
+                            "-m",
+                            "helpers.selftest_engineering",
+                        ],
+                        check=False,
+                        timeout=120,
+                    )
+                    save_log(output / "engineering-selftests.log", raw, secrets_list)
+                    if code:
+                        raise ValueError("ENGINEERING_SELFTEST_FAILED")
                 port = command([*prefix, "port", "frontend", "5173"])[1].strip()
                 frontend_ip = command(
                     [
@@ -526,9 +577,28 @@ def main(argv=None):
                     else {"timeout_seconds": entries[category]["timeout_seconds"]},
                     "allowed_operations": ["api", "owned-fixtures", "owned-container-faults"],
                 }
+                if gate:
+                    context["real_capabilities"] = gate["capabilities"]
                 schema_check("context", context)
-                result = execute_category(prefix, category_output, entries[category], context)
-                report["categories"].append(result)
+                owned = next(p for p in ledger["projects"] if p["name"] == project)
+                owned_ids = [r["id"] for r in owned["resources"] if r["kind"] == "container"]
+                sampler = ResourceSampler(owned_ids).start()
+                try:
+                    result = execute_category(prefix, category_output, entries[category], context)
+                    report["categories"].append(result)
+                finally:
+                    observed = sampler.stop()
+                    write(category_output / "resource-samples.json", observed)
+                    report.setdefault("resource_observations", []).append(
+                        {
+                            "category": category,
+                            "lane": lane,
+                            "path": str(
+                                (category_output / "resource-samples.json").relative_to(root)
+                            ),
+                            **{k: v for k, v in observed.items() if k != "samples_raw"},
+                        }
+                    )
                 codes.update(
                     {"failed": {1}, "blocked": {3}, "harness_error": {2}}.get(
                         result["status"], set()
@@ -551,7 +621,7 @@ def main(argv=None):
         if args.mode in {"All", "Selected"} and not codes:
             report["product"] = "passed"
         elif args.mode == "Real" and not codes:
-            report["real"] = "passed"
+            report["real"] = "passed" if gate["full_business_scope"] else "partial_passed"
         if source_fingerprint()["source"] != fingerprints["source"]:
             raise ValueError("SOURCE_CHANGED_DURING_RUN")
         if args.mode == "Environment":
@@ -573,6 +643,9 @@ def main(argv=None):
 
 
 def finish(report, codes, ledger, ledger_path, root, secrets_list, fingerprints):
+    report["performance"] = performance_summary(
+        report["categories"], report.get("resource_observations", [])
+    )
     recorded = {r["category"] for r in report["categories"]}
     report["categories"].extend(
         {"category": category, "status": "not_run", "reason": "前置/工程未完成"}
@@ -587,8 +660,12 @@ def finish(report, codes, ledger, ledger_path, root, secrets_list, fingerprints)
     report["exit_code"] = next((c for c in (4, 2, 1, 3) if c in codes), 0)
     if any(row["status"] == "failed" for row in report["categories"]):
         report["product"] = "failed"
+        if report["mode"] == "Real":
+            report["real"] = "failed"
     elif any(row["status"] in {"blocked", "not_run"} for row in report["categories"]):
         report["product"] = "not_run"
+        if report["mode"] == "Real":
+            report["real"] = "blocked"
     try:
         summarize(root, report, secrets_list)
     except Exception:

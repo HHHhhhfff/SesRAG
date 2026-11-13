@@ -30,6 +30,10 @@ async function submit() {
     <input type="file" aria-label="选择文档" accept=".txt,.md,.doc,.docx,.pdf,.xls,.xlsx,.ppt,.pptx" :disabled="documents.loading || !rag.selectedBase || documents.pendingUpload" @change="select">
     <p v-if="documents.error || localError" role="alert">{{ documents.error || localError }}</p>
     <button v-if="documents.pendingUpload" class="secondary-button" @click="documents.retryUpload">重试原上传（同一幂等键）</button>
+    <template v-if="documents.pendingRebuild">
+      <p>重建尚未确认；请先恢复原操作。{{ documents.canRetryRebuild ? '' : '请切回原知识库。' }}</p>
+      <button class="secondary-button" :disabled="documents.loading || !documents.canRetryRebuild" @click="documents.retryRebuild">重试原重建（同一幂等键）</button>
+    </template>
     <form v-if="file || rebuilding" class="rag-form" @submit.prevent="submit">
       <strong>{{ rebuilding ? '重建' : '上传' }}：{{ file?.name ?? rebuilding?.filename }}</strong>
       <label v-if="file">标签（英文逗号分隔）<input v-model="tags" maxlength="819"></label>
@@ -52,7 +56,7 @@ async function submit() {
       <p v-if="document.latest_build?.parse?.remote_outcome === 'unknown_may_continue'">本地已停止；远端可能继续处理。取消不保证撤回文件或计费。</p>
       <p>标签：{{ document.tags.join('，') || '无' }}</p>
       <label>更新标签<input :value="document.tags.join(',')" maxlength="819" @change="documents.tags(document.document_id, ($event.target as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean))"></label>
-      <button class="secondary-button" @click="reset(); rebuilding = document">重建索引</button>
+      <button class="secondary-button" :disabled="documents.loading || documents.pendingRebuild" @click="reset(); rebuilding = document">重建索引</button>
       <button v-if="document.latest_build && ['queued','building','waiting'].includes(document.latest_build.state)" class="secondary-button" @click="documents.cancel(document.latest_build!.index_batch_id)">请求取消构建</button>
       <button v-if="document.active_index_batch_id" class="secondary-button" @click="documents.inspect(document)">查看已发布切片</button>
     </article>

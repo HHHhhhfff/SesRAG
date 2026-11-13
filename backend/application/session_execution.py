@@ -22,6 +22,7 @@ from backend.application.context import (
 )
 from backend.application.errors import PermanentTaskError
 from backend.application.session_runs import plan_summary, summary_projection
+from backend.application.stage_observation import observe_stage
 from backend.application.task_execution import (
     append_execution_event,
     check_execution,
@@ -65,6 +66,13 @@ def evidence_metadata(item):
     }
 
 
+def ordered_plan_evidence(plan, evidence):
+    from backend.application.rag_run_execution import context_identity
+
+    by_identity = {(e.document_id, context_identity(e)): e for e in evidence}
+    return [by_identity[identity] for identity in plan.selected_evidence_ids]
+
+
 async def publish_plan(
     factory, task_id, worker_id, generation, plan, context_input, snapshot, evidence
 ):
@@ -100,6 +108,7 @@ async def publish_plan(
                 await session.flush()
             summaries.append(summary)
         selected = {identity for identity in plan.selected_evidence_ids}
+        evidence = ordered_plan_evidence(plan, evidence)
         row = ContextPlanModel(
             context_plan_id=str(uuid4()),
             schema_version=run.execution_schema_version,
@@ -339,6 +348,7 @@ async def process_session_run(
         policy["max_candidate_messages"],
         policy["max_candidate_chars"],
         evidence_role="user" if schema3 else "system",
+        number_evidence=schema3,
     )
     guarded = partial(
         guarded_call,
@@ -357,9 +367,10 @@ async def process_session_run(
     if schema3:
         from backend.application.rag_run_execution import execute_run_retrieval
 
-        evidence = await execute_run_retrieval(
-            factory, settings, task_id, worker_id, generation, snapshot, question
-        )
+        async with observe_stage("retrieval"):
+            evidence = await execute_run_retrieval(
+                factory, settings, task_id, worker_id, generation, snapshot, question
+            )
     elif snapshot["retrieval"]["enabled"]:
         if embedding_provider is None:
             embedding_provider = embedding_from_snapshot2(snapshot)
@@ -467,20 +478,19 @@ async def process_session_run(
         deepcopy(profile["generation_params"]),
     )
     await check_execution(factory, task_id, worker_id, generation)
-    answer = await _bounded_stream(
-        factory,
-        task_id,
-        worker_id,
-        generation,
-        model_provider or provider,
-        model_request,
-        snapshot["execution"],
-    )
-    selected = set(plan.selected_evidence_ids)
+    async with observe_stage("generation"):
+        answer = await _bounded_stream(
+            factory,
+            task_id,
+            worker_id,
+            generation,
+            model_provider or provider,
+            model_request,
+            snapshot["execution"],
+        )
     citations = [
         {**evidence_metadata(e), "filename": e.filename}
-        for e in evidence
-        if (e.document_id, context_identity(e)) in selected
+        for e in ordered_plan_evidence(plan, evidence)
     ]
     async with factory() as session:
         await complete_run(session, task_id, worker_id, generation, answer, citations)

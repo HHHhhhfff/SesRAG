@@ -134,7 +134,8 @@
           "default": {
             "mode": "structure_v1",
             "size": 800,
-            "overlap": 120
+            "overlap": 120,
+            "max_chunks": 50000
           }
         }
       },
@@ -432,6 +433,13 @@
           "maximum": 15999,
           "minimum": 0,
           "title": "Overlap",
+          "type": "integer"
+        },
+        "max_chunks": {
+          "default": 50000,
+          "maximum": 50000,
+          "minimum": 1,
+          "title": "Max Chunks",
           "type": "integer"
         }
       },
@@ -7106,6 +7114,9 @@
     "BuildCreate": {
       "$ref": "#/$defs/BuildCreate"
     },
+    "ChunkPolicy": {
+      "$ref": "#/$defs/ChunkPolicy"
+    },
     "DocumentPatch": {
       "$ref": "#/$defs/DocumentPatch"
     },
@@ -7308,6 +7319,7 @@
     "KnowledgeBaseList",
     "Document",
     "BuildCreate",
+    "ChunkPolicy",
     "DocumentPatch",
     "DocumentList",
     "IndexBuild",

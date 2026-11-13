@@ -6,6 +6,7 @@ from sqlalchemy import (
     JSON,
     Boolean,
     CheckConstraint,
+    Computed,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -173,6 +174,11 @@ class ParsedBlockModel(Base):
 class IndexBuildModel(Base):
     __tablename__ = "index_builds"
     __table_args__ = (
+        CheckConstraint(
+            "provenance IN ('new','legacy_unknown','legacy_confirmed','legacy_verified')",
+            name="ck_build_provenance",
+        ),
+        UniqueConstraint("index_batch_id", "legacy_unverified", name="uq_build_provenance"),
         UniqueConstraint("document_id", "index_batch_id", name="uq_build_document_batch"),
         UniqueConstraint(
             "index_batch_id", "document_id", "space_id", name="uq_build_document_space"
@@ -217,6 +223,9 @@ class IndexBuildModel(Base):
     state: Mapped[str] = mapped_column(String(20), default="queued")
     stage: Mapped[str] = mapped_column(String(40), default="parse")
     provenance: Mapped[str] = mapped_column(String(30), default="new")
+    legacy_unverified: Mapped[bool] = mapped_column(
+        Boolean, Computed("provenance = 'legacy_unknown'", persisted=True)
+    )
     task_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     manifest_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)

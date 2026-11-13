@@ -8,12 +8,20 @@ from backend.domain.rag import ChunkDraftV2, NormalizedArtifact
 
 
 def split_artifact(
-    artifact: NormalizedArtifact, *, size=800, overlap=120, max_bytes=8192, mode="structure_v1"
+    artifact: NormalizedArtifact,
+    *,
+    size=800,
+    overlap=120,
+    max_bytes=8192,
+    mode="structure_v1",
+    max_chunks=50000,
 ):
     if not (
         type(size) is int and 1 <= size <= 16000 and type(overlap) is int and 0 <= overlap < size
     ):
         raise PermanentTaskError("INVALID_CHUNK_POLICY", "切片大小或重叠无效")
+    if type(max_chunks) is not int or not 1 <= max_chunks <= 50000:
+        raise PermanentTaskError("INVALID_CHUNK_POLICY", "切片数量预算无效")
     if type(max_bytes) is not int or max_bytes < 4:
         raise PermanentTaskError("INVALID_CHUNK_POLICY", "模型输入预算过小")
     if mode not in {"structure_v1", "character_v1"}:
@@ -57,7 +65,7 @@ def split_artifact(
                     ),
                 )
             )
-        if len(chunks) > 50000:
+        if len(chunks) > max_chunks:
             raise PermanentTaskError("CHUNK_COUNT_LIMIT", "构建超过切片数量上限")
         if end == len(text):
             break

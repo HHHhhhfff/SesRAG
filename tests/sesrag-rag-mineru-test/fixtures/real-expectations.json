@@ -1,0 +1,88 @@
+{
+  "source": "当前固定源文件的独立内容断言；不从MinerU返回生成预期",
+  "inputs": {
+    "bcbb5889454a26ee02a6e900edc012be05a3cea46a937dc0393b97ffdced1b79": {
+      "filename": "knowledge-scan.pdf",
+      "contains": [
+        "PostgreSQL",
+        "pgvector"
+      ],
+      "minimum_blocks": 1,
+      "expected_table": false,
+      "scanned": true
+    },
+    "afd642e67aed6ec5b8c0b66da7077f1fd6b366dc05decd06a93cf7a900ee56f3": {
+      "filename": "knowledge.docx",
+      "contains": [
+        "SesRAG synthetic RAG fixture",
+        "PostgreSQL",
+        "pgvector",
+        "Component",
+        "Responsibility",
+        "Durable execution facts"
+      ],
+      "minimum_blocks": 3,
+      "expected_table": true,
+      "scanned": false
+    },
+    "c86fbf019758c5798cfd8f29e7127b003483ba1bef6f61b4d834d36bcee82247": {
+      "filename": "knowledge.pdf",
+      "contains": [
+        "PostgreSQL",
+        "pgvector"
+      ],
+      "minimum_blocks": 1,
+      "expected_table": false,
+      "scanned": false
+    },
+    "d345f08aaa4320c1a86c5bad7b7638be1ce5fd3f7cb98f7e9d94ef23802a64aa": {
+      "filename": "knowledge.pptx",
+      "contains": [
+        "PostgreSQL",
+        "pgvector"
+      ],
+      "minimum_blocks": 1,
+      "expected_table": false,
+      "scanned": false
+    },
+    "c5d9f7829628f60d34e370cd1fe3ed22135e37b9425991ea60aed7b95d5e2feb": {
+      "filename": "knowledge.xls",
+      "contains": [
+        "PostgreSQL",
+        "pgvector"
+      ],
+      "minimum_blocks": 1,
+      "expected_table": true,
+      "scanned": false
+    },
+    "2047f4c897d11f6d11a097a216c3c543ad7833c6e299e408da70c5b38572d25a": {
+      "filename": "knowledge.xlsx",
+      "contains": [
+        "PostgreSQL",
+        "pgvector"
+      ],
+      "minimum_blocks": 1,
+      "expected_table": true,
+      "scanned": false
+    },
+    "e8fd4c38ad72ce3735acbca0b60dd5870fb60f819c169e3947d166f4f1bcc79d": {
+      "filename": "public-slides.ppt",
+      "contains": [
+        "This is a test title",
+        "This is a test subtitle"
+      ],
+      "minimum_blocks": 1,
+      "expected_table": false,
+      "scanned": false
+    },
+    "4876e828e62d490fa188c7c4e47013e2e0dfdf02f5903dfd374bc0d2b2049ca1": {
+      "filename": "public-word.doc",
+      "contains": [
+        "This is a simple file created with Word"
+      ],
+      "minimum_blocks": 1,
+      "expected_table": false,
+      "scanned": false
+    }
+  }
+}

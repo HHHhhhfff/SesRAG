@@ -26,6 +26,46 @@ from backend.domain.rag import digest
 
 
 async def confirm(session, settings, manifest, *, apply=False):
+    try:
+        return await _confirm(session, settings, manifest, apply=apply)
+    except BaseException:
+        # 任一批次验证或提交失败均撤回本次清单的全部修改。
+        await session.rollback()
+        raise
+
+
+async def _lock_confirmation_scope(session, settings, batches):
+    identities = []
+    for item in batches:
+        document = await session.get(DocumentModel, item["document_id"])
+        build = await session.get(IndexBuildModel, item["index_batch_id"])
+        if (
+            document is None
+            or build is None
+            or document.owner_id != settings.owner_id
+            or build.document_id != document.document_id
+        ):
+            raise ValueError("旧批次归属不一致")
+        identities.append((document.document_id, build.index_batch_id, build.knowledge_base_id))
+    # 先锁全清单KB，再锁Document/Build；与生产结算顺序一致，避免清单交叉死锁。
+    for model, field, values in (
+        (KnowledgeBaseModel, KnowledgeBaseModel.knowledge_base_id, {i[2] for i in identities}),
+        (DocumentModel, DocumentModel.document_id, {i[0] for i in identities}),
+        (IndexBuildModel, IndexBuildModel.index_batch_id, {i[1] for i in identities}),
+    ):
+        (
+            await session.scalars(
+                select(model)
+                .where(field.in_(sorted(values)))
+                .order_by(field)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+        ).all()
+    return {(doc, batch): base for doc, batch, base in identities}
+
+
+async def _confirm(session, settings, manifest, *, apply=False):
     if (
         set(manifest) != {"space_id", "provenance_reference", "batches"}
         or manifest["space_id"] != LEGACY_SPACE.space_id
@@ -33,6 +73,7 @@ async def confirm(session, settings, manifest, *, apply=False):
         or not 1 <= len(manifest["batches"]) <= 1000
     ):
         raise ValueError("仅支持有可信部署证据的旧Mock-384；清单需明确space/provenance/batches")
+    locked_scopes = await _lock_confirmation_scope(session, settings, manifest["batches"])
     reports = []
     for item in manifest["batches"]:
         document = await session.get(DocumentModel, item["document_id"])
@@ -43,15 +84,19 @@ async def confirm(session, settings, manifest, *, apply=False):
             or build is None
             or build.document_id != document.document_id
             or item["source_hash"] != document.content_hash
+            or build.knowledge_base_id
+            != locked_scopes[(document.document_id, build.index_batch_id)]
         ):
             raise ValueError("旧批次归属或源hash不一致")
         base = await session.scalar(
-            select(KnowledgeBaseModel)
-            .where(KnowledgeBaseModel.knowledge_base_id == build.knowledge_base_id)
-            .with_for_update()
+            select(KnowledgeBaseModel).where(
+                KnowledgeBaseModel.knowledge_base_id == build.knowledge_base_id
+            )
         )
         if (
-            base.embedding_space_id != LEGACY_SPACE.space_id
+            base is None
+            or base.owner_id != settings.owner_id
+            or base.embedding_space_id != LEGACY_SPACE.space_id
             or build.provenance not in {"legacy_unknown", "legacy_confirmed"}
             or build.state != "succeeded"
         ):
@@ -64,6 +109,7 @@ async def confirm(session, settings, manifest, *, apply=False):
                 select(ChunkModel)
                 .where(ChunkModel.index_batch_id == build.index_batch_id)
                 .order_by(ChunkModel.seq)
+                .with_for_update()
             )
         ).all()
         if not chunks or max(c.end_offset for c in chunks) > 32 * 1024**2:

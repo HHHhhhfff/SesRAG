@@ -20,6 +20,14 @@ from backend.infrastructure.storage.local_files import LocalFileStorage
 ACTIVE_BUILDS = ("queued", "building", "waiting")
 
 
+def chunk_policy_fingerprint(chunker):
+    policy = chunker.model_dump()
+    # 缺省上限不改变升级前的幂等指纹；非缺省预算必须参与冲突判断。
+    if policy["max_chunks"] == 50000:
+        policy.pop("max_chunks")
+    return policy
+
+
 def validate_tags(tags):
     if (
         not isinstance(tags, list)
@@ -112,7 +120,7 @@ async def start_build(session, settings, base, document, parse, chunker):
         if (
             current_job
             and current_job.parser_hash == digest(parser_snapshot)
-            and candidate.chunker_snapshot == chunker.model_dump()
+            and {"max_chunks": 50000, **candidate.chunker_snapshot} == chunker.model_dump()
         ):
             return candidate
         raise ApplicationError("INDEX_BUILD_BUSY", "文档已有其他配置的活动构建", 409)
@@ -188,7 +196,7 @@ async def upload_document(
             "hash": source_hash,
             "tags": tags,
             "parse": parse.model_dump(),
-            "chunker": chunker.model_dump(),
+            "chunker": chunk_policy_fingerprint(chunker),
         }
     )
     result = await replay(session, settings.owner_id, "upload", key, hashed)
@@ -239,7 +247,13 @@ async def rebuild_document(session, settings, identity, payload, key):
         session, settings.owner_id, document.knowledge_base_id, lock=True, new_operation=True
     )
     document = await load_document(session, settings, identity, lock=True)
-    hashed = digest({"document_id": identity, **payload.model_dump()})
+    hashed = digest(
+        {
+            "document_id": identity,
+            **payload.model_dump(),
+            "chunker": chunk_policy_fingerprint(payload.chunker),
+        }
+    )
     result = await replay(session, settings.owner_id, f"build:{identity}", key, hashed)
     if result:
         return await load_build(session, settings, result["index_batch_id"]), True

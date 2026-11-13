@@ -3,7 +3,7 @@ x-real-env: &real-env
   DATABASE_URL: postgresql+psycopg://rag_test:${TEST_PASSWORD}@postgres:5432/rag_test
   REDIS_URL: redis://redis:6379/0
   REDIS_ENABLED: "true"
-  OWNER_ID: rag-test-owner-a
+  OWNER_ID: ${TEST_OWNER_ID:?baseline owner required}
   UPLOAD_DIR: /data/uploads
   RAG_ARTIFACT_DIR: /data/artifacts
   RAG_TMP_DIR: /data/scratch
@@ -23,9 +23,21 @@ x-real-volumes: &real-volumes
   - scratch:/data/scratch
   - ${SUITE_DIR}/helpers:/suite/helpers:ro
   - ${RUN_DIR}/config:/config:ro
+# 迁移、Profile导入和测试工具不需要供应商密钥；真实调用通过API/Worker执行。
+x-internal-env: &internal-env
+  DATABASE_URL: postgresql+psycopg://rag_test:${TEST_PASSWORD}@postgres:5432/rag_test
+  REDIS_URL: redis://redis:6379/0
+  REDIS_ENABLED: "true"
+  OWNER_ID: ${TEST_OWNER_ID:?baseline owner required}
+  UPLOAD_DIR: /data/uploads
+  RAG_ARTIFACT_DIR: /data/artifacts
+  RAG_TMP_DIR: /data/scratch
+  MOCK_PROVIDER: "true"
+  PYTHONPATH: /suite:/app
+  TEST_LANE: real
 services:
   migrate:
-    environment: !override {<<: *real-env}
+    environment: !override {<<: *internal-env}
     volumes: !override
       - uploads:/data/uploads
       - artifacts:/data/artifacts
@@ -33,7 +45,7 @@ services:
       - ${SUITE_DIR}/helpers:/suite/helpers:ro
       - ${RUN_DIR}/config:/config:ro
   profile-init:
-    environment: !override {<<: *real-env}
+    environment: !override {<<: *internal-env}
     volumes: !override
       - uploads:/data/uploads
       - artifacts:/data/artifacts
@@ -65,7 +77,7 @@ services:
       profile-init: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
   tools:
-    environment: !override {<<: *real-env}
+    environment: !override {<<: *internal-env}
     volumes: !override
       - uploads:/data/uploads
       - artifacts:/data/artifacts
@@ -75,6 +87,9 @@ services:
       - ${SUITE_DIR}/schemas:/suite/schemas:ro
       - ${SUITE_DIR}/specific_test_script:/suite/specific_test_script:ro
       - ${SUITE_DIR}/manifest.json:/suite/manifest.json:ro
+      - ${SUITE_DIR}/compose/docker-compose.rag-test.yml:/suite/compose/docker-compose.rag-test.yml:ro
+      - ${SUITE_DIR}/compose/docker-compose.rag-real.yml:/suite/compose/docker-compose.rag-real.yml:ro
+      - ${SUITE_DIR}/../../docs/接口文档.md:/app/docs/接口文档.md:ro
       - ${RUN_DIR}/config:/config:ro
       - ${RUN_DIR}/tools-private.json:/run/secrets/tools-private.json:ro
       - ${INPUT_DIR}:/inputs:ro

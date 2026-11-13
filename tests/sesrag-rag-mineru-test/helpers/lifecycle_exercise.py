@@ -31,6 +31,27 @@ def invoke(identity, extra, expected, timeout=5400):
     return load(SUITE / "artifacts" / identity / "cleanup.json")
 
 
+def publish_audit(target, prefix, results, frozen):
+    """ENV报告先逐例审计再宣布通过；审批异常不能遗留passed摘要。"""
+    from helpers.environment_cases import record
+
+    summary = {
+        "status": "running",
+        "scope": "环境工程，产品not_run，无真实外发",
+        "frozen_build": frozen,
+        "runs": results,
+    }
+    write(target, summary)
+    try:
+        record(prefix, results, frozen)
+    except Exception:
+        summary["status"] = "failed"
+        write(target, summary)
+        raise
+    summary["status"] = "passed"
+    write(target, summary)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--prefix", required=True)
@@ -86,18 +107,10 @@ def main():
         terminate_tree(process)
     results.append(invoke(identity, ["--mode", "Cleanup"], 0))
     results.append(invoke(identity, ["--mode", "Cleanup"], 0))
-    results.append(invoke(prefix + "-planned", ["--mode", "All"], 3))
+    # 分类接入后All不再是planned拒绝样本；planned/坏报告负例由runner自测隔离验证。
     results.append(invoke(prefix + "-real-gate", ["--mode", "Real"], 3))
     target = SUITE / "artifacts" / (prefix + "-engineering.json")
-    write(
-        target,
-        {
-            "status": "passed",
-            "scope": "环境工程，产品not_run，无真实外发",
-            "frozen_build": frozen,
-            "runs": results,
-        },
-    )
+    publish_audit(target, prefix, results, frozen)
     print(json.dumps({"engineering": "passed", "record": target.name}), flush=True)
 
 

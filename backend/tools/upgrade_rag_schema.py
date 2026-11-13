@@ -30,8 +30,11 @@ async def upgrade(settings):
             current = await conn.run_sync(
                 lambda c: MigrationContext.configure(c).get_current_revision()
             )
-            if current == "0010_rag_task_and_run_protocol":
+            if current == "0011_rag_source_integrity":
                 print("RAG数据库已在目标版本，未覆盖现有配置。")
+                return
+            if current == "0010_rag_task_and_run_protocol":
+                await conn.run_sync(lambda c: migrate(c, "head"))
                 return
             if current not in {
                 "0007_rag_catalog_and_profiles",

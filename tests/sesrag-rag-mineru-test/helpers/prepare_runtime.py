@@ -4,7 +4,8 @@ import base64
 import secrets
 import shutil
 
-from helpers.common import SUITE, run_path, write
+from helpers.baseline import baseline
+from helpers.common import SUITE, digest, run_path, write
 
 
 def prepare(identity, project, lane, images, owner, real=None):
@@ -15,6 +16,8 @@ def prepare(identity, project, lane, images, owner, real=None):
     state_key = base64.b64encode(secrets.token_bytes(32)).decode()
     config_dir = directory / "config"
     config_dir.mkdir()
+    fixture = baseline()
+    write(config_dir / "baseline.json", fixture)
     for source, target in (
         (f"profiles.{lane if lane == 'local' else 'real.example'}.json", "profiles.json"),
         (f"models.{lane if lane == 'local' else 'real.example'}.json", "models.json"),
@@ -28,6 +31,7 @@ def prepare(identity, project, lane, images, owner, real=None):
         "TEST_RUN_ID": identity,
         "TEST_OWNER": owner,
         "TEST_PROJECT": project,
+        "TEST_OWNER_ID": fixture["owner"],
         "TEST_PASSWORD": password,
         "TEST_CONTROL_TOKEN": token,
         "APP_IMAGE": images["app"],
@@ -46,6 +50,8 @@ def prepare(identity, project, lane, images, owner, real=None):
         values.update(real["secrets"])
         for name, source in real["config_paths"].items():
             shutil.copyfile(source, config_dir / name)
+            if digest((config_dir / name).read_bytes()) != real["config_hashes"][name]:
+                raise ValueError("LIVE_CONFIG_CHANGED_AFTER_APPROVAL")
         live_dir = run_path("tmp", identity) / "inputs/live"
         live_dir.mkdir(exist_ok=True)
         safe_files = []
@@ -53,7 +59,15 @@ def prepare(identity, project, lane, images, owner, real=None):
             filename = f"{number:02}-{row['filename']}"
             shutil.copyfile(row["source"], live_dir / filename)
             safe_files.append({"file": "/inputs/live/" + filename, "sha256": row["sha256"]})
-        write(config_dir / "live-inputs.json", {"files": safe_files, "budget": real["budget"]})
+        write(
+            config_dir / "live-inputs.json",
+            {
+                "files": safe_files,
+                "budget": real["budget"],
+                "capabilities": real["capabilities"],
+                "full_business_scope": real["full_business_scope"],
+            },
+        )
     # env-file只用于插值，子进程环境不继承开发DSN或模型Key。
     for value in values.values():
         if any(c in str(value) for c in "\r\n\x00'"):

@@ -95,6 +95,11 @@ async def test_runtime_logs_exact_persisted_task_business_identity(
                 "task_id": task_id,
                 "run_id": run_id if kind == "run" else None,
                 "document_id": document_id,
+                "parse_job_id": None,
+                "index_batch_id": None,
+                "retrieval_execution_id": None,
+                "stage": action,
+                "duration_ms": 0,
                 "worker_id": worker.worker_id,
                 "generation": 0,
                 "attempt": 0,
@@ -516,3 +521,13 @@ async def test_shutdown_does_not_gather_uncooperative_handler_forever(execution)
         await asyncio.wait_for(cleaned.wait(), 1)
         pending.cancel()
         await asyncio.gather(pending, return_exceptions=True)
+        remaining = [
+            task
+            for task in asyncio.all_tasks()
+            if not task.done()
+            and (
+                "WorkerRuntime._observed_dispatch" in task.get_coro().__qualname__
+                or "WorkerRuntime._database.<locals>.transaction" in task.get_coro().__qualname__
+            )
+        ]
+        assert not remaining, "shutdown left observation wrapper/database tasks pending"

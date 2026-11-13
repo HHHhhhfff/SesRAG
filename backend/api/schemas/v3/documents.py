@@ -9,8 +9,10 @@ from backend.domain.rag import ParseRequest
 
 class ChunkPolicy(StrictModel):
     mode: Literal["structure_v1", "character_v1"] = "structure_v1"
-    size: int = Field(default=800, ge=1, le=16000)
-    overlap: int = Field(default=120, ge=0, le=15999)
+    size: int = Field(default=800, ge=1, le=16000, strict=True)
+    overlap: int = Field(default=120, ge=0, le=15999, strict=True)
+
+    max_chunks: int = Field(default=50000, ge=1, le=50000, strict=True)
 
 
 class BuildCreate(StrictModel):

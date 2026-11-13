@@ -65,6 +65,25 @@ class RunnerTests(unittest.TestCase):
     def test_engineering_valid_report(self):
         self.assertEqual(self.valid(), ["passed"])
 
+    def test_engineering_atomic_write_retries_transient_windows_lock(self):
+        # ENV_007/009：Windows扫描器短时持有目标句柄时，账本仍须原子写入。
+        from helpers.common import load, write
+
+        path = self.root / "ledger.json"
+        replace = Path.replace
+        calls = []
+
+        def transient(source, target):
+            calls.append(1)
+            if len(calls) < 3:
+                raise PermissionError("transient test lock")
+            return replace(source, target)
+
+        with patch.object(Path, "replace", transient), patch("helpers.common.time.sleep"):
+            write(path, {"safe": True})
+        self.assertEqual(load(path), {"safe": True})
+        self.assertEqual(len(calls), 3)
+
     def test_engineering_empty_report_rejected(self):
         self.result["cases"] = []
         with self.assertRaises(ValidationError):
@@ -358,7 +377,7 @@ class RunnerTests(unittest.TestCase):
             result = real_gate(plan, "Business")
         self.assertFalse(result["passed"])
         self.assertIn("OUTBOUND_AUTHORIZATION_REQUIRED", result["reasons"])
-        self.assertIn("THREE_CAPABILITY_COUNTER_EVIDENCE_REQUIRED", result["reasons"])
+        self.assertIn("COUNTER_EVIDENCE_MISSING_generation", result["reasons"])
 
     def test_engineering_safehttp_still_rejects_private_protocol(self):
         from backend.application.errors import PermanentTaskError

@@ -1,0 +1,483 @@
+{
+  "schema_version": 1,
+  "coordinate_system": "independent-source-projection-v1:zero-based-unicode-half-open",
+  "sources": [
+    {
+      "file": "knowledge.txt",
+      "format": "txt",
+      "source_sha256": "56b604bc06386fe4436dd2912af3cb83f61facdd10c764e6e475eaf652edb75c",
+      "projection_sha256": "158df07b5e1880c28f2f98de56fe6a1674b65069b1a3bba4179e9e71d9768389"
+    },
+    {
+      "file": "knowledge.md",
+      "format": "md",
+      "source_sha256": "b2d234edf5802a18e8a6e4b04f376d443506e50940c75ace018f8e52f241a8bc",
+      "projection_sha256": "71a20f1e4e12623027b87919fce2532766be8a2fc88997308aa49d0b03802e9d"
+    },
+    {
+      "file": "knowledge.docx",
+      "format": "docx",
+      "source_sha256": "afd642e67aed6ec5b8c0b66da7077f1fd6b366dc05decd06a93cf7a900ee56f3",
+      "projection_sha256": "2249bb0462bedcd6e911b3271f625893cdeef6576f1ce2d04bba9814eca8aad4"
+    },
+    {
+      "file": "knowledge.pdf",
+      "format": "pdf",
+      "source_sha256": "c86fbf019758c5798cfd8f29e7127b003483ba1bef6f61b4d834d36bcee82247",
+      "projection_sha256": "f6ad3c611c4ffbb1c1e2c5b0ccbe8ceae655a46311775e157858a253fede6a9c"
+    },
+    {
+      "file": "knowledge.xls",
+      "format": "xls",
+      "source_sha256": "c5d9f7829628f60d34e370cd1fe3ed22135e37b9425991ea60aed7b95d5e2feb",
+      "projection_sha256": "e6a20520a36e5ee53e6c48a1c282932ece70dae600fcd8c6fbce7eab41d5618e"
+    },
+    {
+      "file": "knowledge.xlsx",
+      "format": "xlsx",
+      "source_sha256": "2047f4c897d11f6d11a097a216c3c543ad7833c6e299e408da70c5b38572d25a",
+      "projection_sha256": "e6a20520a36e5ee53e6c48a1c282932ece70dae600fcd8c6fbce7eab41d5618e"
+    },
+    {
+      "file": "knowledge.pptx",
+      "format": "pptx",
+      "source_sha256": "d345f08aaa4320c1a86c5bad7b7638be1ce5fd3f7cb98f7e9d94ef23802a64aa",
+      "projection_sha256": "a01d3e093a7621c40d1537d75e6b0dc3d57803ace1101167e52aea0f5bd947f2"
+    },
+    {
+      "file": "public-word.doc",
+      "format": "doc",
+      "source_sha256": "4876e828e62d490fa188c7c4e47013e2e0dfdf02f5903dfd374bc0d2b2049ca1",
+      "projection_sha256": "9f14472ebbaff27714045721ce427aea4cb0da8657d4e749ac05d9f7026fca5a"
+    },
+    {
+      "file": "public-slides.ppt",
+      "format": "ppt",
+      "source_sha256": "e8fd4c38ad72ce3735acbca0b60dd5870fb60f819c169e3947d166f4f1bcc79d",
+      "projection_sha256": "c7a0647ba788d7c8dbd5449ddda7b6b0e0e9e646f7e5a0cc3c5e5255e47f3724"
+    }
+  ],
+  "questions": [
+    {
+      "id": "GOLD_001",
+      "query": "SesRAG将执行事实存在哪里，Run内事件序号有什么约束？",
+      "answerable": true,
+      "expected_answer": "SesRAG stores execution facts in PostgreSQL and vectors in pgvector. Events use increasing sequence numbers within each Run.",
+      "ranges": [
+        {
+          "source_sha256": "56b604bc06386fe4436dd2912af3cb83f61facdd10c764e6e475eaf652edb75c",
+          "start": 25,
+          "end": 93,
+          "quote": "SesRAG stores execution facts in PostgreSQL and vectors in pgvector."
+        },
+        {
+          "source_sha256": "56b604bc06386fe4436dd2912af3cb83f61facdd10c764e6e475eaf652edb75c",
+          "start": 1238,
+          "end": 1293,
+          "quote": "Events use increasing sequence numbers within each Run."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": true,
+      "semantic_distractor": true,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_002",
+      "query": "What does Redis provide?",
+      "answerable": true,
+      "expected_answer": "Redis only provides notifications and short lived cache.",
+      "ranges": [
+        {
+          "source_sha256": "b2d234edf5802a18e8a6e4b04f376d443506e50940c75ace018f8e52f241a8bc",
+          "start": 115,
+          "end": 171,
+          "quote": "Redis only provides notifications and short lived cache."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_003",
+      "query": "哪些格式无需MinerU而在本地解析？",
+      "answerable": true,
+      "expected_answer": "TXT and Markdown are parsed locally without MinerU.",
+      "ranges": [
+        {
+          "source_sha256": "afd642e67aed6ec5b8c0b66da7077f1fd6b366dc05decd06a93cf7a900ee56f3",
+          "start": 188,
+          "end": 239,
+          "quote": "TXT and Markdown are parsed locally without MinerU."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_004",
+      "query": "When may office originals be sent to MinerU?",
+      "answerable": true,
+      "expected_answer": "Office originals are sent to MinerU only after consent for each operation.",
+      "ranges": [
+        {
+          "source_sha256": "c86fbf019758c5798cfd8f29e7127b003483ba1bef6f61b4d834d36bcee82247",
+          "start": 218,
+          "end": 292,
+          "quote": "Office originals are sent to MinerU only after consent for each operation."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_005",
+      "query": "候选索引在什么条件下成为active？",
+      "answerable": true,
+      "expected_answer": "A candidate index becomes active only after all stages succeed.",
+      "ranges": [
+        {
+          "source_sha256": "c5d9f7829628f60d34e370cd1fe3ed22135e37b9425991ea60aed7b95d5e2feb",
+          "start": 320,
+          "end": 383,
+          "quote": "A candidate index becomes active only after all stages succeed."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_006",
+      "query": "What happens to the active batch when rebuilding fails?",
+      "answerable": true,
+      "expected_answer": "A failed rebuild preserves the previous active batch.",
+      "ranges": [
+        {
+          "source_sha256": "2047f4c897d11f6d11a097a216c3c543ad7833c6e299e408da70c5b38572d25a",
+          "start": 392,
+          "end": 445,
+          "quote": "A failed rebuild preserves the previous active batch."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_007",
+      "query": "Which database stores durable execution facts?",
+      "answerable": true,
+      "expected_answer": "SesRAG stores execution facts in PostgreSQL and vectors in pgvector.",
+      "ranges": [
+        {
+          "source_sha256": "d345f08aaa4320c1a86c5bad7b7638be1ce5fd3f7cb98f7e9d94ef23802a64aa",
+          "start": 9,
+          "end": 77,
+          "quote": "SesRAG stores execution facts in PostgreSQL and vectors in pgvector."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_008",
+      "query": "What configuration does each new Run freeze?",
+      "answerable": true,
+      "expected_answer": "Each new Run freezes its retrieval view and model configuration.",
+      "ranges": [
+        {
+          "source_sha256": "56b604bc06386fe4436dd2912af3cb83f61facdd10c764e6e475eaf652edb75c",
+          "start": 461,
+          "end": 525,
+          "quote": "Each new Run freezes its retrieval view and model configuration."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_009",
+      "query": "自动重试是否创建新的Run和用户消息？",
+      "answerable": true,
+      "expected_answer": "An automatic retry keeps the same Run and user Message.",
+      "ranges": [
+        {
+          "source_sha256": "b2d234edf5802a18e8a6e4b04f376d443506e50940c75ace018f8e52f241a8bc",
+          "start": 558,
+          "end": 613,
+          "quote": "An automatic retry keeps the same Run and user Message."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_010",
+      "query": "Which three identities are required for every task write?",
+      "answerable": true,
+      "expected_answer": "Every task write requires task id, worker id and generation.",
+      "ranges": [
+        {
+          "source_sha256": "afd642e67aed6ec5b8c0b66da7077f1fd6b366dc05decd06a93cf7a900ee56f3",
+          "start": 602,
+          "end": 662,
+          "quote": "Every task write requires task id, worker id and generation."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_011",
+      "query": "引用可以指向哪些证据？",
+      "answerable": true,
+      "expected_answer": "Citations refer only to evidence selected into the actual context.",
+      "ranges": [
+        {
+          "source_sha256": "c86fbf019758c5798cfd8f29e7127b003483ba1bef6f61b4d834d36bcee82247",
+          "start": 643,
+          "end": 709,
+          "quote": "Citations refer only to evidence selected into the actual context."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_012",
+      "query": "Are dense similarity and reranker relevance scores combined?",
+      "answerable": true,
+      "expected_answer": "Dense similarity and reranker relevance scores are recorded separately.",
+      "ranges": [
+        {
+          "source_sha256": "c5d9f7829628f60d34e370cd1fe3ed22135e37b9425991ea60aed7b95d5e2feb",
+          "start": 733,
+          "end": 804,
+          "quote": "Dense similarity and reranker relevance scores are recorded separately."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_013",
+      "query": "邻近扩展允许跨文档或索引批次吗？",
+      "answerable": true,
+      "expected_answer": "Neighbor expansion stays inside the same document and index batch.",
+      "ranges": [
+        {
+          "source_sha256": "2047f4c897d11f6d11a097a216c3c543ad7833c6e299e408da70c5b38572d25a",
+          "start": 814,
+          "end": 880,
+          "quote": "Neighbor expansion stays inside the same document and index batch."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_014",
+      "query": "Is an unknown remote submission automatically resubmitted?",
+      "answerable": true,
+      "expected_answer": "An unknown remote submission is not automatically submitted again.",
+      "ranges": [
+        {
+          "source_sha256": "56b604bc06386fe4436dd2912af3cb83f61facdd10c764e6e475eaf652edb75c",
+          "start": 901,
+          "end": 967,
+          "quote": "An unknown remote submission is not automatically submitted again."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_015",
+      "query": "本地取消保证远端取消或退款吗？",
+      "answerable": true,
+      "expected_answer": "Local cancellation cannot guarantee remote cancellation or refund.",
+      "ranges": [
+        {
+          "source_sha256": "b2d234edf5802a18e8a6e4b04f376d443506e50940c75ace018f8e52f241a8bc",
+          "start": 1019,
+          "end": 1085,
+          "quote": "Local cancellation cannot guarantee remote cancellation or refund."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_016",
+      "query": "What is the maximum source-file size?",
+      "answerable": true,
+      "expected_answer": "A source file must not exceed ten mebibytes.",
+      "ranges": [
+        {
+          "source_sha256": "afd642e67aed6ec5b8c0b66da7077f1fd6b366dc05decd06a93cf7a900ee56f3",
+          "start": 1050,
+          "end": 1094,
+          "quote": "A source file must not exceed ten mebibytes."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_017",
+      "query": "一次检索可选择多少个归属自己的知识库？",
+      "answerable": true,
+      "expected_answer": "One retrieval selects exactly one owned knowledge base.",
+      "ranges": [
+        {
+          "source_sha256": "c86fbf019758c5798cfd8f29e7127b003483ba1bef6f61b4d834d36bcee82247",
+          "start": 1073,
+          "end": 1128,
+          "quote": "One retrieval selects exactly one owned knowledge base."
+        }
+      ],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_018",
+      "query": "Where must API credentials never appear?",
+      "answerable": true,
+      "expected_answer": "API credentials must never appear in public events or messages.",
+      "ranges": [
+        {
+          "source_sha256": "56b604bc06386fe4436dd2912af3cb83f61facdd10c764e6e475eaf652edb75c",
+          "start": 1166,
+          "end": 1229,
+          "quote": "API credentials must never appear in public events or messages."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_019",
+      "query": "Which Word version created the simple public document?",
+      "answerable": true,
+      "expected_answer": "This is a simple file created with Word 97-SR2.",
+      "ranges": [
+        {
+          "source_sha256": "4876e828e62d490fa188c7c4e47013e2e0dfdf02f5903dfd374bc0d2b2049ca1",
+          "start": 0,
+          "end": 47,
+          "quote": "This is a simple file created with Word 97-SR2."
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_020",
+      "query": "What is the title text on page 2 of the public presentation?",
+      "answerable": true,
+      "expected_answer": "This is the title on page 2",
+      "ranges": [
+        {
+          "source_sha256": "e8fd4c38ad72ce3735acbca0b60dd5870fb60f819c169e3947d166f4f1bcc79d",
+          "start": 370,
+          "end": 397,
+          "quote": "This is the title on page 2"
+        }
+      ],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": false,
+      "absence_basis": null
+    },
+    {
+      "id": "GOLD_021",
+      "query": "PostgreSQL生产数据库管理员的姓名是什么？",
+      "answerable": false,
+      "expected_answer": null,
+      "ranges": [],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": "固定源只说明数据库职责，没有管理员姓名。"
+    },
+    {
+      "id": "GOLD_022",
+      "query": "What Redis cache TTL in seconds is configured in production?",
+      "answerable": false,
+      "expected_answer": null,
+      "ranges": [],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": "源说明Redis仅通知和短期缓存，但没有生产TTL数值。"
+    },
+    {
+      "id": "GOLD_023",
+      "query": "MinerU云任务每次费用是多少元？",
+      "answerable": false,
+      "expected_answer": null,
+      "ranges": [],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": "源只说明逐次同意、未知提交及取消边界，没有定价。"
+    },
+    {
+      "id": "GOLD_024",
+      "query": "What exact reranker model revision is deployed?",
+      "answerable": false,
+      "expected_answer": null,
+      "ranges": [],
+      "language": "en",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": "源区分相似度和重排分数，不提供部署模型修订。"
+    },
+    {
+      "id": "GOLD_025",
+      "query": "SesRAG在2027年的运行可用率SLA是多少？",
+      "answerable": false,
+      "expected_answer": null,
+      "ranges": [],
+      "language": "zh",
+      "cross_chunk": false,
+      "semantic_distractor": true,
+      "absence_basis": "固定源描述执行不变量，没有2027年SLA承诺。"
+    }
+  ]
+}

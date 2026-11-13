@@ -7,8 +7,9 @@ from backend.application.errors import PermanentTaskError
 
 
 class TableText(HTMLParser):
-    def __init__(self):
+    def __init__(self, protected=()):
         super().__init__(convert_charrefs=True)
+        self.protected = protected
         self.rows, self.row, self.cell = [], None, None
         self.header = False
         self.ignored = 0
@@ -36,7 +37,10 @@ class TableText(HTMLParser):
             self.ignored = max(0, self.ignored - 1)
         elif not self.ignored:
             if tag in {"td", "th"} and self.cell is not None and self.row is not None:
-                self.row.append(" ".join("".join(self.cell).split()).replace("|", "\\|"))
+                value = "".join(self.cell)
+                for marker, original in self.protected:
+                    value = value.replace(marker, original)
+                self.row.append(" ".join(value.split()).replace("|", "\\|"))
                 self.cell = None
             elif tag == "tr" and self.row is not None:
                 self.rows.append(self.row)
@@ -61,9 +65,9 @@ class TableText(HTMLParser):
         return "\n\n" + "\n".join(lines) + "\n\n"
 
 
-def normalize_html_tables(text):
+def normalize_html_tables(text, protected=()):
     def convert(match):
-        parser = TableText()
+        parser = TableText(protected)
         parser.feed(match.group())
         parser.close()
         return parser.markdown()

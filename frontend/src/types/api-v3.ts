@@ -16,7 +16,7 @@ export type Chunk = { "chunk_id": string; "document_id": string; "index_batch_id
 
 export type ChunkList = { "items": Array<Chunk>; "next_cursor"?: (string) | (null) }
 
-export type ChunkPolicy = { "mode"?: "structure_v1" | "character_v1"; "size"?: number; "overlap"?: number }
+export type ChunkPolicy = { "mode"?: "structure_v1" | "character_v1"; "size"?: number; "overlap"?: number; "max_chunks"?: number }
 
 export type CitationV2 = { "schema_version"?: 2; "bundle_id": string; "document_id": string; "index_batch_id": string; "context_evidence_ids": Array<string>; "locations": Array<Location>; "dense_score": number; "rerank_score"?: (number) | (null) }
 

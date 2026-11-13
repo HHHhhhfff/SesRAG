@@ -411,9 +411,18 @@ class ChunkModel(Base):
     __tablename__ = "chunks"
     __table_args__ = (
         ForeignKeyConstraint(
+            ["index_batch_id", "legacy_unverified"],
+            ["index_builds.index_batch_id", "index_builds.legacy_unverified"],
+            name="fk_chunks_build_provenance",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        ForeignKeyConstraint(
             ["index_batch_id", "document_id", "space_id"],
             ["index_builds.index_batch_id", "index_builds.document_id", "index_builds.space_id"],
             name="fk_chunks_build_document_space",
+            deferrable=True,
+            initially="DEFERRED",
         ),
         UniqueConstraint("document_id", "index_batch_id", "seq", name="uq_chunks_batch_seq"),
         ForeignKeyConstraint(

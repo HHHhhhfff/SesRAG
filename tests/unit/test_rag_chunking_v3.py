@@ -38,3 +38,28 @@ def test_empty_or_binary_text_does_not_create_success_artifact(content):
 def test_cloud_markdown_has_only_normalized_block_locations():
     artifact = parse_text(b"# Title\n\nBody", ".md", source_locations=False)
     assert all(p["origin"] == "normalized" for block in artifact.blocks for p in block.locations)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        (field, value)
+        for field in ("size", "overlap", "max_chunks")
+        for value in (True, False, "1", 1.0)
+    ],
+)
+def test_chunk_policy_rejects_coercible_nonintegers(field, value):
+    from pydantic import ValidationError
+
+    from backend.api.schemas.v3.documents import ChunkPolicy
+
+    with pytest.raises(ValidationError):
+        ChunkPolicy.model_validate({field: value})
+
+
+def test_chunk_count_budget_fails_instead_of_truncating():
+    artifact = parse_text(b"abcdefghij", ".txt")
+    with pytest.raises(ApplicationError) as error:
+        split_artifact(artifact, size=2, overlap=0, max_chunks=4)
+    assert error.value.code == "CHUNK_COUNT_LIMIT"
+    assert len(split_artifact(artifact, size=2, overlap=0, max_chunks=5)) == 5

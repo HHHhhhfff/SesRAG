@@ -14,6 +14,7 @@ from backend.api.schemas.v3.context import ContextPlan, ContextResponse
 from backend.api.schemas.v3.documents import (
     BuildCreate,
     ChunkList,
+    ChunkPolicy,
     Document,
     DocumentList,
     DocumentPatch,
@@ -71,6 +72,7 @@ def wire_catalog():
         KnowledgeBaseList,
         Document,
         BuildCreate,
+        ChunkPolicy,
         DocumentPatch,
         DocumentList,
         IndexBuild,

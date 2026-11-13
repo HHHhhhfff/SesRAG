@@ -6,7 +6,7 @@ x-env: &env
   DATABASE_URL: postgresql+psycopg://rag_test:${TEST_PASSWORD:?private password required}@postgres:5432/rag_test
   REDIS_URL: redis://redis:6379/0
   REDIS_ENABLED: "true"
-  OWNER_ID: rag-test-owner-a
+  OWNER_ID: ${TEST_OWNER_ID:?baseline owner required}
   UPLOAD_DIR: /data/uploads
   RAG_ARTIFACT_DIR: /data/artifacts
   RAG_TMP_DIR: /data/scratch
@@ -138,6 +138,9 @@ services:
       - ${SUITE_DIR}/schemas:/suite/schemas:ro
       - ${SUITE_DIR}/specific_test_script:/suite/specific_test_script:ro
       - ${SUITE_DIR}/manifest.json:/suite/manifest.json:ro
+      - ${SUITE_DIR}/compose/docker-compose.rag-test.yml:/suite/compose/docker-compose.rag-test.yml:ro
+      - ${SUITE_DIR}/compose/docker-compose.rag-real.yml:/suite/compose/docker-compose.rag-real.yml:ro
+      - ${SUITE_DIR}/../../docs/接口文档.md:/app/docs/接口文档.md:ro
       - ${RUN_DIR}/config:/config:ro
       - ${RUN_DIR}/tools-private.json:/run/secrets/tools-private.json:ro
       - ${INPUT_DIR}:/inputs:ro

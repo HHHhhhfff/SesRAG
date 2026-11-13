@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint'
 
 // QLT_003工具前置：前端自行持有Lint配置，不依赖任何PRD验收目录。
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', '.cache/**', 'coverage/**'] },
+  { ignores: ['dist/**', 'node_modules/**', '.cache/**', 'coverage/**', 'src/events/generated/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...vue.configs['flat/essential'],

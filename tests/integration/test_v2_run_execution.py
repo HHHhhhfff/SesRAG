@@ -541,6 +541,12 @@ async def test_plan_publication_after_last_flush_lease_expiry_rolls_back(workspa
 async def test_summary_extraction_failure_publishes_trim_only_and_safe_log(
     workspace, monkeypatch, caplog
 ):
+    import logging
+
+    # Alembic 可能禁用同进程 logger；仅恢复本例采集，结束后自动还原。
+    monkeypatch.setattr(
+        logging.getLogger("backend.application.session_execution"), "disabled", False
+    )
     settings, factory, tid, bid = workspace
     await submit(workspace, "! " * 2500)
 

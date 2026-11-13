@@ -154,15 +154,19 @@ async def post_document(
     knowledge_base_id: str = Form(...),
     tags: str = Form("[]"),
     parse: str = Form("{}"),
+    chunker: str = Form("{}"),
     idempotency_key: str | None = Header(None),
     session=Depends(get_session),
     settings=Depends(get_settings),
 ):
-    if len(tags) > 4096 or len(parse) > 4096:
+    if len(tags) > 4096 or len(parse) > 4096 or len(chunker) > 4096:
         raise ApplicationError("INVALID_RAG_PARAMETER", "上传参数过大", 422)
     try:
         tag_values = json.loads(tags)
         parsed = ParseRequest.model_validate_json(parse)
+        chunk_policy = ChunkPolicy.model_validate_json(chunker)
+        if chunk_policy.overlap >= chunk_policy.size:
+            raise ValueError("overlap必须小于size")
     except (ValueError, ValidationError):
         raise ApplicationError("INVALID_RAG_PARAMETER", "上传参数无效", 422) from None
     document, duplicate = await upload_document(
@@ -174,7 +178,7 @@ async def post_document(
         await file.read(10 * 1024**2 + 1),
         tag_values,
         parsed,
-        ChunkPolicy(),
+        chunk_policy,
         idempotency_key,
     )
     if duplicate:

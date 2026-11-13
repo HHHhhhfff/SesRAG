@@ -12,6 +12,7 @@
     "resources": {"type": "object", "additionalProperties": {"type": ["string", "array"]}},
     "report_dir": {"type": "string"},
     "budget": {"type": "object"},
+    "real_capabilities": {"type": "array", "uniqueItems": true, "items": {"enum": ["mineru", "embedding", "rerank", "generation"]}},
     "allowed_operations": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
   }
 }

@@ -10,7 +10,7 @@ from zipfile import BadZipFile, ZipFile
 from markdown_it import MarkdownIt
 
 from backend.application.errors import PermanentTaskError
-from backend.infrastructure.rag.html_tables import normalize_html_tables
+from backend.infrastructure.rag.cloud_html import normalize_cloud_html
 from backend.infrastructure.rag.local_structure import parse_text
 
 
@@ -50,7 +50,7 @@ def normalize_package(raw: bytes, extension: str):
             if not content.strip():
                 raise PermanentTaskError("MINERU_EMPTY_OUTPUT", "云端未返回有效文本")
             try:
-                content = normalize_html_tables(content.decode("utf-8-sig")).encode()
+                content = normalize_cloud_html(content.decode("utf-8-sig")).encode()
             except UnicodeError:
                 raise PermanentTaskError("MINERU_OUTPUT_UNSUPPORTED", "云端文本不是UTF-8") from None
             tokens = MarkdownIt("commonmark", {"html": True}).parse(content.decode())

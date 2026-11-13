@@ -13,6 +13,8 @@ if (-not (Test-Path -LiteralPath $taskPython)) {
     & $taskBootstrap -m venv $taskEnvironment
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
-& $taskPython -m pip install -r (Join-Path $PSScriptRoot 'requirements-test.lock')
+& $taskPython -m pip install --retries 2 --timeout 30 -r (Join-Path $PSScriptRoot 'requirements-test.lock')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $taskPython -m pip check
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host '专属.cache虚拟环境已准备，未修改项目依赖。Environment将构建tools并验证Chromium/离线词表；尚未执行产品测试。'
