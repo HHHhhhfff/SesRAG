@@ -5,6 +5,8 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
+from backend.application.observation import receipt
+from backend.application.stage_observation import observed_stage
 from backend.db.models import BranchModel, MessageModel, ThreadModel
 from backend.infrastructure.events.journal import append_event
 from backend.infrastructure.queue import postgres_queue as queue
@@ -82,6 +84,7 @@ async def append_execution_event(session, task_id, worker_id, generation, event_
     return event
 
 
+@observed_stage("publish")
 async def complete_run(session, task_id, worker_id, generation, answer, citations):
     task, run = await lock_execution(session, task_id, worker_id, generation)
     if run is None:
@@ -171,4 +174,5 @@ async def complete_run(session, task_id, worker_id, generation, answer, citation
     # 所有最终事实已 flush 后再定发布边界；失效由 session 整组回滚。
     # commit 的网络往返仍有耗时，不将此检查声称为物理时间零延迟提交。
     check_locked_times(lease_expires_at, deadline_at)
+    receipt(session, task, "succeeded")
     await session.commit()

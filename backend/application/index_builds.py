@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from backend.application.errors import ApplicationError
 from backend.application.knowledge_bases import load_base
+from backend.application.observation import enqueue
 from backend.application.rag_capacity import reserve_storage
 from backend.application.rag_operations import record, replay
 from backend.application.rag_profiles import profile_reason, resolve_profile, select_parser
@@ -174,6 +175,7 @@ async def start_build(session, settings, base, document, parse, chunker):
         deadline_at=utc_now() + timedelta(seconds=1800),
     )
     session.add(task)
+    enqueue(session, task)
     await session.flush()
     build.task_id = task.task_id
     document.latest_index_batch_id = build.index_batch_id

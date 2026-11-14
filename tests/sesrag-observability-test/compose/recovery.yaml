@@ -1,0 +1,4 @@
+# 只在Recovery主入口临时替换Worker启动夹具，不改变产品代码。
+services:
+  worker:
+    command: ["python", "/tests/obs/fixtures/recovery_worker.py"]

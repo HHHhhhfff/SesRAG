@@ -8,6 +8,7 @@ from uuid import uuid4
 from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,8 @@ from backend.db.session import create_engine
 async def upgrade(settings):
     engine = create_engine(settings)
     config = Config("alembic.ini")
+    scripts = ScriptDirectory.from_config(config)
+    head = scripts.get_current_head()
 
     def migrate(connection, revision):
         config.attributes["connection"] = connection
@@ -30,10 +33,14 @@ async def upgrade(settings):
             current = await conn.run_sync(
                 lambda c: MigrationContext.configure(c).get_current_revision()
             )
-            if current == "0011_rag_source_integrity":
+            if current == head:
                 print("RAG数据库已在目标版本，未覆盖现有配置。")
                 return
-            if current == "0010_rag_task_and_run_protocol":
+            if current is not None and current not in {
+                r.revision for r in scripts.walk_revisions()
+            }:
+                raise RuntimeError("DATABASE_REVISION_UNSUPPORTED: 数据库版本不在已知迁移链中")
+            if current in {"0010_rag_task_and_run_protocol", "0011_rag_source_integrity"}:
                 await conn.run_sync(lambda c: migrate(c, "head"))
                 return
             if current not in {

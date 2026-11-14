@@ -4,6 +4,7 @@ from sqlalchemy import and_, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.errors import PermanentTaskError
+from backend.application.observation import receipt
 from backend.config import Settings
 from backend.db.models import DocumentModel, RunModel, TaskModel
 from backend.infrastructure.events.journal import append_event
@@ -171,6 +172,13 @@ async def settle_failure(
     if document is not None:
         document.status = "indexing" if retry else "failed"
         document.last_error_code = error_code
+    receipt(
+        session,
+        task,
+        "failed",
+        retry_scheduled=task.state == "retry_waiting",
+        error_code=error_code,
+    )
     return True
 
 
@@ -179,6 +187,7 @@ async def settle_cancelled(session, task, run):
     from backend.application.rag_run_execution import settle_open_tools
 
     await settle_open_tools(session, task, run, "TASK_CANCELLED", cancelled=True)
+    receipt(session, task, "cancelled")
     run.status = task.state = "cancelled"
     task.lease_expires_at = None
     await append_event(session, run.run_id, "run.cancelled", {"reason": "user_requested"})
@@ -349,6 +358,7 @@ async def mark_succeeded(
         await session.rollback()
         return False
     lease_expires_at, deadline_at = task.lease_expires_at, task.deadline_at
+    receipt(session, task, "succeeded")
     task.state = "succeeded"
     task.lease_expires_at = None
     return await commit_authorized(session, lease_expires_at, deadline_at)

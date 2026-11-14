@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 import httpx
 
 from backend.application.errors import PermanentTaskError, TransientTaskError
+from backend.application.observation import observed_call
 from backend.application.vector_validation import validate_vector
 from backend.domain.ports import ModelRequest
 
@@ -75,6 +76,7 @@ class OpenAICompatibleProvider:
         except httpx.TransportError:
             raise TransientTaskError("PROVIDER_TRANSPORT_ERROR", "模型服务连接失败") from None
 
+    @observed_call("embedding", "remote")
     async def embed(self, text: str) -> list[float]:
         body = b"".join(
             [
@@ -90,6 +92,7 @@ class OpenAICompatibleProvider:
             raise PermanentTaskError("PROVIDER_INVALID_RESPONSE", "模型响应格式无效") from None
         return validate_vector(vector)
 
+    @observed_call("model.generate", "remote")
     async def stream_answer(
         self, question: str, evidence: list[dict[str, str]]
     ) -> AsyncGenerator[str, None]:
@@ -143,6 +146,7 @@ class OpenAICompatibleProvider:
         if not content:
             raise PermanentTaskError("PROVIDER_EMPTY_CONTENT", "模型没有返回有效内容")
 
+    @observed_call("model.generate", "remote")
     async def stream_request(self, request: ModelRequest) -> AsyncGenerator[str, None]:
         """只发送 ContextPlan 已选内容及冻结的模型输出参数。"""
         if request.max_output_tokens <= 0:

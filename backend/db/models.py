@@ -320,6 +320,7 @@ class TaskModel(Base):
     )
 
     task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    trace_origin_json: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     kind: Mapped[str] = mapped_column(String(30), index=True)
     run_id: Mapped[str | None] = mapped_column(ForeignKey("runs.run_id"), nullable=True, index=True)
     document_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)

@@ -1,6 +1,7 @@
 """MinerU精准API原件上传；未知提交绝不自动重复申请batch。"""
 
 from backend.application.errors import PermanentTaskError, TransientTaskError
+from backend.application.observation import observed_call
 from backend.infrastructure.rag.download_safety import SafeHTTP, decode_json
 
 API = "https://mineru.net/api/v4"
@@ -26,6 +27,7 @@ class MinerUClient:
             raise PermanentTaskError("MINERU_PARSE_FAILED", "MinerU拒绝或无法处理请求")
         return body["data"]
 
+    @observed_call("mineru.submit", "remote")
     async def submit(self, job):
         c = job["config"]
         try:
@@ -80,6 +82,7 @@ class MinerUClient:
                 "MINERU_SUBMISSION_UNKNOWN", "申请身份不完整，不能自动重新提交"
             ) from None
 
+    @observed_call("mineru.upload", "remote")
     async def upload(self, content, handle):
         status, _ = await self.storage.request(
             "PUT", handle["upload_url"], content=content, timeout=120
@@ -87,6 +90,7 @@ class MinerUClient:
         if status not in {200, 201, 204}:
             raise TransientTaskError("MINERU_UPLOAD_UNCONFIRMED", "上传未确认，请先查询原batch")
 
+    @observed_call("mineru.poll", "remote")
     async def poll(self, handle):
         status, raw = await self.api.request(
             "GET",
@@ -123,6 +127,7 @@ class MinerUClient:
         except (KeyError, TypeError, ValueError):
             raise PermanentTaskError("MINERU_OUTPUT_UNSUPPORTED", "解析状态协议不支持") from None
 
+    @observed_call("mineru.download", "remote")
     async def download(self, handle):
         status, raw = await self.storage.request(
             "GET", handle["download_url"], max_bytes=100 * 1024**2, timeout=120

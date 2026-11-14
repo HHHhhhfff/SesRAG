@@ -135,6 +135,7 @@ async def stream_events(
                 payload = json.dumps(event, ensure_ascii=False, default=str)
                 yield f"id: {cursor}\nevent: {event['type']}\ndata: {payload}\n\n"
             if not page["has_more"] and detail["status"] in {"succeeded", "failed", "cancelled"}:
+                request.scope["sesrag_sse_close"] = "completed"
                 return
             if not page["has_more"]:
                 await asyncio.sleep(settings.sse_poll_interval)

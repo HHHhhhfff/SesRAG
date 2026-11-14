@@ -3,6 +3,7 @@
 from urllib.parse import urlsplit
 
 from backend.application.errors import PermanentTaskError, TransientTaskError
+from backend.application.observation import observed_call
 from backend.application.vector_validation import normalize_l2_float32, validate_vector
 from backend.infrastructure.rag.download_safety import SafeHTTP, decode_json
 
@@ -12,6 +13,7 @@ class BailianEmbedding:
         self.config, self.secret = config, secret
         self.http = SafeHTTP([urlsplit(config.base_url).hostname], transport=transport)
 
+    @observed_call("embedding", "remote")
     async def embed(self, texts, *, purpose="document"):
         config = self.config
         if not 1 <= len(texts) <= config.batch_size or any(

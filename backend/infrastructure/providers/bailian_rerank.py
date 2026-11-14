@@ -4,6 +4,7 @@ import math
 from urllib.parse import urlsplit
 
 from backend.application.errors import PermanentTaskError, TransientTaskError
+from backend.application.observation import observed_call
 from backend.infrastructure.rag.download_safety import SafeHTTP, decode_json
 
 
@@ -16,6 +17,7 @@ class BailianRerank:
         self.config, self.secret = config, secret
         self.http = SafeHTTP([urlsplit(config.endpoint).hostname], transport=transport)
 
+    @observed_call("rerank.rank", "remote")
     async def rank(self, query, texts):
         c = self.config
         if not texts:

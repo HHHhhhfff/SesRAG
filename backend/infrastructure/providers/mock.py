@@ -2,6 +2,7 @@ import hashlib
 import math
 from collections.abc import AsyncGenerator
 
+from backend.application.observation import observed_call
 from backend.domain.ports import ModelRequest
 
 
@@ -13,6 +14,7 @@ class MockEmbeddingProvider:
             raise ValueError("dimension must be positive")
         self.dimension = dimension
 
+    @observed_call("embedding", "mock")
     def embed(self, text: str) -> list[float]:
         digest = hashlib.sha256(text.encode("utf-8")).digest()
         values = [digest[index % len(digest)] / 255.0 for index in range(self.dimension)]
@@ -23,6 +25,7 @@ class MockEmbeddingProvider:
 class MockModelProvider:
     """返回可重复的证据型回答增量。"""
 
+    @observed_call("model.generate", "mock")
     async def stream_answer(
         self, question: str, evidence: list[dict[str, str]]
     ) -> AsyncGenerator[str, None]:
@@ -34,6 +37,7 @@ class MockModelProvider:
         for part in answer.split(" "):
             yield f"{part} "
 
+    @observed_call("model.generate", "mock")
     async def stream_request(self, request: ModelRequest) -> AsyncGenerator[str, None]:
         """消费 schema 2 的已规划消息，不拼接隐藏提示或证据。"""
         question = next(

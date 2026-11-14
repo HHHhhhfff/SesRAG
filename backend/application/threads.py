@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.errors import ApplicationError
+from backend.application.observation import enqueue
 from backend.config import Settings
 from backend.db.models import BranchModel, MessageModel, RunModel, TaskModel, ThreadModel
 from backend.domain.enums import MessageRole, MessageStatus, RunState, TaskKind, TaskState
@@ -157,6 +158,7 @@ async def create_message_run(
         ),
     )
     session.add(task)
+    enqueue(session, task)
     await session.flush()
     run.primary_task_id = task.task_id
     message.run_id = run.run_id

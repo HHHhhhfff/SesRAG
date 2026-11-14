@@ -81,7 +81,7 @@ async def test_empty_database_runs_actual_four_migrations_and_repeated_upgrade(t
     async with engine.connect() as connection:
         assert (
             await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            == "0011_rag_source_integrity"
+            == "0012_task_trace_origin"
         )
         assert await connection.scalar(text("SELECT count(*) FROM knowledge_bases")) == 1
         assert await connection.scalar(text("SELECT count(*) FROM parse_jobs")) == 0

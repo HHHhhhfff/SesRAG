@@ -3,6 +3,7 @@
 import os
 
 from backend.application.errors import PermanentTaskError
+from backend.application.observation import observed_call
 from backend.application.vector_validation import normalize_l2_float32, validate_vector
 from backend.domain.rag_profiles import EmbeddingConfig, RerankConfig
 from backend.infrastructure.providers.mock import MockEmbeddingProvider
@@ -22,6 +23,7 @@ class MockEmbeddingV2:
         self.dimension = dimension
         self.normalization = normalization
 
+    @observed_call("embedding", "mock")
     async def embed(self, texts, *, purpose="document"):
         provider = MockEmbeddingProvider(self.dimension)
         convert = normalize_l2_float32 if self.normalization == "l2_float32_v1" else validate_vector
@@ -29,6 +31,7 @@ class MockEmbeddingV2:
 
 
 class MockRerank:
+    @observed_call("rerank.rank", "mock")
     async def rank(self, query, texts):
         # 明确仅供工程验证的词集合交集，不能当真实语义重排验收。
         terms = set(query.casefold().split())

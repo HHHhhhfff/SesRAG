@@ -32,7 +32,7 @@ ADR-002/PRD-002：v0.2持久化会话与工作台主体已实施；2026-10-23独
 
 | 术语 | 统一含义 | 来源 | 当前状态 |
 | --- | --- | --- | --- |
-| `Task` | 持久化可执行工作项；Demo 支持 `run` 和 `index_document` 两类。 | `backend/db/models.py` 的 `TaskModel`；`backend/domain/enums.py:TaskKind` | 已实现 |
+| `Task` | 持久化可执行工作项；当前支持 `run`、`index_document`、`index_build` 和 `retrieval_diagnostic` 四类。 | `backend/db/models.py` 的 `TaskModel`；`backend/domain/enums.py:TaskKind` | 已实现；新增两类来源于PRD-003 |
 | `Worker` | 领取 Task、维护 lease、执行 handler 并写回事实的进程。 | `backend/workers/runtime.py`、`backend/workers/main.py` | 已实现 |
 | `Worker lease` | Task 在某个 Worker 和 generation 下的有限执行租约；到期后可被其他 Worker 回收。 | `backend/infrastructure/queue/postgres_queue.py` | 已实现 |
 | Worker readiness | 最近一次可见的 Worker 进程存活心跳投影，不等同于某一 Task 的 lease，也不能证明任务已成功。Redis 不可用或无可见心跳时为 `unknown`，不推断为停止；心跳独立探测并在连接恢复后重建投影。 | `WorkerRuntime._readiness_loop/heartbeat`；`RedisNotifier.ready_worker_count/probe`；`backend/api/routes/health.py:ready` | 当前代码已实现；ADR-001历史两轮纳入目标已复验；旧结果在上一版本/测试分支，不外推本轮验收 |
@@ -96,6 +96,17 @@ ADR-002/PRD-002：v0.2持久化会话与工作台主体已实施；2026-10-23独
 | `ContextEvidence` | 某个ContextPlan实际使用的Bundle组件区间及hash，最终Citation v2只引用其已选择范围；关系外键同时承担历史保留保护。 | ADR-003 §4/§7.3 | 已实现工程基线；独立验收见PR-003 |
 | `RagOperation` | owner和操作范围内的入库／重建／诊断幂等记录，与会话SessionOperation分开；不代表外部服务提供请求去重。 | ADR-003 §4/§6.1 | 已实现工程基线；独立验收见PR-003 |
 | Task `waiting_external` / `failure_count` | 新index_build任务保存检查点后的可恢复让出状态及累计错误计数；正常等待不增加failure_count，attempt仍表示物理执行次数。旧run/index_document原attempt上限不变。 | ADR-003 §6.3 | 已实现工程基线；独立验收见PR-003 |
+
+## PRD-004 的应用观测约定
+
+以下为[PRD-004](docs/prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)已落地的应用约定；实现及独立开发验证见[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)。005监控部署仍未实施，不把应用验证当作Grafana展示或告警通过。
+
+| 术语 | 统一含义 | 来源 | 当前状态 |
+| --- | --- | --- | --- |
+| 应用观测契约 | SesRAG向采集方交付的版本化指标语义、日志关联字段、追踪传播与运行配置约定；部署实例描述引用它，不取代正式接口真源。 | PRD-004；ADR-005接入要求 | 已实施；正式接口§9与contracts/observability为真源 |
+| Task追踪来源 | 新Task创建时绑定的受限、可信追踪来源，供后续物理尝试在等待、重试和重启后建立关联；不是RunSnapshot、业务Event或任意请求头容器。 | PRD-004；[ADR-004](docs/adr/004-sesrag-observability-implementation-plan.md) | 已实施；0012来源不可变，同trace兄弟attempt；旧任务可明确缺失 |
+| Task尝试观测结果 | 一次有效领取对应的执行片段的观测分类，区分成功、失败、正常让出、取消、失租、停机释放及无法确认；不等同于整个Run或IndexBuild的终态。 | PRD-004 | 已实施；原事务commit回执确认，不作为精确审计账本 |
+| RAG Trace与应用追踪 | RAG Trace仍是RetrievalExecution的安全业务投影；PRD-004的应用追踪是可采样、可丢失的OTel遥测，两者可关联但不共用身份或事实权威。 | PRD-003、PRD-004 | 均已有工程实现；各轮证据分别保留 |
 
 ## 术语变更规则
 

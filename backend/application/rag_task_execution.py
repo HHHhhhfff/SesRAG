@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from sqlalchemy import select
 
+from backend.application.observation import receipt
 from backend.application.task_execution import ExecutionStopped, check_locked_times
 from backend.db.models import DocumentModel, utc_now
 from backend.db.rag_models import (
@@ -58,6 +59,7 @@ async def lock_build_execution(session, task_id, worker, generation):
 
 async def yield_task(session, task, *, delay=0):
     lease, deadline = task.lease_expires_at, task.deadline_at
+    receipt(session, task, "yielded")
     task.state = "waiting_external"
     task.available_at = utc_now() + timedelta(seconds=delay)
     task.worker_id = None
@@ -68,6 +70,13 @@ async def yield_task(session, task, *, delay=0):
 
 
 async def settle_rag_task(session, task, code, *, retry=False, cancelled=False):
+    receipt(
+        session,
+        task,
+        "cancelled" if cancelled else "failed",
+        retry_scheduled=retry,
+        error_code=code,
+    )
     task.state = "retry_waiting" if retry else "cancelled" if cancelled else "failed"
     task.last_error_code = code
     task.last_error_message = "任务取消" if cancelled else "RAG任务失败，请按错误码检查"

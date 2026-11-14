@@ -4,6 +4,8 @@ from collections.abc import AsyncGenerator, Awaitable, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
+from backend.domain.observability import TraceOrigin
+
 
 @dataclass(frozen=True, slots=True)
 class SourceLocation:
@@ -55,6 +57,8 @@ class TaskLease:
     attempt: int
     index_batch_id: str | None = None
     retrieval_execution_id: str | None = None
+    trace_origin: TraceOrigin | None = None
+    trace_origin_state: str = "missing"
 
 
 class QueuePort(Protocol):

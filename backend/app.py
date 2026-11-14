@@ -19,6 +19,9 @@ from backend.config import Settings
 from backend.db.base import Base
 from backend.db.session import create_engine, create_session_factory
 from backend.infrastructure.events.redis_notifier import RedisNotifier
+from backend.infrastructure.observability.config import from_settings
+from backend.infrastructure.observability.http import ObservabilityMiddleware
+from backend.infrastructure.observability.runtime import ObservabilityRuntime
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -41,9 +44,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await bootstrap_default(session, app_settings)
                 await session.commit()
         await notifier.connect()
+        observation = ObservabilityRuntime(from_settings("api", app_settings))
+        app.state.observability = observation
+        await observation.start(app_settings)
         try:
             yield
         finally:
+            await observation.close()
             await notifier.close()
             await engine.dispose()
 
@@ -53,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.session_factory = session_factory
     app.state.notifier = notifier
+    app.add_middleware(ObservabilityMiddleware)
 
     @app.exception_handler(RequestValidationError)
     async def request_validation_handler(_request: Request, exc: RequestValidationError):

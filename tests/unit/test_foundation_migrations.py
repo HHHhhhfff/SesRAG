@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from alembic import command
@@ -25,6 +26,9 @@ def migration_engine():
 def migrate(connection, action, revision):
     config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
     config.attributes["connection"] = connection
+    if action == "downgrade":
+        # 测试显式授权丢弃遥测来源；线上仍需传入同名-x参数。
+        config.cmd_opts = SimpleNamespace(x=["allow_observability_loss=true"])
     getattr(command, action)(config, revision)
 
 

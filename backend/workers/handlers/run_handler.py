@@ -3,6 +3,7 @@ from dataclasses import asdict
 from functools import partial
 
 from backend.application.errors import PermanentTaskError
+from backend.application.stage_observation import observe_stage
 from backend.application.task_execution import (
     append_execution_event,
     check_execution,
@@ -94,59 +95,64 @@ async def process_run_task(
         model_provider = model_provider or default_model
 
     guarded = partial(guarded_call, session_factory, task_id, worker_id, generation)
-    query_embedding = validate_vector(await guarded(partial(embedding_provider.embed, question)))
+    async with observe_stage("query_embedding"):
+        query_embedding = validate_vector(
+            await guarded(partial(embedding_provider.embed, question))
+        )
     await check_execution(session_factory, task_id, worker_id, generation)
-    async with session_factory() as session:
-        evidence = await vector_store_factory(session).search(
-            snapshot["owner_id"], query_embedding, snapshot["retrieval"]["top_k"]
-        )
-        await append_execution_event(
-            session,
-            task_id,
-            worker_id,
-            generation,
-            "retrieval.completed",
-            {
-                "count": len(evidence),
-                "items": [
-                    {
-                        "document_id": item.document_id,
-                        "chunk_id": item.chunk_id,
-                        "index_batch_id": item.index_batch_id,
-                        "locations": [asdict(p) for p in item.locations],
-                        "start_offset": item.start_offset,
-                        "end_offset": item.end_offset,
-                        "score": item.score,
-                    }
-                    for item in evidence
-                ],
-            },
-        )
-        await session.commit()
+    async with observe_stage("dense_search"):
+        async with session_factory() as session:
+            evidence = await vector_store_factory(session).search(
+                snapshot["owner_id"], query_embedding, snapshot["retrieval"]["top_k"]
+            )
+            await append_execution_event(
+                session,
+                task_id,
+                worker_id,
+                generation,
+                "retrieval.completed",
+                {
+                    "count": len(evidence),
+                    "items": [
+                        {
+                            "document_id": item.document_id,
+                            "chunk_id": item.chunk_id,
+                            "index_batch_id": item.index_batch_id,
+                            "locations": [asdict(p) for p in item.locations],
+                            "start_offset": item.start_offset,
+                            "end_offset": item.end_offset,
+                            "score": item.score,
+                        }
+                        for item in evidence
+                    ],
+                },
+            )
+            await session.commit()
 
     evidence_payload = [{"text": item.text, "chunk_id": item.chunk_id} for item in evidence]
     answer_parts: list[str] = []
     stream = model_provider.stream_answer(question, evidence_payload)
     # 总流时间和 delta 数量双重有界，不因持续小块输出无限执行。
-    try:
-        async with asyncio.timeout(120):
-            for _ in range(4096):
-                try:
-                    delta = await guarded(partial(anext, stream))
-                except StopAsyncIteration:
-                    break
-                if sum(map(len, answer_parts)) + len(delta) > 1_000_000:
+    async with observe_stage("generation"):
+        try:
+            async with asyncio.timeout(120):
+                for _ in range(4096):
+                    try:
+                        delta = await guarded(partial(anext, stream))
+                    except StopAsyncIteration:
+                        break
+                    if sum(map(len, answer_parts)) + len(delta) > 1_000_000:
+                        raise ValueError("ANSWER_LIMIT_EXCEEDED")
+                    answer_parts.append(delta)
+                    async with session_factory() as session:
+                        await append_execution_event(
+                            session, task_id, worker_id, generation, "answer.delta", {"text": delta}
+                        )
+                        await session.commit()
+                else:
                     raise ValueError("ANSWER_LIMIT_EXCEEDED")
-                answer_parts.append(delta)
-                async with session_factory() as session:
-                    await append_execution_event(
-                        session, task_id, worker_id, generation, "answer.delta", {"text": delta}
-                    )
-                    await session.commit()
-            else:
-                raise ValueError("ANSWER_LIMIT_EXCEEDED")
-    finally:
-        await stream.aclose()
+        finally:
+            await stream.aclose()
     citations = [
         {
             "document_id": item.document_id,

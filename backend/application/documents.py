@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.errors import ApplicationError
+from backend.application.observation import enqueue
 from backend.config import Settings
 from backend.db.models import DocumentModel, TaskModel
 from backend.domain.enums import DocumentState, TaskKind, TaskState
@@ -93,6 +94,7 @@ async def create_document(
             progress_json={"index_batch_id": batch_id},
         )
         session.add_all([document, task])
+        enqueue(session, task)
         await session.commit()
     except Exception:
         try:
@@ -170,5 +172,6 @@ async def create_index_task(
     )
     document.status = DocumentState.UPLOADED.value
     session.add(task)
+    enqueue(session, task)
     await session.commit()
     return task

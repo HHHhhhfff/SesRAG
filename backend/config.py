@@ -45,6 +45,16 @@ class Settings(BaseSettings):
     rag_tmp_budget_bytes: int = Field(default=1024**3, ge=384 * 1024**2)
     rag_pipeline_concurrency: int = Field(default=1, ge=1, le=4)
     rag_bootstrap_config: str | None = None
+    # 原始字符串交观测模块校验；遥测配置错误不能阻止业务启动。
+    obs_metrics_enabled: str = "true"
+    obs_metrics_host: str = "0.0.0.0"
+    obs_metrics_port: str | None = None
+    obs_environment: str = "local"
+    obs_service_name: str | None = None
+    obs_traces_enabled: str = "false"
+    obs_otlp_traces_endpoint: str = ""
+    obs_otlp_allowed_hosts: str = ""
+    obs_trace_sample_ratio: str = "1.0"
 
     @model_validator(mode="after")
     def validate_combinations(self) -> Self:

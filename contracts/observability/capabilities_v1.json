@@ -1,0 +1,446 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "application_version": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "source_ref": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "source_fingerprint": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "services": {
+      "type": "object",
+      "properties": {
+        "api": {
+          "type": "object",
+          "properties": {
+            "service_name": {
+              "const": "sesrag-api"
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9.-]{0,62}$"
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "path": {
+                    "const": "/metrics"
+                  }
+                },
+                "required": [
+                  "host",
+                  "port",
+                  "path"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "maxItems": 32
+            }
+          },
+          "required": [
+            "service_name",
+            "targets"
+          ],
+          "additionalProperties": false
+        },
+        "worker": {
+          "type": "object",
+          "properties": {
+            "service_name": {
+              "const": "sesrag-worker"
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9.-]{0,62}$"
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "path": {
+                    "const": "/metrics"
+                  }
+                },
+                "required": [
+                  "host",
+                  "port",
+                  "path"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "maxItems": 32
+            }
+          },
+          "required": [
+            "service_name",
+            "targets"
+          ],
+          "additionalProperties": false
+        },
+        "environment": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]{1,32}$"
+        },
+        "honor_labels": {
+          "const": true
+        }
+      },
+      "required": [
+        "api",
+        "worker",
+        "environment",
+        "honor_labels"
+      ],
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "logical_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^sesrag_[a-z_]+$"
+          },
+          "type": {
+            "enum": [
+              "counter",
+              "gauge",
+              "histogram"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "api",
+                "worker"
+              ]
+            },
+            "minItems": 1
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          "allowed_tuples": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 256
+              }
+            }
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "initialization": {
+            "enum": [
+              "required_always",
+              "required_after_first_success"
+            ]
+          },
+          "validity_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "postgres": {
+                    "const": "postgres"
+                  },
+                  "redis": {
+                    "const": "redis"
+                  }
+                },
+                "required": [
+                  "postgres",
+                  "redis"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aggregation": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "reset_semantics": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "logical_id",
+          "name",
+          "type",
+          "unit",
+          "roles",
+          "labels",
+          "allowed_tuples",
+          "buckets",
+          "initialization",
+          "validity_source",
+          "aggregation",
+          "reset_semantics"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "log_v1.json"
+        },
+        "trace_field_mode": {
+          "const": "json"
+        }
+      },
+      "required": [
+        "schema",
+        "trace_field_mode"
+      ],
+      "additionalProperties": false
+    },
+    "tracing": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "http/protobuf"
+        },
+        "topology": {
+          "const": "task_sibling_spans_v1"
+        },
+        "origin_schema_version": {
+          "const": 1
+        },
+        "third_party_propagation": {
+          "const": false
+        },
+        "enabled_by_default": {
+          "const": false
+        }
+      },
+      "required": [
+        "protocol",
+        "topology",
+        "origin_schema_version",
+        "third_party_propagation",
+        "enabled_by_default"
+      ],
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "series": {
+          "const": 12000
+        },
+        "snapshot_valid_seconds": {
+          "const": 30
+        },
+        "span_queue": {
+          "const": 1024
+        },
+        "span_batch": {
+          "const": 128
+        },
+        "log_queue": {
+          "const": 1024
+        },
+        "line_bytes": {
+          "const": 4096
+        },
+        "close_seconds": {
+          "const": 3
+        }
+      },
+      "required": [
+        "series",
+        "snapshot_valid_seconds",
+        "span_queue",
+        "span_batch",
+        "log_queue",
+        "line_bytes",
+        "close_seconds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "application_version",
+    "source_ref",
+    "source_fingerprint",
+    "services",
+    "metrics",
+    "logging",
+    "tracing",
+    "limits"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "metrics_catalog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "logical_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^sesrag_[a-z_]+$"
+          },
+          "type": {
+            "enum": [
+              "counter",
+              "gauge",
+              "histogram"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "api",
+                "worker"
+              ]
+            },
+            "minItems": 1
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          "allowed_tuples": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 256
+              }
+            }
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "initialization": {
+            "enum": [
+              "required_always",
+              "required_after_first_success"
+            ]
+          },
+          "validity_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "postgres": {
+                    "const": "postgres"
+                  },
+                  "redis": {
+                    "const": "redis"
+                  }
+                },
+                "required": [
+                  "postgres",
+                  "redis"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aggregation": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "reset_semantics": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "logical_id",
+          "name",
+          "type",
+          "unit",
+          "roles",
+          "labels",
+          "allowed_tuples",
+          "buckets",
+          "initialization",
+          "validity_source",
+          "aggregation",
+          "reset_semantics"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

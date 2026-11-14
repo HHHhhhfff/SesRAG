@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "run_id": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "source_ref": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "source_fingerprint": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "config_hash": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "contract_hash": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "case": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "blocked",
+              "not_run"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "evidence": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "case",
+          "status",
+          "message",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "cleanup": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "source_ref",
+    "source_fingerprint",
+    "config_hash",
+    "contract_hash",
+    "results",
+    "cleanup"
+  ],
+  "additionalProperties": false
+}

@@ -42,6 +42,15 @@ services:
       context: .
       dockerfile: docker/api/Dockerfile
     environment:
+      OBS_METRICS_ENABLED: ${OBS_METRICS_ENABLED:-true}
+      OBS_METRICS_HOST: 0.0.0.0
+      OBS_METRICS_PORT: "9101"
+      OBS_SERVICE_NAME: sesrag-api
+      OBS_ENVIRONMENT: ${OBS_ENVIRONMENT:-local}
+      OBS_TRACES_ENABLED: ${OBS_TRACES_ENABLED:-false}
+      OBS_OTLP_TRACES_ENDPOINT: ${OBS_OTLP_TRACES_ENDPOINT:-}
+      OBS_OTLP_ALLOWED_HOSTS: ${OBS_OTLP_ALLOWED_HOSTS:-}
+      OBS_TRACE_SAMPLE_RATIO: ${OBS_TRACE_SAMPLE_RATIO:-1.0}
       DATABASE_URL: ${DATABASE_URL:?运行时必须提供含安全凭据的数据库 DSN}
       REDIS_URL: redis://redis:6379/0
       REDIS_ENABLED: "true"
@@ -91,12 +100,32 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    expose:
+      - "9101"
+    stop_grace_period: 30s
+    labels:
+      io.sesrag.observability.collect: "false"
+      io.sesrag.observability.environment: ${OBS_ENVIRONMENT:-local}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   worker:
     build:
       context: .
       dockerfile: docker/api/Dockerfile
     environment:
+      OBS_METRICS_ENABLED: ${OBS_METRICS_ENABLED:-true}
+      OBS_METRICS_HOST: 0.0.0.0
+      OBS_METRICS_PORT: "9102"
+      OBS_SERVICE_NAME: sesrag-worker
+      OBS_ENVIRONMENT: ${OBS_ENVIRONMENT:-local}
+      OBS_TRACES_ENABLED: ${OBS_TRACES_ENABLED:-false}
+      OBS_OTLP_TRACES_ENDPOINT: ${OBS_OTLP_TRACES_ENDPOINT:-}
+      OBS_OTLP_ALLOWED_HOSTS: ${OBS_OTLP_ALLOWED_HOSTS:-}
+      OBS_TRACE_SAMPLE_RATIO: ${OBS_TRACE_SAMPLE_RATIO:-1.0}
       DATABASE_URL: ${DATABASE_URL:?运行时必须提供含安全凭据的数据库 DSN}
       REDIS_URL: redis://redis:6379/0
       REDIS_ENABLED: "true"
@@ -140,6 +169,17 @@ services:
       migrate:
         condition: service_completed_successfully
     command: ["python", "-m", "backend.workers.main"]
+    expose:
+      - "9102"
+    stop_grace_period: 30s
+    labels:
+      io.sesrag.observability.collect: "false"
+      io.sesrag.observability.environment: ${OBS_ENVIRONMENT:-local}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:

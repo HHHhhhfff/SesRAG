@@ -55,3 +55,12 @@ ADR-003 已挂载 v2 Thread/Branch/Model/Run/Context 路由及显式 Run 操作�
 失败/取消的无完整回答输入以 `incomplete_turn` 记录省略；用户输入创建者曾失败但显式 retry 已成功时，按实际 assistant 的输入关系保留完整轮次。摘要提取异常回退 `trim_only_v1`，结构化日志记录 `SUMMARY_EXTRACTION_FAILED` 和关联身份，不包含源文或异常正文；计数器/mandatory 故障不会伪装成摘要回退。
 
 `../migrations/versions/0011_rag_source_integrity.py` 将切片来源绑定批次派生来源状态，并允许可信旧空间确认在同一事务更新；PostgreSQL另外保护来源转换与确认依据。`ChunkPolicy.max_chunks`冻结切片数量预算，超限在Embedding外发前整体失败。
+
+
+## 004应用观测模块
+
+`domain/observability.py`定义普通来源/执行身份/提交回执DTO；`application/observation.py`提供旁路facade，`infrastructure/observability/`装配指标、安全日志、OTel、事务hook和API只读快照。`app.py`/`workers/main.py`只在生命周期接线，六处新Task创建入口在首次flush前保存来源，结算仍沿原授权事务。
+
+迁移`../migrations/versions/0012_task_trace_origin.py`增加不可变可空来源；`tools/upgrade_rag_schema.py`读取实际head而不是硬编码0011。`tools/export_observability_contract.py`只读核对字典/路由并导出005输入。新运维接口与字段不加入业务响应；正式真源为[接口文档](../docs/接口文档.md)，配置/回退见[应用观测Runbook](../docs/runbooks/application-observability.md)。
+
+Worker结果日志使用attempt_succeeded/failed/yielded/cancelled/lease_lost/released/unknown；正常handler return不再代表持久成功。旧无runtime测试适配保留，但正式API/Worker均使用统一安全JSON队列。本轮验证在`../tests/sesrag-observability-test/`，不修改既往专项验收目录。

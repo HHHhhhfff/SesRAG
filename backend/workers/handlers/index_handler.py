@@ -6,6 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from backend.application.errors import PermanentTaskError
+from backend.application.observation import correlate, receipt
+from backend.application.stage_observation import observe_stage
 from backend.application.task_execution import check_locked_times, guarded_call, lock_execution
 from backend.application.vector_validation import validate_vector
 from backend.config import Settings
@@ -51,53 +53,62 @@ async def process_index_task(
         check_locked_times(lease_expires_at, deadline_at)
         await session.commit()
 
+    # 旧Task无批次外键；本次候选身份在处理器选定后才能关联，不能伪造领取时已知。
+    correlate(document_id=document_id, index_batch_id=batch_id)
     guarded = partial(guarded_call, session_factory, task_id, worker_id, generation)
-    parsed = await guarded(partial(parser.parse, storage_key, extension))
-    drafts = chunk_text(parsed.text, chunk_size=settings.chunk_size, overlap=settings.chunk_overlap)
-    if not drafts or parsed.text == "":
-        raise PermanentTaskError("EMPTY_DOCUMENT", "文档没有可索引文本")
+    async with observe_stage("parse"):
+        parsed = await guarded(partial(parser.parse, storage_key, extension))
+    async with observe_stage("chunk"):
+        drafts = chunk_text(
+            parsed.text, chunk_size=settings.chunk_size, overlap=settings.chunk_overlap
+        )
+        if not drafts or parsed.text == "":
+            raise PermanentTaskError("EMPTY_DOCUMENT", "文档没有可索引文本")
     candidates = []
-    for draft in drafts:
-        vector = validate_vector(await guarded(partial(provider.embed, draft.text)))
-        candidates.append(
-            IndexedChunk(
-                str(uuid4()),
-                draft.seq,
-                draft.text,
-                draft.start_offset,
-                draft.end_offset,
-                vector,
-                tuple(
-                    p
-                    for p in parsed.locations
-                    if p.end_offset > draft.start_offset and p.start_offset < draft.end_offset
-                ),
+    async with observe_stage("embed"):
+        for draft in drafts:
+            vector = validate_vector(await guarded(partial(provider.embed, draft.text)))
+            candidates.append(
+                IndexedChunk(
+                    str(uuid4()),
+                    draft.seq,
+                    draft.text,
+                    draft.start_offset,
+                    draft.end_offset,
+                    vector,
+                    tuple(
+                        p
+                        for p in parsed.locations
+                        if p.end_offset > draft.start_offset and p.start_offset < draft.end_offset
+                    ),
+                )
             )
-        )
 
-    # 外部解析/Embedding 全部完成后才拿发布锁；失败没有候选持久残留。
-    async with session_factory() as session:
-        current, _ = await lock_execution(session, task_id, worker_id, generation)
-        current_document = await session.scalar(
-            select(DocumentModel)
-            .where(DocumentModel.document_id == document_id)
-            .with_for_update()
-            .execution_options(populate_existing=True)
-        )
-        if current_document is None:
-            raise PermanentTaskError("DOCUMENT_NOT_FOUND", "索引任务引用的文档不存在")
-        lease_expires_at, deadline_at = current.lease_expires_at, current.deadline_at
-        check_locked_times(lease_expires_at, deadline_at)
-        await vector_store_factory(session).replace(document_id, batch_id, candidates)
-        await session.flush()
-        # flush/后续锁等待也可能跨越租约；最终事实改变前再次校验。
-        check_locked_times(lease_expires_at, deadline_at)
-        current.progress_json = {**current.progress_json, "index_batch_id": batch_id}
-        current_document.active_index_batch_id = batch_id
-        current_document.status = DocumentState.INDEXED.value
-        current_document.last_error_code = None
-        current.state = TaskState.SUCCEEDED.value
-        current.lease_expires_at = None
-        await session.flush()
-        check_locked_times(lease_expires_at, deadline_at)
-        await session.commit()
+    async with observe_stage("publish"):
+        # 外部解析/Embedding 全部完成后才拿发布锁；失败没有候选持久残留。
+        async with session_factory() as session:
+            current, _ = await lock_execution(session, task_id, worker_id, generation)
+            current_document = await session.scalar(
+                select(DocumentModel)
+                .where(DocumentModel.document_id == document_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            if current_document is None:
+                raise PermanentTaskError("DOCUMENT_NOT_FOUND", "索引任务引用的文档不存在")
+            lease_expires_at, deadline_at = current.lease_expires_at, current.deadline_at
+            check_locked_times(lease_expires_at, deadline_at)
+            await vector_store_factory(session).replace(document_id, batch_id, candidates)
+            await session.flush()
+            # flush/后续锁等待也可能跨越租约；最终事实改变前再次校验。
+            check_locked_times(lease_expires_at, deadline_at)
+            current.progress_json = {**current.progress_json, "index_batch_id": batch_id}
+            current_document.active_index_batch_id = batch_id
+            current_document.status = DocumentState.INDEXED.value
+            current_document.last_error_code = None
+            current.state = TaskState.SUCCEEDED.value
+            current.lease_expires_at = None
+            await session.flush()
+            check_locked_times(lease_expires_at, deadline_at)
+            receipt(session, current, "succeeded")
+            await session.commit()

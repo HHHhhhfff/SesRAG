@@ -18,6 +18,7 @@ from backend.application.branches import (
 )
 from backend.application.errors import ApplicationError
 from backend.application.model_profiles import profile_reason
+from backend.application.observation import enqueue
 from backend.application.runs import event_to_dict
 from backend.application.session_operations import record_operation, replay_operation, request_hash
 from backend.application.session_threads import utc_projection
@@ -178,6 +179,7 @@ async def insert_run(
         deadline_at=now_utc() + timedelta(seconds=snapshot["execution"]["deadline_seconds"]),
     )
     session.add(task)
+    enqueue(session, task)
     await session.flush()
     run.primary_task_id = task.task_id
     if source is None:

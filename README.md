@@ -29,7 +29,7 @@ tests/         单元、API 和集成测试
 tests/sesrag-rag-mineru-test/ PRD-003独立环境、工具、协议及后续产品验收入口
 tests/sesrag-persistent-session-workspace-test/ PRD-002历史独立环境与验收证据（不作为v0.3入口）
 docker/        API/Worker 与前端镜像定义
-docs/prd/      Demo、v0.2、v0.3 与完整项目 PRD，以及对应调研依据
+docs/prd/      Demo、v0.2、v0.3、应用可观测性与完整项目 PRD，以及对应调研依据
 docs/adr/      实施方案和架构决策
 docs/pr/       PRD 实施完成后的开发结果记录
 docs/test/     PRD 测试验收方案和结果
@@ -51,6 +51,12 @@ AGENTS.md      仓库级 AI 开发约束
 - Demo历史变更：[基础缺陷修复记录](docs/pr/001-SesRAG-Demo-缺陷修复-PR.md)。当前v0.2验收只使用本轮独立套件。
 - 开发结果与测试验收：[`docs/pr/`](docs/pr/)、[`docs/test/`](docs/test/)。Demo 正式测试实施方案见 [`docs/test/001-SesRAG-项目Demo-test-plan.md`](docs/test/001-SesRAG-项目Demo-test-plan.md)，历史验收结果见 [`docs/test/001-SesRAG-项目Demo-test.md`](docs/test/001-SesRAG-项目Demo-test.md)。
 - 部署、故障和验收流程：[`docs/runbooks/`](docs/runbooks/)；代码修改规范见 [`docs/项目开发和修改的通用执行规范.md`](docs/项目开发和修改的通用执行规范.md)。
+- 云端CI接入：[阿里云ECS GitHub Runner环境核验与步骤](docs/runbooks/github-actions-ecs-runner.md)，记录实际资源／网络限制、专用用户、注册与手动smoke；当前尚未注册Runner。
+- 云端部署选型：[腾讯云学生优惠与萤光云比较](docs/runbooks/cloud-server-selection.md)，按应用＋Grafana监控、CI使用GitHub Runner核对配置、首购／续费和当前优惠边界。
+- 本地可观测体系：[Grafana／Prometheus／Loki／Tempo／Alloy的Compose调研](docs/runbooks/local-observability-compose-research.md)，分析平台采集、OTel接入、告警和保留／销毁；当前为建议，未实施监控栈。
+- 应用观测需求：[PRD-004：应用可观测性与追踪上下文](docs/prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)，已实施；覆盖API／Worker内部指标、安全JSON日志、OTLP与Task跨等待／重试／重启关联，向ADR-005交接，不含监控组件部署。
+- 应用观测实施方案：[ADR-004](docs/adr/004-sesrag-observability-implementation-plan.md)，已实施；端点、迁移、传播与预算已交付，真实独立开发验证及三对开销结果见[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)，005监控栈尚未实施。
+- 本地监控部署方案：[ADR-005](docs/adr/005-sesrag-local-observability-deployment-plan.md)，已接受、待另行实施；004已交付应用能力，部署时仍须重核G1～G5。未来独立模块为`docker/monitoring/`，本次未实施，不含windows_exporter或应用插桩开发。
 - 接口唯一说明：[`docs/接口文档.md`](docs/接口文档.md)；稳定术语见 [`CONTEXT.md`](CONTEXT.md)；仓库级 AI 规则见 [`AGENTS.md`](AGENTS.md)。
 - 工程技能配置：`docs/agents/` 保存 [GitHub Issues 工作流](docs/agents/issue-tracker.md)、[分诊标签映射](docs/agents/triage-labels.md)和[领域文档读取规则](docs/agents/domain.md)；使用现有 `CONTEXT.md` 和 `docs/adr/`。
 
@@ -182,3 +188,21 @@ Invoke-WebRequest http://localhost:8000/health/ready
 ```
 
 完整实施边界、对象关系、异常行为和阶段退出条件见 [`docs/adr/001-sesrag-demo-implementation-plan.md`](docs/adr/001-sesrag-demo-implementation-plan.md)；Demo 产品验收口径见 [`docs/prd/001-SesRAG-项目Demo-PRD.md`](docs/prd/001-SesRAG-项目Demo-PRD.md)；完整产品长期目标见 [`docs/prd/SesRAG-完整项目-PRD.md`](docs/prd/SesRAG-完整项目-PRD.md)。
+
+
+## 应用可观测性（004）
+
+应用提供独立内网指标、安全JSON日志、显式OTLP追踪及不可变Task来源；默认启用指标/日志，traces默认关闭。正式运维端点、指标字典和传播契约见[接口文档](docs/接口文档.md)，启用、排查及回退见[应用观测Runbook](docs/runbooks/application-observability.md)。本轮未部署Grafana监控栈，后续按[ADR-005](docs/adr/005-sesrag-local-observability-deployment-plan.md)接入。
+
+新增文件职责：`backend/infrastructure/observability/`负责有界采集与生命周期，`contracts/observability/`是版本化字段/指标真源，`migrations/versions/0012_task_trace_origin.py`保存Task来源，`docker/observability-requirements.in/.lock`锁定观测依赖，`tests/sesrag-observability-test/`提供独立部署至清理验证；[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)记录实际变更和验证边界。
+
+| 可选配置 | 默认与含义 |
+| --- | --- |
+| `OBS_METRICS_ENABLED` | true，false关闭监听/API快照，安全日志保持启用 |
+| `OBS_METRICS_HOST` / `OBS_METRICS_PORT` | 直接Python运行默认0.0.0.0、API9101/Worker9102；宿主运行应设127.0.0.1。根Compose固定角色端口，仅expose不发布宿主 |
+| `OBS_SERVICE_NAME` / `OBS_ENVIRONMENT` | 角色固定sesrag-api/worker，环境默认local且为有限小写标识；005必须保持一致 |
+| `OBS_TRACES_ENABLED` | false，需显式true并同时提供合法接收配置；不因填写endpoint自动启用 |
+| `OBS_OTLP_TRACES_ENDPOINT` / `OBS_OTLP_ALLOWED_HOSTS` | traces启用时必填；固定/v1/traces、精确受信内网主机，无凭据/query/代理/重定向，不向公网导出 |
+| `OBS_TRACE_SAMPLE_RATIO` | 1.0，可设0～1有限比例；独立验收固定100%，自动重试保留原来源采样 |
+
+日志与指标不接收业务正文/Secret；原健康语义不因观测接收端故障变化。运行支持配置根Compose或项目源码的python -m入口，部署必须同时带版本化contracts资源。详细数值预算、快照未知/过期处理和多Worker聚合规则见接口文档及Runbook。

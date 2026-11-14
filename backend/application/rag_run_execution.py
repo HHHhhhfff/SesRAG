@@ -8,6 +8,7 @@ from uuid import uuid4
 from sqlalchemy import select
 
 from backend.application.errors import ApplicationError
+from backend.application.observation import correlate
 from backend.application.retrieval import execute_retrieval, persist_bundles
 from backend.application.retrieval_views import load_scope
 from backend.application.task_execution import (
@@ -151,6 +152,7 @@ async def execute_run_retrieval(factory, settings, task_id, worker, generation, 
         check_locked_times(lease, deadline)
         await session.commit()
         execution_id, call_id = execution.execution_id, call.call_id
+    correlate(retrieval_execution_id=execution_id)
     guarded = partial(guarded_call, factory, task_id, worker, generation)
 
     async def progress(stage):

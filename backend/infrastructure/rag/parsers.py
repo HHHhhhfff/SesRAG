@@ -6,6 +6,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from backend.application.errors import PermanentTaskError, TransientTaskError
+from backend.application.observation import observed_call
 from backend.domain.ports import ParsedDocument, SourceLocation
 from backend.infrastructure.storage.local_files import LocalFileStorage
 
@@ -70,6 +71,7 @@ class SubprocessParser:
     def __init__(self, root: Path):
         self.storage = LocalFileStorage(root)
 
+    @observed_call("parser.local", "remote")
     async def parse(self, storage_key: str, extension: str) -> ParsedDocument:
         try:
             path = self.storage.resolve(storage_key)

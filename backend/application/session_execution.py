@@ -22,7 +22,7 @@ from backend.application.context import (
 )
 from backend.application.errors import PermanentTaskError
 from backend.application.session_runs import plan_summary, summary_projection
-from backend.application.stage_observation import observe_stage
+from backend.application.stage_observation import observe_stage, observed_stage
 from backend.application.task_execution import (
     append_execution_event,
     check_execution,
@@ -73,6 +73,7 @@ def ordered_plan_evidence(plan, evidence):
     return [by_identity[identity] for identity in plan.selected_evidence_ids]
 
 
+@observed_stage("context")
 async def publish_plan(
     factory, task_id, worker_id, generation, plan, context_input, snapshot, evidence
 ):
@@ -367,14 +368,14 @@ async def process_session_run(
     if schema3:
         from backend.application.rag_run_execution import execute_run_retrieval
 
-        async with observe_stage("retrieval"):
-            evidence = await execute_run_retrieval(
-                factory, settings, task_id, worker_id, generation, snapshot, question
-            )
+        evidence = await execute_run_retrieval(
+            factory, settings, task_id, worker_id, generation, snapshot, question
+        )
     elif snapshot["retrieval"]["enabled"]:
         if embedding_provider is None:
             embedding_provider = embedding_from_snapshot2(snapshot)
-        vector = validate_vector(await guarded(partial(embedding_provider.embed, question)))
+        async with observe_stage("query_embedding"):
+            vector = validate_vector(await guarded(partial(embedding_provider.embed, question)))
 
         async def retrieve():
             async with factory() as session:
@@ -382,7 +383,8 @@ async def process_session_run(
                     snapshot["owner_id"], vector, snapshot["retrieval"]["top_k"]
                 )
 
-        evidence = await guarded(retrieve)
+        async with observe_stage("dense_search"):
+            evidence = await guarded(retrieve)
     if not schema3:
         async with factory() as session:
             await append_execution_event(

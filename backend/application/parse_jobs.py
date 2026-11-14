@@ -7,6 +7,7 @@ from functools import partial
 from uuid import uuid4
 
 from backend.application.errors import PermanentTaskError, TransientTaskError
+from backend.application.observation import observed_call
 from backend.application.rag_profiles import profile_reason, resolve_profile
 from backend.application.rag_task_execution import lock_build_execution, yield_task
 from backend.application.task_execution import check_locked_times, guarded_call
@@ -125,7 +126,13 @@ async def advance_parse_job(
         if hashlib.sha256(raw).hexdigest() != source_hash:
             raise PermanentTaskError("SOURCE_HASH_MISMATCH", "原源hash不匹配")
         artifact = await guarded(
-            partial(isolated, "text", raw, extension, timeout=min(30, remaining)),
+            partial(
+                observed_call("parser.local", "local")(isolated),
+                "text",
+                raw,
+                extension,
+                timeout=min(30, remaining),
+            ),
             timeout=min(30, remaining),
         )
     else:

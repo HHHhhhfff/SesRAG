@@ -3,14 +3,16 @@ import json
 import logging
 import os
 import signal
-from contextlib import suppress
+from contextlib import nullcontext, suppress
 from functools import partial
 from time import monotonic
 from uuid import uuid4
 
 from backend.application.errors import ApplicationError
+from backend.application.observation import current_attempt, settlement_reason
 from backend.application.task_execution import ExecutionStopped
 from backend.config import Settings
+from backend.domain.observability import ExecutionIdentity
 from backend.domain.ports import (
     EmbeddingPort,
     ModelProvider,
@@ -52,7 +54,9 @@ class WorkerRuntime:
         parser: ParserPort | None = None,
         vector_store_factory=None,
         provider_factory=None,
+        observation=None,
     ) -> None:
+        self.observation = observation
         self.settings = settings
         self.session_factory = session_factory
         self.notifier = notifier
@@ -81,6 +85,27 @@ class WorkerRuntime:
             self._write_log(action, task, error_code, context, stage, duration_ms)
 
     def _write_log(self, action, task, error_code, context, stage, duration_ms):
+        if self.observation is not None:
+            self.observation.log(
+                action,
+                **{
+                    **context,
+                    "stage": stage,
+                    "error_code": error_code,
+                    "duration_ms": duration_ms,
+                    "task_id": getattr(task, "task_id", None),
+                    "run_id": getattr(task, "run_id", None),
+                    "document_id": context.get("document_id", getattr(task, "document_id", None)),
+                    "index_batch_id": getattr(task, "index_batch_id", None),
+                    "retrieval_execution_id": context.get(
+                        "retrieval_execution_id", getattr(task, "retrieval_execution_id", None)
+                    ),
+                    "worker_id": self.worker_id,
+                    "generation": getattr(task, "generation", None),
+                    "attempt": getattr(task, "attempt", None),
+                },
+            )
+            return
         logger.info(
             json.dumps(
                 {
@@ -106,11 +131,15 @@ class WorkerRuntime:
         )
 
     async def _load_log_context(self, task):
-        self._log_context = {}
+        self._log_context = {
+            key: getattr(task, key, None)
+            for key in ("run_id", "document_id", "index_batch_id", "retrieval_execution_id")
+        }
 
         async def load(session):
             from sqlalchemy import select
 
+            from backend.db.models import RunModel
             from backend.db.rag_models import IndexBuildModel, RetrievalExecutionModel
 
             context = {}
@@ -123,6 +152,9 @@ class WorkerRuntime:
                         stage=build.stage,
                     )
             elif task.kind == "run":
+                run = await session.get(RunModel, task.run_id)
+                if run is not None:
+                    context["thread_id"] = run.thread_id
                 execution_id = await session.scalar(
                     select(RetrievalExecutionModel.execution_id).where(
                         RetrievalExecutionModel.task_id == task.task_id,
@@ -133,12 +165,19 @@ class WorkerRuntime:
             return context
 
         try:
-            self._log_context = await self._database(load)
+            self._log_context.update(await self._database(load))
         except Exception:
             # 旧任务与替代 Queue/Session 不必实现观测专用查询。
             pass
+        observed = current_attempt.get()
+        if observed is not None:
+            # 当前attempt独享可补充身份，让阶段和结束日志复用；不改变结算身份。
+            observed.correlation.update(self._log_context)
 
     async def _observed_dispatch(self, task):
+        if self.observation is not None:
+            # 新旁路已在阶段出口记录；避免旧适配再次查库/重复日志与计时。
+            return await self._dispatch(task)
         from backend.application.stage_observation import observer
 
         stage = self._log_context.get("stage", task.kind)
@@ -166,6 +205,9 @@ class WorkerRuntime:
 
     def request_stop(self) -> None:
         self.stop_event.set()
+        if self.observation:
+            with suppress(Exception):
+                self.observation.metrics.set("WORKER_ACCEPTING", value=0)
 
     async def _cancel_tasks(self, *tasks):
         pending = {task for task in tasks if task is not None and not task.done()}
@@ -211,6 +253,13 @@ class WorkerRuntime:
         return await self._bounded(transaction(), timeout=timeout, stop_sensitive=stop_sensitive)
 
     async def _release(self, task):
+        token = settlement_reason.set("shutdown")
+        try:
+            await self._release_owned(task)
+        finally:
+            settlement_reason.reset(token)
+
+    async def _release_owned(self, task):
         try:
             released = await self._database(
                 lambda session: self.queue(session).release(task),
@@ -313,6 +362,18 @@ class WorkerRuntime:
             return False
         if task is None:
             return False
+        identity = ExecutionIdentity(
+            task.task_id, task.kind, task.worker_id, task.generation, task.attempt
+        )
+        scope = (
+            self.observation.attempt(identity, task.trace_origin, task.trace_origin_state)
+            if self.observation
+            else nullcontext()
+        )
+        with scope:
+            return await self._run_claimed(task)
+
+    async def _run_claimed(self, task):
         await self._load_log_context(task)
         self.log("claim", task)
         try:
@@ -326,6 +387,8 @@ class WorkerRuntime:
             if not running:
                 await self._ack_cancel(task)
                 self.log("reject", task, "LEASE_LOST")
+                if current_attempt.get():
+                    current_attempt.get().stopped("lease_lost")
                 return True
         except ExecutionStopped:
             await self._release(task)
@@ -344,7 +407,9 @@ class WorkerRuntime:
                     await self._release(task)
                     return True
             await execution
-            self.log("success", task)
+            # 正常return可能仅是让出；最终观测结果只由原事务回执决定。
+            if self.observation is None:
+                self.log("success", task)
         except (ExecutionStopped, asyncio.CancelledError):
             await self._ack_cancel(task)
             self.log("reject", task, "EXECUTION_STOPPED")
@@ -409,12 +474,17 @@ class WorkerRuntime:
                     self.log("renew", task)
                     continue
                 self.log("reject", task, "LEASE_LOST")
+                if current_attempt.get():
+                    current_attempt.get().stopped("lease_lost")
             except Exception:
                 self.log("reject", task, "LEASE_CHECK_FAILED")
             execution.cancel()
             return
 
     async def run_forever(self) -> None:
+        if self.observation:
+            with suppress(Exception):
+                self.observation.metrics.set("WORKER_ACCEPTING", value=1)
         readiness = asyncio.create_task(self._readiness_loop())
         failures = 0
         try:

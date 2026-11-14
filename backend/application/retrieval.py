@@ -11,10 +11,12 @@ from sqlalchemy import select
 
 from backend.application.errors import ApplicationError, PermanentTaskError
 from backend.application.evidence_assembly import assemble_evidence
+from backend.application.observation import enqueue
 from backend.application.rag_operations import record, replay
 from backend.application.rag_profiles import resolve_profile
 from backend.application.retrieval_views import freeze_retrieval, load_scope
 from backend.application.source_locations import clip_locations, public_locations
+from backend.application.stage_observation import observe_stage, observed_stage
 from backend.db.models import ChunkModel, TaskModel, utc_now
 from backend.db.rag_models import (
     EvidenceBundleModel,
@@ -59,6 +61,7 @@ async def validate_frozen_retrieval(factory, settings, scope, snapshot):
         await load_scope(session, settings, scope.view_id)
 
 
+@observed_stage("retrieval")
 async def execute_retrieval(
     factory,
     settings,
@@ -83,13 +86,17 @@ async def execute_retrieval(
     if progress:
         await progress("query_embedding")
     await validate_frozen_retrieval(factory, settings, scope, snapshot)
-    vectors = await guarded(partial(embedding_factory(embedding).embed, (query,), purpose="query"))
+    async with observe_stage("query_embedding"):
+        vectors = await guarded(
+            partial(embedding_factory(embedding).embed, (query,), purpose="query")
+        )
     timings["query_embedding_ms"] = (time.monotonic() - started) * 1000
     started = time.monotonic()
     if progress:
         await progress("dense_search")
-    async with factory() as session:
-        candidates = await VectorSearch(session).search(scope, vectors[0], policy.candidate_k)
+    async with observe_stage("dense_search"):
+        async with factory() as session:
+            candidates = await VectorSearch(session).search(scope, vectors[0], policy.candidate_k)
     timings["dense_ms"] = (time.monotonic() - started) * 1000
     ordered = candidates
     mode, error = "ok", None
@@ -100,44 +107,49 @@ async def execute_retrieval(
             raise PermanentTaskError("PROFILE_UNAVAILABLE", "冻结重排配置缺失")
         await validate_frozen_retrieval(factory, settings, scope, snapshot)
         started = time.monotonic()
-        try:
-            ranker = rerank_factory(snapshot["rerank"])
-            ranking = await guarded(
-                partial(
-                    ranker.rank,
-                    query,
-                    tuple(h.text for h in candidates),
+        async with observe_stage("rerank") as rerank_stage:
+            try:
+                ranker = rerank_factory(snapshot["rerank"])
+                ranking = await guarded(
+                    partial(
+                        ranker.rank,
+                        query,
+                        tuple(h.text for h in candidates),
+                    )
                 )
-            )
-            if sorted(i for i, _ in ranking) != list(range(len(candidates))):
-                raise PermanentTaskError("RERANK_PROTOCOL_INVALID", "重排返回候选不完整")
-            ranges = getattr(ranker, "input_ranges", tuple((0, len(c.text)) for c in candidates))
-            scores = {i: score for i, score in ranking}
-            candidates = tuple(
-                replace(
-                    c,
-                    rerank_score=scores[i],
-                    rerank_input_start=ranges[i][0],
-                    rerank_input_end=ranges[i][1],
+                if sorted(i for i, _ in ranking) != list(range(len(candidates))):
+                    raise PermanentTaskError("RERANK_PROTOCOL_INVALID", "重排返回候选不完整")
+                ranges = getattr(
+                    ranker, "input_ranges", tuple((0, len(c.text)) for c in candidates)
                 )
-                for i, c in enumerate(candidates)
-            )
-            ordered = tuple(candidates[i] for i, _ in ranking)
-        except ApplicationError as exc:
-            if policy.failure_policy != "dense_fallback" or exc.code not in {
-                "RERANK_TEMPORARY_UNAVAILABLE",
-                "RERANK_SERVICE_FAILED",
-                "RERANK_PROTOCOL_INVALID",
-                "RERANK_INPUT_BUDGET_EXCEEDED",
-                "UPSTREAM_TEMPORARY_UNAVAILABLE",
-            }:
-                raise
-            mode, error = "degraded", exc.code
+                scores = {i: score for i, score in ranking}
+                candidates = tuple(
+                    replace(
+                        c,
+                        rerank_score=scores[i],
+                        rerank_input_start=ranges[i][0],
+                        rerank_input_end=ranges[i][1],
+                    )
+                    for i, c in enumerate(candidates)
+                )
+                ordered = tuple(candidates[i] for i, _ in ranking)
+            except ApplicationError as exc:
+                if policy.failure_policy != "dense_fallback" or exc.code not in {
+                    "RERANK_TEMPORARY_UNAVAILABLE",
+                    "RERANK_SERVICE_FAILED",
+                    "RERANK_PROTOCOL_INVALID",
+                    "RERANK_INPUT_BUDGET_EXCEEDED",
+                    "UPSTREAM_TEMPORARY_UNAVAILABLE",
+                }:
+                    raise
+                mode, error = "degraded", exc.code
+            rerank_stage.set_outcome(mode)
         timings["rerank_ms"] = (time.monotonic() - started) * 1000
     if progress:
         await progress("enhancement")
-    async with factory() as session:
-        bundles, omitted = await assemble_evidence(session, ordered[: policy.top_k], policy)
+    async with observe_stage("enhancement"):
+        async with factory() as session:
+            bundles, omitted = await assemble_evidence(session, ordered[: policy.top_k], policy)
     return RetrievalResult(
         mode if candidates else "empty", bundles, candidates, omitted, error, timings
     )
@@ -214,6 +226,7 @@ async def create_diagnostic(session, settings, payload, key):
             deadline_at=utc_now() + timedelta(seconds=120),
         )
         session.add(task)
+        enqueue(session, task)
         await session.flush()
         execution.task_id = task.task_id
         record(session, settings.owner_id, "diagnostic", key, hashed, {"execution_id": identity})

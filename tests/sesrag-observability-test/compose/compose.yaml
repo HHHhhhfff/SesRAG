@@ -1,0 +1,99 @@
+x-app: &app
+  image: ${OBS_TEST_IMAGE:-sesrag-obs-candidate:local}
+  build:
+    context: ../../..
+    dockerfile: docker/api/Dockerfile
+  environment: &environment
+    PYTHONPATH: /app
+    DATABASE_URL: postgresql+psycopg://obs:${OBS_TEST_PASSWORD:?test password required}@postgres/obs
+    REDIS_URL: redis://redis:6379/0
+    REDIS_ENABLED: "true"
+    OWNER_ID: obs-test
+    MOCK_PROVIDER: "true"
+    UPLOAD_DIR: /data/uploads
+    RAG_ARTIFACT_DIR: /data/rag-artifacts
+    RAG_TMP_DIR: /data/rag-tmp
+    QUEUE_POLL_INTERVAL: "0.05"
+    TASK_HEARTBEAT_INTERVAL: "2"
+    TASK_LEASE_TTL: "10"
+    TASK_RETRY_BASE_DELAY: "1"
+    TASK_DEADLINE: "120"
+    OBS_METRICS_ENABLED: "true"
+    OBS_ENVIRONMENT: obs-test
+    OBS_TRACES_ENABLED: "true"
+    OBS_OTLP_TRACES_ENDPOINT: http://collector:4318/v1/traces
+    OBS_OTLP_ALLOWED_HOSTS: collector
+    OBS_TRACE_SAMPLE_RATIO: "1.0"
+    MINERU_ENABLED: "true"
+    MINERU_API_KEY: OBS_SECRET_SENTINEL
+    MINERU_STATE_ENCRYPTION_KEY: ${OBS_TEST_ENCRYPTION_KEY:?test key required}
+    MINERU_STORAGE_HOST_ALLOWLIST: fixture.test
+  volumes:
+    - data:/data
+    - ../:/tests/obs:ro
+    - ../../fixtures/rag-v3:/tests/rag-fixtures:ro
+    - ../../../docker:/config:ro
+  stop_grace_period: 30s
+  labels:
+    io.sesrag.test.suite: observability-004
+  mem_limit: 768m
+  cpus: 1.0
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "2"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: obs
+      POSTGRES_USER: obs
+      POSTGRES_PASSWORD: ${OBS_TEST_PASSWORD:?test password required}
+    volumes: ["database:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U obs -d obs"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    mem_limit: 768m
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  migrate:
+    <<: *app
+    command: ["python", "-m", "backend.tools.upgrade_rag_schema"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  collector:
+    <<: *app
+    command: ["python", "/tests/obs/fixtures/collector.py"]
+    mem_limit: 128m
+  api:
+    <<: *app
+    expose: ["8000", "9101"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      collector: {condition: service_started}
+  worker:
+    <<: *app
+    command: ["python", "/tests/obs/fixtures/provider.py"]
+    expose: ["9102"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      collector: {condition: service_started}
+  probe:
+    <<: *app
+    command: ["python", "-c", "import time; time.sleep(86400)"]
+    mem_limit: 512m
+
+volumes:
+  database:
+  data:
