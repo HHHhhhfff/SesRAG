@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "environment_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+    },
+    "source_ref": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "source_fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "contract_reference": {
+      "const": "docs/接口文档.md#9-应用观测接口与交付契约004"
+    },
+    "application_project": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,62}$"
+    },
+    "application_network": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$"
+    },
+    "application_network_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "platform": {
+      "enum": [
+        "docker-desktop",
+        "linux-host"
+      ]
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "api": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "service_name": {
+              "enum": [
+                "sesrag-api",
+                "sesrag-worker"
+              ]
+            },
+            "targets": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,62}$"
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "path": {
+                    "const": "/metrics"
+                  }
+                },
+                "required": [
+                  "host",
+                  "port",
+                  "path"
+                ]
+              }
+            }
+          },
+          "required": [
+            "service_name",
+            "targets"
+          ]
+        },
+        "worker": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "service_name": {
+              "enum": [
+                "sesrag-api",
+                "sesrag-worker"
+              ]
+            },
+            "targets": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,62}$"
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "path": {
+                    "const": "/metrics"
+                  }
+                },
+                "required": [
+                  "host",
+                  "port",
+                  "path"
+                ]
+              }
+            }
+          },
+          "required": [
+            "service_name",
+            "targets"
+          ]
+        }
+      },
+      "required": [
+        "api",
+        "worker"
+      ]
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 28,
+      "maxItems": 28
+    },
+    "logs": {
+      "const": {
+        "schema": "contracts/observability/log_v1.json",
+        "timestamp_field": "timestamp",
+        "level_field": "level",
+        "trace_id_field": "trace_id",
+        "mode": "json"
+      }
+    },
+    "traces": {
+      "const": {
+        "protocol": "http/protobuf",
+        "topology": "task_sibling_spans_v1",
+        "sampling": "source",
+        "schema": "contracts/observability/capabilities_v1.json"
+      }
+    },
+    "contract_reference_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "environment_id",
+    "source_ref",
+    "source_fingerprint",
+    "contract_reference",
+    "application_project",
+    "application_network",
+    "application_network_id",
+    "platform",
+    "services",
+    "metrics",
+    "logs",
+    "traces",
+    "contract_reference_hash"
+  ]
+}

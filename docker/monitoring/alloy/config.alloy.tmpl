@@ -1,0 +1,107 @@
+logging { level = "warn" }
+
+discovery.docker "application" {
+  host = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+  filter {
+    name = "label"
+    values = ["com.docker.compose.project=@@APPLICATION_PROJECT@@", "io.sesrag.observability.environment=@@ENVIRONMENT@@", "io.sesrag.observability.collect=true"]
+  }
+}
+discovery.relabel "application" {
+  targets = discovery.docker.application.targets
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex = "api|worker"
+    action = "keep"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label = "service"
+    replacement = "sesrag-$1"
+  }
+  rule { target_label = "environment"
+    replacement = "@@ENVIRONMENT@@" }
+}
+loki.source.docker "application" {
+  host = "unix:///var/run/docker.sock"
+  targets = discovery.relabel.application.output
+  forward_to = [loki.process.safe.receiver]
+  refresh_interval = "5s"
+}
+loki.process "safe" {
+  // 非JSON不透传原文，替换为固定诊断；源端004仍负责正文/Secret安全。
+  stage.json { expressions = { level = "level", timestamp = "timestamp", schema = "schema_version" } }
+  stage.template {
+    source = "safe_line"
+    template = "{{ if .schema }}{{ .Entry }}{{ else }}{\"level\":\"WARNING\",\"action\":\"non_json_redacted\",\"message\":\"非JSON日志原文已屏蔽\"}{{ end }}"
+  }
+  stage.output { source = "safe_line" }
+  stage.regex { expression = "(?P<secret>(?i:bearer) [A-Za-z0-9_.-]+|sk-[A-Za-z0-9_-]{8,})" }
+  stage.replace { expression = "(?i)(bearer [A-Za-z0-9_.-]+|sk-[A-Za-z0-9_-]{8,})"
+    replace = "[REDACTED]" }
+  stage.timestamp { source = "timestamp"
+    format = "RFC3339Nano"
+    action_on_failure = "skip" }
+  stage.template {
+    source = "safe_level"
+    template = "{{ if or (eq .level \"INFO\") (eq .level \"WARNING\") (eq .level \"ERROR\") }}{{ .level }}{{ else }}WARNING{{ end }}"
+  }
+  stage.labels { values = { level = "safe_level" } }
+  stage.label_keep { values = ["environment", "service", "level"] }
+  forward_to = [loki.write.local.receiver]
+}
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+    batch_wait = "1s"
+    batch_size = "1MiB"
+    remote_timeout = "5s"
+    min_backoff_period = "500ms"
+    max_backoff_period = "5s"
+    max_backoff_retries = 10
+  }
+}
+otelcol.receiver.otlp "local" {
+  grpc { endpoint = "0.0.0.0:4317" }
+  http { endpoint = "0.0.0.0:4318" }
+  output { traces = [otelcol.processor.memory_limiter.local.input] }
+}
+otelcol.processor.memory_limiter "local" {
+  check_interval = "1s"
+  limit = "384MiB"
+  spike_limit = "96MiB"
+  output { traces = [otelcol.processor.transform.safe.input] }
+}
+otelcol.processor.transform "safe" {
+  error_mode = "ignore"
+  trace_statements {
+    context = "resource"
+    statements = ["keep_keys(attributes, [\"service.name\", \"service.version\", \"deployment.environment.name\"])" ]
+  }
+  trace_statements {
+    context = "span"
+    statements = ["keep_keys(attributes, [\"run_id\", \"task_id\", \"worker_id\", \"generation\", \"attempt\", \"task_kind\", \"operation\", \"outcome\", \"stage\", \"origin_state\", \"error_code\", \"backend\", \"route\", \"method\", \"status_class\", \"result\", \"retry_scheduled\", \"reason\", \"http.request.method\", \"http.route\", \"http.response.status_code\", \"document_id\", \"index_batch_id\", \"parse_job_id\", \"retrieval_execution_id\"])" ]
+  }
+  output { traces = [otelcol.processor.batch.local.input] }
+}
+otelcol.processor.batch "local" {
+  timeout = "1s"
+  send_batch_size = 128
+  send_batch_max_size = 256
+  output { traces = [otelcol.exporter.otlp.tempo.input] }
+}
+otelcol.exporter.otlp "tempo" {
+  timeout = "5s"
+  client {
+    endpoint = "tempo:4317"
+    tls { insecure = true }
+  }
+  sending_queue { enabled = true
+    num_consumers = 2
+    queue_size = 256 }
+  retry_on_failure { enabled = true
+    initial_interval = "1s"
+    max_interval = "5s"
+    max_elapsed_time = "60s" }
+}

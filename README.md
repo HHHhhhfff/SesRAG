@@ -1,5 +1,7 @@
 # SesRAG Demo
 
+本地Grafana监控模块已实施并完成Docker Desktop独立验证，独立Compose与生命周期入口见[监控模块README](docker/monitoring/README.md)，实际完成范围和验证结果见[PR-005](docs/pr/005-SesRAG-本地监控部署-PR.md)。应用端点及指标语义仍以[接口文档](docs/接口文档.md#9-应用观测接口与交付契约004)为真源。
+
 PRD-003正式验收后的产品与测试工程修复见[缺陷修复记录](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-缺陷修复记录.md)，对应最新执行结论与受限项以[本轮测试报告](tests/sesrag-rag-mineru-test/测试报告.md)为准。
 
 v0.3（`sesrag_v0.3`）已落地[RAG 检索增强与 MinerU 接入](docs/prd/003-SesRAG-RAG检索增强与MinerU接入-PRD.md)工程基线：知识库、版本化向量空间、结构切片、冻结检索视图、只读工具及诊断、pgvector数据库内精确检索、候选发布、历史证据和v3工作台。[实施结果简要说明](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-PR.md)记录主要交付与历史检查；[实施结果调研](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-实施结果调研.md)逐项核对需求、源码机制、文件变动及待验收内容，供后续测试设计使用。两者均不替代正式验收报告。
@@ -53,10 +55,11 @@ AGENTS.md      仓库级 AI 开发约束
 - 部署、故障和验收流程：[`docs/runbooks/`](docs/runbooks/)；代码修改规范见 [`docs/项目开发和修改的通用执行规范.md`](docs/项目开发和修改的通用执行规范.md)。
 - 云端CI接入：[阿里云ECS GitHub Runner环境核验与步骤](docs/runbooks/github-actions-ecs-runner.md)，记录实际资源／网络限制、专用用户、注册与手动smoke；当前尚未注册Runner。
 - 云端部署选型：[腾讯云学生优惠与萤光云比较](docs/runbooks/cloud-server-selection.md)，按应用＋Grafana监控、CI使用GitHub Runner核对配置、首购／续费和当前优惠边界。
-- 本地可观测体系：[Grafana／Prometheus／Loki／Tempo／Alloy的Compose调研](docs/runbooks/local-observability-compose-research.md)，分析平台采集、OTel接入、告警和保留／销毁；当前为建议，未实施监控栈。
+- 本地可观测体系：[Grafana／Prometheus／Loki／Tempo／Alloy的Compose调研](docs/runbooks/local-observability-compose-research.md)，分析平台采集、OTel接入、告警和保留／销毁；保留调研时点；实际模块和验证以PR-005为准。
 - 应用观测需求：[PRD-004：应用可观测性与追踪上下文](docs/prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)，已实施；覆盖API／Worker内部指标、安全JSON日志、OTLP与Task跨等待／重试／重启关联，向ADR-005交接，不含监控组件部署。
-- 应用观测实施方案：[ADR-004](docs/adr/004-sesrag-observability-implementation-plan.md)，已实施；端点、迁移、传播与预算已交付，真实独立开发验证及三对开销结果见[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)，005监控栈尚未实施。
-- 本地监控部署方案：[ADR-005](docs/adr/005-sesrag-local-observability-deployment-plan.md)，已接受、待另行实施；004已交付应用能力，部署时仍须重核G1～G5。未来独立模块为`docker/monitoring/`，本次未实施，不含windows_exporter或应用插桩开发。
+- 应用观测实施方案：[ADR-004](docs/adr/004-sesrag-observability-implementation-plan.md)，已实施；端点、迁移、传播与预算已交付，真实独立开发验证及三对开销结果见[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)，005独立监控交付见PR-005。
+- 本地监控部署方案：[ADR-005](docs/adr/005-sesrag-local-observability-deployment-plan.md)，已实施Desktop范围，部署时仍须重核G1～G5；独立模块`docker/monitoring/`不含windows_exporter或应用插桩开发，Linux可选profile未验收。
+- 本地监控产品需求：[PRD-005：本地Grafana监控告警体系](docs/prd/005-SesRAG-本地Grafana监控告警体系-PRD.md)，已确认并交付Desktop范围；范围、告警、资源、备份恢复和销毁边界以该文档与ADR-005为准。
 - 接口唯一说明：[`docs/接口文档.md`](docs/接口文档.md)；稳定术语见 [`CONTEXT.md`](CONTEXT.md)；仓库级 AI 规则见 [`AGENTS.md`](AGENTS.md)。
 - 工程技能配置：`docs/agents/` 保存 [GitHub Issues 工作流](docs/agents/issue-tracker.md)、[分诊标签映射](docs/agents/triage-labels.md)和[领域文档读取规则](docs/agents/domain.md)；使用现有 `CONTEXT.md` 和 `docs/adr/`。
 

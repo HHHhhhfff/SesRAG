@@ -354,3 +354,8 @@ docker compose --env-file docker/monitoring/runtime/monitoring.env -p sesrag-obs
 7. [OpenTelemetry Python](https://opentelemetry.io/docs/languages/python/instrumentation/)、[上下文传播](https://opentelemetry.io/docs/concepts/context-propagation/)、[敏感数据处理](https://opentelemetry.io/docs/security/handling-sensitive-data/)、[FastAPI插桩](https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/fastapi/fastapi.html)。
 8. [Docker Compose down](https://docs.docker.com/reference/cli/docker/compose/down/)、[跨项目网络](https://docs.docker.com/compose/how-tos/networking/)、[多文件合并](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)、[Docker日志轮转](https://docs.docker.com/engine/logging/drivers/json-file/)。
 9. 官方Release：[Grafana](https://github.com/grafana/grafana/releases)、[Prometheus](https://github.com/prometheus/prometheus/releases)、[Loki](https://github.com/grafana/loki/releases)、[Tempo](https://github.com/grafana/tempo/releases)、[Alloy](https://github.com/grafana/alloy/releases)、[OTel Python](https://github.com/open-telemetry/opentelemetry-python/releases)。
+
+
+## 005实施导航（2026-11-16）
+
+本文件保留原调研时点；独立模块的实际配置、生命周期命令和安全边界见[模块README](../../docker/monitoring/README.md)，固定digest与实际结果见[PR-005](../pr/005-SesRAG-本地监控部署-PR.md)。004应用能力及默认开关以正式接口和当前源码为准，不以旧调研的未插桩描述推断当前状态。

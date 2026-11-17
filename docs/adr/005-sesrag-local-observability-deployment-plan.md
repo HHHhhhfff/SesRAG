@@ -3,14 +3,14 @@
 | 字段 | 内容 |
 | --- | --- |
 | 编号 | ADR-005 |
-| 状态 | **已接受：方案确认，等待前置应用可观测接入完成；尚未实施** |
-| 版本／日期 | 1.2／2026-11-14（America/New_York）；同步ADR-004接入设计、指标label及条件初始化规则，尚未实施 |
+| 状态 | **已实施**：Windows Docker Desktop范围完成；Linux可选profile未验收，每次新增部署仍核G1～G5 |
+| 版本／日期 | 1.4／2026-11-16（Asia/Shanghai）；记录005实际配置适配与开发验证，资源预算保持 |
 | 对应项目版本 | 以当前v0.3代码为调研基线；005是工作编号，不表示项目已经升级为v0.5 |
 | 适用范围 | 仓库独立模块`docker/monitoring/`，Windows Docker Desktop Linux容器为首要使用环境，兼顾原生Linux Docker Engine |
-| 依据 | 本次用户明确的部署要求；[本地可观测体系调研](../runbooks/local-observability-compose-research.md)；现有[应用Compose](../../docker-compose.yml)、[通用执行规范](../项目开发和修改的通用执行规范.md) |
+| 依据 | [PRD-005：本地Grafana监控告警体系](../prd/005-SesRAG-本地Grafana监控告警体系-PRD.md)；用户部署要求与[本地可观测体系调研](../runbooks/local-observability-compose-research.md)；现有[应用Compose](../../docker-compose.yml)、[通用执行规范](../项目开发和修改的通用执行规范.md) |
 | 前置依赖 | [PRD-004：应用可观测性与追踪上下文](../prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)与[ADR-004](004-sesrag-observability-implementation-plan.md)的应用实施/开发验证已完成，证据见[PR-004](../pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)；005实施时仍须对实际部署重新核准G1～G5，不把独立测试网络当部署接线；应用开发不在本方案内 |
-| 关联PRD | 本次为独立运维部署方案，未新建PRD-005；不扩展PRD-003的产品承诺，不把部署方案当成应用插桩实施方案 |
-| 实施结果 | 尚未实施；实际文件、镜像digest、验证命令、结果和限制在实施完成后另记于`docs/pr/005-SesRAG-本地监控部署-PR.md` |
+| 关联PRD | 已补充确认PRD-005；本ADR承载工程设计，PRD规定目标/边界/验收，不扩展PRD-003或重复实施004插桩 |
+| 实施结果 | 见[PR-005实际交付与验证](../pr/005-SesRAG-本地监控部署-PR.md)及[模块README](../../docker/monitoring/README.md)；实际命令、清理与未测范围以交付记录为准 |
 
 ## 决策摘要
 
@@ -18,7 +18,7 @@
 
 监控使用独立Compose project和独立数据卷。只有Prometheus、Alloy连接已存在且归属核验通过的应用网络，其余监控组件留在监控网络。Grafana统一拥有告警规则，通过内置Alertmanager路由；本轮通知目的端为本地Webhook验证接收器，外部通知集成留待后续独立实施。
 
-本次只交付方案与导航。后续正式实施必须先通过第3节准入；即使能启动空监控栈，也不能跳过应用接入前提，更不能用合成遥测冒充真实业务验收。**本方案不安装windows_exporter，不修改业务代码、数据库Schema、Task传播或应用指标语义。**
+本ADR定义部署方案，005模块和独立开发验证现已落地；新增部署必须先通过第3节准入；即使能启动空监控栈，也不能跳过应用接入前提，更不能用合成遥测冒充真实业务验收。**本方案不安装windows_exporter，不修改业务代码、数据库Schema、Task传播或应用指标语义。**
 
 ## 1. 目标、边界和可预估结果
 
@@ -57,9 +57,9 @@
 | 文件／模块 | 当前事实 | 对本方案的影响 |
 | --- | --- | --- |
 | `docker-compose.yml` | PostgreSQL、Redis、API、Worker、前端常驻；迁移完成后退出；存在业务named volumes | 监控独立运行，不把这些卷加入监控Compose；不对应用project执行`down --volumes` |
-| `pyproject.toml`、`backend/app.py`、`backend/workers/main.py` | 当前调研基线没有Prometheus端点及OTel接入 | 作为准入缺口记录，由前置工作完成；005不补依赖、不改应用入口 |
-| `backend/workers/runtime.py::_write_log`、`backend/application/stage_observation.py` | 已有安全身份与阶段耗时日志及观测旁路 | 可以消费前置交付最终确认的stdout结构；既有日志不是完整trace或metrics的替代 |
-| `backend/domain/ports/__init__.py::TaskLease`、`backend/db/models.py::TaskModel` | PostgreSQL任务、租约、attempt／generation为事实，当前未有显式W3C传播接口 | API→Task→Worker追踪关联由前置工作验收，005不修改这些核心对象 |
+| `pyproject.toml`、`backend/app.py`、`backend/workers/main.py`、`backend/infrastructure/observability/` | 004已实现API9101/Worker9102内网metrics、安全JSON及OTLP HTTP/protobuf；traces默认关闭 | 005仅配置并消费已支持能力；接入前重核目标部署，不补依赖或改应用入口 |
+| `backend/workers/runtime.py::_write_log`、`backend/application/stage_observation.py` | 004已接线适用安全身份、阶段耗时、实际trace/span和尝试结算 | 通过真实stdout/日志Schema核验，日志不是其它信号的替代 |
+| `backend/domain/ports/__init__.py::TaskLease`、`backend/db/models.py::TaskModel` | 已有0012不可变trace_origin_json及task_sibling_spans_v1；任务/租约/代际仍以PG为事实 | API→Task→Worker已有应用验证，005再验经Alloy到Tempo；不修改核心对象 |
 | `backend/api/routes/health.py::ready` | DB失败503，Redis降级／Worker未知可能仍200并有不同payload | 告警消费明确的readiness指标，不能只按HTTP200判Worker正常 |
 | 调研文档 | 已区分Desktop／宿主、Tempo3、Alloy职责和清理边界，未运行监控栈 | 本ADR确定具体路线；旧调研中的候选项以本ADR范围为准 |
 
@@ -176,7 +176,7 @@ OTLP接收器显式绑定`0.0.0.0`的**容器接口**；不等于发布到宿主
 
 ## 5. 目录、文件与职责
 
-以下为**将来实施时**新增的模块；本次只写ADR和文档导航，不创建空目录或可执行脚本。
+以下为原设计目录基线；005实际新增文件和用途以模块README及PR-005为准。runtime/artifacts等运行目录不进入Git。
 
 ```text
 docker/monitoring/
@@ -269,7 +269,7 @@ docker/monitoring/
 
 根应用Compose、根`.env.example`、`backend/`、`frontend/`、`contracts/`、`migrations/`和旧测试套件不在005修改清单。若前置接入需要这些变动，应在其独立任务完成，不能以本部署模块为名悄悄加入。
 
-正式实施完成后另新增`docs/pr/005-SesRAG-本地监控部署-PR.md`，登记实际文件、差异、版本、命令、验收证据及未完成项，由P6交付；本次不预填实施结果。本次实际文档变动仅为新增本ADR、在根README增加入口、在原调研开头标明已接受方案的范围与链接。
+正式实施完成后另新增`docs/pr/005-SesRAG-本地监控部署-PR.md`，登记实际文件、差异、版本、命令、验收证据及未完成项，由P6交付；本次不预填实施结果。方案初版仅新增ADR及导航，2026-11-16补充PRD-005、CONTEXT术语和当前应用基线，不创建监控运行文件。
 
 ## 6. 技术选型、版本与工具准备
 
@@ -467,12 +467,12 @@ Stop／Destroy不自动移除应用已接受的OTLP配置。监控停止后源�
 
 启动失败／Ctrl+C：只回收账本中本次创建的容器和自有网络，保留既有卷及诊断；原来健康的环境不被另一次失败Prepare／Start拆掉。主进程被硬杀后，下一次Status／Stop／Destroy读取持久账本并复查实际labels，不能凭缺少锁就假设资源不存在。
 
-### 10.3 未来操作示例
+### 10.3 原方案操作示例（实际入口已交付）
 
-下面文件和命令是实施结果应提供的接口，**当前不执行**：
+以下接口现已交付；实际参数与安全步骤见模块README：
 
 ```powershell
-# 首次工具准备：依赖锁与脚本均由未来P1交付，当前不执行。
+# 首次工具准备：模块已交付依赖锁与入口。
 python -m venv ./docker/monitoring/.cache/venv
 & ./docker/monitoring/.cache/venv/Scripts/python.exe -m pip install --require-hashes -r ./docker/monitoring/requirements-host.lock
 # 由前置接入交付放置实际部署描述；文件内容须符合本模块Schema。
@@ -503,7 +503,7 @@ Docker镜像、BuildKit cache、其它environment、外部网络、只读源码�
 
 ## 11. 实施路线与阶段退出条件
 
-所有阶段当前均未执行。每阶段先验证实际缺口／负例，再最小实现与回归，不自动提交、推送或要求用户在开发中逐步确认。应用前置不足时必须停在P0，不能把005变成前置实施任务。
+P0～P6现已在005专用Desktop环境推进，实际结果见PR-005；下表保留阶段输入和退出标准。实施先验证实际缺口／负例，再最小实现与回归，不自动提交、推送或要求用户在开发中逐步确认。应用前置不足时必须停在P0，不能把005变成前置实施任务。
 
 | 阶段 | 输入与工作顺序 | 文件交付 | 独立退出条件 |
 | --- | --- | --- | --- |
@@ -576,7 +576,7 @@ Validate应实际调用同版本`promtool check config`、`alloy validate`及Lok
 
 后续启用时应补需求／配置／资源预算、权限和验收，不把本ADR的“后续”理解成默认已批准下载部署。特别是windows_exporter不在任何本轮默认profile、依赖或验收通过数内。
 
-## 15. 方案整体校审
+## 15. 方案整体校审（1.3文档确认阶段历史）
 
 ### 15.1 用户要求覆盖
 
@@ -609,7 +609,7 @@ Validate应实际调用同版本`promtool check config`、`alloy validate`及Lok
 
 本次已执行文档级机械检查：16个编号章节、6个目标、5项准入、7个阶段、17项验收编号完整；本文、根README和原调研的本地链接均存在；Markdown表格列数、代码块闭合及空白检查通过。资源表复算为五核心6144MiB／3.75核、五卷规划10GiB；`git diff --check`通过，并确认`docker/monitoring/`尚未创建。这些结果只证明文档检查，不代表镜像兼容、Compose部署或端到端运行已经通过。
 
-代码基线中缺少应用指标／插桩是已记录的实施前置，不是本ADR的遗漏实现。本次只完成方案设计与文档检查，不运行监控镜像、解析器、Compose、业务／遥测／通知验证，所有P0～P6执行和V01～V17结果均未产生。ADR保持“已接受／等待前置”，实施结果栏不填通过。
+原研究阶段的应用指标/插桩缺口已由004实施补齐；其源码/开发验证记录不代表005网络接线与G1～G5自动通过。2026-11-16补充确认PRD-005，并同步此处当前基线；仅作文档整理，未运行监控镜像、解析器、Compose或业务/遥测/通知验证。P0～P6及V01～V17仍未执行，ADR保持“已接受、待实施”，实施结果不填通过。
 
 ## 16. 官方资料和关联文档
 
@@ -620,3 +620,18 @@ Validate应实际调用同版本`promtool check config`、`alloy validate`及Lok
 - [Tempo3.1.1单体](https://github.com/grafana/tempo/blob/v3.1.1/example/docker-compose/single-binary/tempo.yaml)、[配置manifest](https://github.com/grafana/tempo/blob/v3.1.1/docs/sources/tempo/configuration/manifest.md)、[3.x迁移](https://github.com/grafana/tempo/blob/v3.1.1/docs/sources/tempo/set-up-for-tracing/setup-tempo/migrate-to-3.md)。
 - [Compose down](https://docs.docker.com/reference/cli/docker/compose/down/)、[网络](https://docs.docker.com/compose/how-tos/networking/)、[配置合并](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)。
 - [OTel上下文传播](https://opentelemetry.io/docs/concepts/context-propagation/)、[敏感数据](https://opentelemetry.io/docs/security/handling-sensitive-data/)，仅作为接入依赖核对，005不实施插桩。
+
+
+## 17. 005实际实施补充（1.4）
+
+实施文件、证据索引和未测边界见[PR-005](../pr/005-SesRAG-本地监控部署-PR.md)。本节更新实施事实，不改变既有产品范围。
+
+1. 固定版本已从官方tag元信息核实并拉取Linux/amd64 digest；`images.lock.json`为实际锁。可选Node Exporter采用官方Docker Hub `prom/node-exporter:v1.12.1`同版本镜像，Desktop不拉取/运行。工具镜像以锁定Python构建后记录ImageID；宿主依赖hash锁已交付。
+2. Alloy1.21.3配置使用`stage.label_keep`和组件根级exporter timeout；数据目录/Unix socket由可信本地root采集器加DAC_OVERRIDE访问，仍非privileged。源日志仅三标签匹配的API/Worker；非JSON固定诊断，有限level。
+3. 原始004能力导出不能在无Git/宿主构建文件的应用镜像中直接完整执行；005另比对镜像内业务/迁移/契约/包文件指纹，在宿主冻结004来源和正式接口hash，实际容器、网络、端点及opt-in另核。API全局快照限定一个来源；Worker允许多个唯一目标，逐实例increase、按up过滤后再sum。
+4. Grafana13先建立固定dashboard目录UID，再由Start安装/重新加载规则，避免重复随机folder；数据源中的跳转变量使用转义$并实际检查存储值和trace正则。Prometheus/规则的JSON生成文件是合法YAML，模板说明文件指出实际渲染函数。
+5. 保留期/资源上限是版本化配置；变更须备份、审核并重建配置，不接受shell直接覆盖。Status给出容量预算/保留/targets/limits；报告含源码/配置/镜像/契约指纹。默认Verify只做基础探测，完整验收由独立005场景组成，不用单条success覆盖未运行项。
+6. 生命周期按完整labels+owner+资源ID核验；清理可诊断ID漂移并重入，应用离线不阻断Stop/Destroy。子进程树和CID临时容器在超时/中断时有界回收。只预置canonical输入文件允许Prepare，孤立Secret/其它runtime不得覆盖。备份停实际运行服务，归档卷根uid/gid/mode；恢复严格同版本空目标，并重建核对受控路径/镜像绑定、模板生成结果及完整文件集合，六份归档总展开预算12GiB；不能由备份自行声明hash就绕过绑定校验。
+7. 72h日志/24htrace物理删除已用合法旧时间在独立环境验证，维护周期加速且阈值不降低；资源采样、真实三组件中断、隔离ENOSPC和一致备份恢复已有通过证据。Linux可选profile/受限Secret读取权限仍需Linux另验，本轮不声明其通过。
+
+第15节及原操作示例中的“本次不执行/未来”均指方案确认时点；现在可执行入口和实际步骤以模块README为准，不把历史文档检查当运行结果。

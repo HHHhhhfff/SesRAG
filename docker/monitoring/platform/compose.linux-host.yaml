@@ -1,0 +1,17 @@
+services:
+  node-exporter:
+    image: ${IMAGE_NODE_EXPORTER:?}
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.1
+    pid: host
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    command: ["--path.rootfs=/host", "--path.procfs=/host/proc", "--path.sysfs=/host/sys", "--collector.disable-defaults", "--collector.cpu", "--collector.meminfo", "--collector.filesystem", "--collector.loadavg", "--collector.stat"]
+    volumes: ["/:/host:ro,rslave"]
+    networks: [monitoring]
+    labels:
+      io.sesrag.observability.module: obs005
+      io.sesrag.observability.environment: ${OBS_ENVIRONMENT_ID:?}
+      io.sesrag.observability.owner: ${OBS_OWNER:?}

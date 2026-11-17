@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "verified_date": "2026-11-16",
+  "images": {
+    "grafana": {
+      "tag": "grafana/grafana:13.3.1",
+      "digest": "sha256:1c88285f1dd391a62232c010e6c224846e6a73bdc583b3365be2eba614b7919e",
+      "reference": "grafana/grafana@sha256:1c88285f1dd391a62232c010e6c224846e6a73bdc583b3365be2eba614b7919e",
+      "platform": "linux/amd64",
+      "manifest_size": 506200855
+    },
+    "prometheus": {
+      "tag": "prom/prometheus:v3.16.0",
+      "digest": "sha256:89c1a644817e9ad70fa2af76c84898e327c1de7063735f962e8313b1e28672c3",
+      "reference": "prom/prometheus@sha256:89c1a644817e9ad70fa2af76c84898e327c1de7063735f962e8313b1e28672c3",
+      "platform": "linux/amd64",
+      "manifest_size": 116078268
+    },
+    "loki": {
+      "tag": "grafana/loki:3.7.10",
+      "digest": "sha256:6d789ab9a603ee4429d0fdc4d11512bf2423e8a8c5fc898a9e5aa2d8471ce459",
+      "reference": "grafana/loki@sha256:6d789ab9a603ee4429d0fdc4d11512bf2423e8a8c5fc898a9e5aa2d8471ce459",
+      "platform": "linux/amd64",
+      "manifest_size": 50137287
+    },
+    "tempo": {
+      "tag": "grafana/tempo:3.1.1",
+      "digest": "sha256:24ded48437b982348fdb52d6353d6e0a6ea519e57b0517d6065d419112d4032c",
+      "reference": "grafana/tempo@sha256:24ded48437b982348fdb52d6353d6e0a6ea519e57b0517d6065d419112d4032c",
+      "platform": "linux/amd64",
+      "manifest_size": 40896622
+    },
+    "alloy": {
+      "tag": "grafana/alloy:v1.21.3",
+      "digest": "sha256:5ed61e8ab102bdf590ea3d67c5e29dfb5837f5b4660a1d2a0db4b8160553e9e7",
+      "reference": "grafana/alloy@sha256:5ed61e8ab102bdf590ea3d67c5e29dfb5837f5b4660a1d2a0db4b8160553e9e7",
+      "platform": "linux/amd64",
+      "manifest_size": 223638984
+    },
+    "python": {
+      "tag": "python:3.12.12-slim-bookworm",
+      "digest": "sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301",
+      "reference": "python@sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301",
+      "platform": "linux/amd64",
+      "manifest_size": 45421745
+    },
+    "node_exporter": {
+      "tag": "prom/node-exporter:v1.12.1",
+      "digest": "sha256:da83fae85603c4e47e6c68369a7d746e2dda683dc35ea2e234b4f171e0d92798",
+      "reference": "prom/node-exporter@sha256:da83fae85603c4e47e6c68369a7d746e2dda683dc35ea2e234b4f171e0d92798",
+      "platform": "linux/amd64",
+      "manifest_size": 13404971
+    },
+    "tools": {
+      "tag": "local-build",
+      "reference": "built-from-locked-python",
+      "platform": "linux/amd64",
+      "source": "tools/Dockerfile"
+    }
+  }
+}

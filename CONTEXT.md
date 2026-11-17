@@ -99,7 +99,7 @@ ADR-002/PRD-002：v0.2持久化会话与工作台主体已实施；2026-10-23独
 
 ## PRD-004 的应用观测约定
 
-以下为[PRD-004](docs/prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)已落地的应用约定；实现及独立开发验证见[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)。005监控部署仍未实施，不把应用验证当作Grafana展示或告警通过。
+以下为[PRD-004](docs/prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)已落地的应用约定；实现及独立开发验证见[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)。005独立监控模块已实施，实际展示/告警/维护验证见[PR-005](docs/pr/005-SesRAG-本地监控部署-PR.md)，不把004应用验证当005通过证据。
 
 | 术语 | 统一含义 | 来源 | 当前状态 |
 | --- | --- | --- | --- |
@@ -107,6 +107,19 @@ ADR-002/PRD-002：v0.2持久化会话与工作台主体已实施；2026-10-23独
 | Task追踪来源 | 新Task创建时绑定的受限、可信追踪来源，供后续物理尝试在等待、重试和重启后建立关联；不是RunSnapshot、业务Event或任意请求头容器。 | PRD-004；[ADR-004](docs/adr/004-sesrag-observability-implementation-plan.md) | 已实施；0012来源不可变，同trace兄弟attempt；旧任务可明确缺失 |
 | Task尝试观测结果 | 一次有效领取对应的执行片段的观测分类，区分成功、失败、正常让出、取消、失租、停机释放及无法确认；不等同于整个Run或IndexBuild的终态。 | PRD-004 | 已实施；原事务commit回执确认，不作为精确审计账本 |
 | RAG Trace与应用追踪 | RAG Trace仍是RetrievalExecution的安全业务投影；PRD-004的应用追踪是可采样、可丢失的OTel遥测，两者可关联但不共用身份或事实权威。 | PRD-003、PRD-004 | 均已有工程实现；各轮证据分别保留 |
+
+## PRD-005 的本地监控约定
+
+以下为[PRD-005](docs/prd/005-SesRAG-本地Grafana监控告警体系-PRD.md)的已确认需求，Desktop范围已实施；具体编排和文件设计见[ADR-005](docs/adr/005-sesrag-local-observability-deployment-plan.md)。名称描述职责，不要求存在同名Python类或业务数据库实体；实际入口位于docker/monitoring。
+
+| 术语 | 统一含义 | 来源 | 当前状态 |
+| --- | --- | --- | --- |
+| `MonitoringEnvironment` | 独立管理的本地监控环境，拥有自己的监控资源和遥测历史；引用的应用资源仍由应用拥有。 | PRD-005 §4.2 | 已实施（Desktop） |
+| `ApplicationContract` | 监控接入某个实际应用部署的非Secret实例描述，引用应用观测契约并补充资源身份；不能取代应用接口和指标真源。 | ADR-005 §3.2、PRD-005 | 已实施（Desktop）；不同于004的能力导出 |
+| `SignalSource` | 某类指标、日志或追踪的实际来源，具有可核对的服务和环境身份；不是业务事实的新权威。 | PRD-005 §4.2 | 已实施（Desktop） |
+| `Datasource` / `Dashboard` / `AlertRule` | 分别表示Grafana查询来源、版本化展示定义和诊断告警规则；告警不改变应用执行事实。 | ADR-005 §8、PRD-005 | 已实施（Desktop） |
+| `LifecycleRun` | 一次监控管理或验证操作及其证据身份，不是会话业务中的Run。 | ADR-005 §10、PRD-005 | 已实施（Desktop） |
+| `MonitoringBackup` | 监控数据、配置和必要凭据的一致备份，独立于应用数据库和文档备份。 | ADR-005 §10、PRD-005 | 已实施（Desktop） |
 
 ## 术语变更规则
 

@@ -1,0 +1,266 @@
+{
+  "uid": "obs005-application",
+  "title": "SesRAG application",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "timezone": "browser",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "refresh": "15s",
+  "tags": [
+    "obs005"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "sesrag-prometheus"
+        },
+        "query": "label_values(up,environment)",
+        "refresh": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "短请求速率",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(status_class)(rate(sesrag_http_requests_total{environment=\"$environment\",request_kind=\"short\"}[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "HTTP耗时P95（短路由）",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by(le)(rate(sesrag_http_request_duration_seconds_bucket{environment=\"$environment\",route!~\".*stream|/health/.*\"}[5m])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "快照有效性",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sesrag_snapshot_valid{environment=\"$environment\"}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Worker可信就绪",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sesrag_worker_ready{environment=\"$environment\"} and on(environment,service) (sesrag_snapshot_initialized{environment=\"$environment\",source=\"worker_presence\"}==1) and on(environment,service) (sesrag_snapshot_valid{environment=\"$environment\",source=\"worker_presence\"}==1) and on(environment,service) ((time()-sesrag_snapshot_last_success_timestamp_seconds{environment=\"$environment\",source=\"worker_presence\"})<=30) and on(environment,service) (up{environment=\"$environment\",service=\"sesrag-api\"}==1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "到时待领任务",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sesrag_queue_ready_tasks{environment=\"$environment\"} and on(environment,service) (sesrag_snapshot_initialized{environment=\"$environment\",source=\"queue\"}==1) and on(environment,service) (sesrag_snapshot_valid{environment=\"$environment\",source=\"queue\"}==1) and on(environment,service) ((time()-sesrag_snapshot_last_success_timestamp_seconds{environment=\"$environment\",source=\"queue\"})<=30) and on(environment,service) (up{environment=\"$environment\",service=\"sesrag-api\"}==1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "最老待领秒",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sesrag_queue_oldest_wait_seconds{environment=\"$environment\"} and on(environment,service) (sesrag_snapshot_initialized{environment=\"$environment\",source=\"queue\"}==1) and on(environment,service) (sesrag_snapshot_valid{environment=\"$environment\",source=\"queue\"}==1) and on(environment,service) ((time()-sesrag_snapshot_last_success_timestamp_seconds{environment=\"$environment\",source=\"queue\"})<=30) and on(environment,service) (up{environment=\"$environment\",service=\"sesrag-api\"}==1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "运行/退避/外部等待",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sesrag_queue_tasks{environment=\"$environment\"} and on(environment,service) (sesrag_snapshot_initialized{environment=\"$environment\",source=\"queue\"}==1) and on(environment,service) (sesrag_snapshot_valid{environment=\"$environment\",source=\"queue\"}==1) and on(environment,service) ((time()-sesrag_snapshot_last_success_timestamp_seconds{environment=\"$environment\",source=\"queue\"})<=30) and on(environment,service) (up{environment=\"$environment\",service=\"sesrag-api\"}==1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Task尝试结果",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(task_kind,result)(rate(sesrag_task_attempts_total{environment=\"$environment\"}[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "阶段耗时P95",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sesrag-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(.95,sum by(le,stage)(rate(sesrag_stage_duration_seconds_bucket{environment=\"$environment\"}[5m])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    }
+  ]
+}

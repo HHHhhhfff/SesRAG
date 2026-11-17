@@ -1,0 +1,20 @@
+# 显式合并到应用Compose，由应用拥有者执行；监控主入口不操作应用生命周期。
+services:
+  api:
+    environment: &obs
+      OBS_ENVIRONMENT: ${OBS_ENVIRONMENT_ID:?明确监控环境}
+      OBS_METRICS_ENABLED: "true"
+      OBS_TRACES_ENABLED: "true"
+      OBS_OTLP_TRACES_ENDPOINT: http://sesrag-obs-${OBS_ENVIRONMENT_ID:?}-alloy:4318/v1/traces
+      OBS_OTLP_ALLOWED_HOSTS: sesrag-obs-${OBS_ENVIRONMENT_ID:?}-alloy
+      OBS_TRACE_SAMPLE_RATIO: "1.0"
+    labels: &logs
+      io.sesrag.observability.collect: "true"
+      io.sesrag.observability.environment: ${OBS_ENVIRONMENT_ID:?}
+    logging: &rotation
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+  worker:
+    environment: *obs
+    labels: *logs
+    logging: *rotation

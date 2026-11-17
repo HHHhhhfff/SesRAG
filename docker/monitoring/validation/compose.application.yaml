@@ -1,0 +1,39 @@
+# 005专用开发验证，不合并到日常应用部署。
+services:
+  migrate:
+    image: sesrag-obs005-app:local
+    labels: &validation_labels
+      io.sesrag.observability.validation: obs005
+  api:
+    image: sesrag-obs005-app:local
+    labels: *validation_labels
+    ports: !override ["127.0.0.1:18005:8000"]
+    mem_limit: 768m
+    cpus: 1
+  worker:
+    image: sesrag-obs005-app:local
+    labels: *validation_labels
+    command: ["python", "/validation/worker_fault_entry.py"]
+    volumes: ["./docker/monitoring/validation:/validation:ro"]
+    mem_limit: 768m
+    cpus: 1
+  postgres:
+    labels: *validation_labels
+    mem_limit: 768m
+    cpus: 1
+  redis:
+    labels: *validation_labels
+    mem_limit: 128m
+    cpus: 0.25
+networks:
+  default:
+    labels: *validation_labels
+volumes:
+  postgres_data:
+    labels: *validation_labels
+  uploads:
+    labels: *validation_labels
+  rag_artifacts:
+    labels: *validation_labels
+  rag_tmp:
+    labels: *validation_labels

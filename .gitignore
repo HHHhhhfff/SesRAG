@@ -42,3 +42,9 @@ tests/sesrag-rag-mineru-test/compose/.env.rag-test.local
 tests/sesrag-observability-test/runtime/
 tests/sesrag-observability-test/artifacts/
 tests/sesrag-observability-test/tmp/
+
+# PRD-005独立监控运行数据、凭据、备份和工具缓存。
+docker/monitoring/runtime/
+docker/monitoring/artifacts/
+docker/monitoring/backups/
+docker/monitoring/.cache/

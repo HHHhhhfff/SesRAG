@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "verified_date": "2026-11-16",
+  "required_always": {
+    "alloy": ["loki_write_batch_retries_total", "otelcol_receiver_refused_spans_total"],
+    "loki": ["prometheus_tsdb_wal_writes_failed_total"],
+    "tempo": ["tempo_live_store_local_failed_flushes_total"]
+  },
+  "conditional_after_event": ["otelcol_exporter_send_failed_spans_total", "loki_discarded_samples_total", "loki_write_dropped_entries_total"],
+  "semantics": "required_always已在固定镜像实际metrics端点观察零样本，缺失由METRIC-MISSING处理；conditional只在事件产生后检查增量，非必需初始化不填假值。组件up仅为正常无事件回退来源。"
+}

@@ -1,0 +1,80 @@
+x-common: &common
+  restart: unless-stopped
+  pull_policy: never
+  stop_grace_period: 30s
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging: {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+  labels: &labels
+    io.sesrag.observability.module: obs005
+    io.sesrag.observability.environment: ${OBS_ENVIRONMENT_ID:?}
+    io.sesrag.observability.owner: ${OBS_OWNER:?}
+  networks: [monitoring]
+services:
+  grafana:
+    <<: *common
+    image: ${IMAGE_GRAFANA:?}
+    mem_limit: 768m
+    cpus: 0.5
+    ports: ["127.0.0.1:${OBS_GRAFANA_PORT:?}:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+    secrets: [grafana_password]
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ${OBS_GENERATED:?}/provisioning:/etc/grafana/provisioning:ro
+      - ${OBS_GENERATED:?}/dashboards:/var/lib/grafana/dashboards:ro
+  prometheus:
+    <<: *common
+    image: ${IMAGE_PROMETHEUS:?}
+    mem_limit: 1536m
+    cpus: 0.75
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=7d", "--storage.tsdb.retention.size=2GB", "--web.enable-lifecycle"]
+    volumes: ["prometheus_data:/prometheus", "${OBS_GENERATED:?}/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    networks: [monitoring, application]
+  loki:
+    <<: *common
+    image: ${IMAGE_LOKI:?}
+    mem_limit: 1536m
+    cpus: 1
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes: ["loki_data:/loki", "./loki/config.yaml:/etc/loki/config.yaml:ro"]
+  tempo:
+    <<: *common
+    image: ${IMAGE_TEMPO:?}
+    mem_limit: 1536m
+    cpus: 1
+    command: ["-config.file=/etc/tempo/config.yaml", "-target=all"]
+    volumes: ["tempo_data:/var/tempo", "./tempo/config.yaml:/etc/tempo/config.yaml:ro"]
+  alloy:
+    <<: *common
+    image: ${IMAGE_ALLOY:?}
+    mem_limit: 768m
+    cpus: 0.5
+    # 镜像数据目录属alloy用户且socket属root；可信本地采集器需遍历该目录。
+    cap_add: [DAC_OVERRIDE]
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "--disable-reporting", "/etc/alloy/config.alloy"]
+    volumes: ["alloy_data:/var/lib/alloy/data", "/var/run/docker.sock:/var/run/docker.sock:ro", "${OBS_GENERATED:?}/config.alloy:/etc/alloy/config.alloy:ro"]
+    networks:
+      monitoring: {}
+      application: {aliases: ["sesrag-obs-${OBS_ENVIRONMENT_ID:?}-alloy"]}
+  webhook-sink:
+    <<: *common
+    image: ${IMAGE_TOOLS:?}
+    mem_limit: 128m
+    cpus: 0.1
+    read_only: true
+    user: "65534:65534"
+    command: ["python", "/tools/telemetry_fixture.py", "sink"]
+secrets:
+  grafana_password: {file: "${OBS_SECRET:?}"}
+networks:
+  monitoring: {labels: *labels}
+  application: {external: true, name: "${OBS_APPLICATION_NETWORK:?}"}
+volumes:
+  grafana_data: {labels: *labels}
+  prometheus_data: {labels: *labels}
+  loki_data: {labels: *labels}
+  tempo_data: {labels: *labels}
+  alloy_data: {labels: *labels}

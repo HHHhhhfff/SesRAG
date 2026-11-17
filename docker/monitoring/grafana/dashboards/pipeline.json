@@ -1,0 +1,84 @@
+{
+  "uid": "obs005-pipeline",
+  "title": "SesRAG pipeline",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "sesrag-prometheus"
+        },
+        "query": "label_values(up,environment)",
+        "refresh": 1
+      },
+      {
+        "name": "service",
+        "type": "custom",
+        "query": "sesrag-api,sesrag-worker",
+        "current": {
+          "text": "sesrag-api",
+          "value": "sesrag-api"
+        }
+      },
+      {
+        "name": "trace_id",
+        "type": "textbox",
+        "query": ""
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "logs",
+      "title": "安全日志（trace_id为JSON字段）",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 12
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "sesrag-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{environment=\"$environment\",service=\"$service\"} | json"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "traces",
+      "title": "按真实trace_id追踪；缺片段不代表业务失败",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 12
+      },
+      "datasource": {
+        "type": "tempo",
+        "uid": "sesrag-tempo"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceId",
+          "query": "$trace_id"
+        }
+      ]
+    }
+  ]
+}
