@@ -48,3 +48,7 @@ docker/monitoring/runtime/
 docker/monitoring/artifacts/
 docker/monitoring/backups/
 docker/monitoring/.cache/
+
+# 本机持久部署的私有凭据、数据库备份和验证证据。
+scripts/runtime/
+tests/grafana-observability-test/artifacts/

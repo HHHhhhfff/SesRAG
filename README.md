@@ -1,6 +1,8 @@
 # SesRAG Demo
 
-本地Grafana监控模块已实施并完成Docker Desktop独立验证，独立Compose与生命周期入口见[监控模块README](docker/monitoring/README.md)，实际完成范围和验证结果见[PR-005](docs/pr/005-SesRAG-本地监控部署-PR.md)。应用端点及指标语义仍以[接口文档](docs/接口文档.md#9-应用观测接口与交付契约004)为真源。
+本机应用与监控可通过[统一部署脚本](scripts/README.md)一键启动：`pwsh -NoProfile -File scripts/sesrag.ps1 Start`。当前持久实例已完成真实模型、三信号与实际告警验证，结果和剩余限制见[持久部署与运维记录](docs/pr/005-SesRAG-持久部署与统一运维-PR.md)。
+
+本地Grafana监控模块已实施并完成Docker Desktop独立验证，配置和部署步骤见[本地监控启动指南](docs/runbooks/local-grafana-monitoring-setup.md)，独立Compose与完整操作说明见[监控模块README](docker/monitoring/README.md)，实际完成范围和验证结果见[PR-005](docs/pr/005-SesRAG-本地监控部署-PR.md)。应用端点及指标语义仍以[接口文档](docs/接口文档.md#9-应用观测接口与交付契约004)为真源。
 
 PRD-003正式验收后的产品与测试工程修复见[缺陷修复记录](docs/pr/003-SesRAG-RAG检索增强与MinerU接入-缺陷修复记录.md)，对应最新执行结论与受限项以[本轮测试报告](tests/sesrag-rag-mineru-test/测试报告.md)为准。
 
@@ -31,6 +33,7 @@ tests/         单元、API 和集成测试
 tests/sesrag-rag-mineru-test/ PRD-003独立环境、工具、协议及后续产品验收入口
 tests/sesrag-persistent-session-workspace-test/ PRD-002历史独立环境与验收证据（不作为v0.3入口）
 docker/        API/Worker 与前端镜像定义
+scripts/       本机持久应用与监控的统一启动、更新、停止和销毁容器入口
 docs/prd/      Demo、v0.2、v0.3、应用可观测性与完整项目 PRD，以及对应调研依据
 docs/adr/      实施方案和架构决策
 docs/pr/       PRD 实施完成后的开发结果记录
@@ -56,6 +59,8 @@ AGENTS.md      仓库级 AI 开发约束
 - 云端CI接入：[阿里云ECS GitHub Runner环境核验与步骤](docs/runbooks/github-actions-ecs-runner.md)，记录实际资源／网络限制、专用用户、注册与手动smoke；当前尚未注册Runner。
 - 云端部署选型：[腾讯云学生优惠与萤光云比较](docs/runbooks/cloud-server-selection.md)，按应用＋Grafana监控、CI使用GitHub Runner核对配置、首购／续费和当前优惠边界。
 - 本地可观测体系：[Grafana／Prometheus／Loki／Tempo／Alloy的Compose调研](docs/runbooks/local-observability-compose-research.md)，分析平台采集、OTel接入、告警和保留／销毁；保留调研时点；实际模块和验证以PR-005为准。
+- 本地监控日常配置与部署：[Grafana监控模块部署启动指南](docs/runbooks/local-grafana-monitoring-setup.md)，从应用显式接线到监控栈启动、验证及销毁。
+- 应用与监控一键运维：[scripts说明](scripts/README.md)，真实配置、Start/Update/Stop/Destroy；销毁容器保留数据，本次验证集中在`tests/grafana-observability-test/`。
 - 应用观测需求：[PRD-004：应用可观测性与追踪上下文](docs/prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)，已实施；覆盖API／Worker内部指标、安全JSON日志、OTLP与Task跨等待／重试／重启关联，向ADR-005交接，不含监控组件部署。
 - 应用观测实施方案：[ADR-004](docs/adr/004-sesrag-observability-implementation-plan.md)，已实施；端点、迁移、传播与预算已交付，真实独立开发验证及三对开销结果见[PR-004](docs/pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)，005独立监控交付见PR-005。
 - 本地监控部署方案：[ADR-005](docs/adr/005-sesrag-local-observability-deployment-plan.md)，已实施Desktop范围，部署时仍须重核G1～G5；独立模块`docker/monitoring/`不含windows_exporter或应用插桩开发，Linux可选profile未验收。

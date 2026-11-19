@@ -489,6 +489,33 @@ class Environment:
             "Prepare", "passed", "G1～G5、网络/容器实际归属及指标能力通过；凭据仅保存在私有runtime"
         )
 
+    def refresh_binding(self, contract_path):
+        """显式更新同一部署的源码依据；不能改变网络/目标/信号语义。"""
+        self.reconcile()
+        self.check_drift()
+        current = load(self.path / "inputs/application-contract.json")
+        incoming = validate_contract(load(contract_path))
+        provenance = {"source_ref", "source_fingerprint", "contract_reference_hash"}
+        if {k: v for k, v in current.items() if k not in provenance} != {
+            k: v for k, v in incoming.items() if k not in provenance
+        }:
+            raise MonitoringError(
+                "OBS005_BINDING_IDENTITY", "仅允许同一网络/目标/语义的源码依据更新"
+            )
+        docker_admission(self.run, incoming, self.environment)
+        if incoming == current:
+            self.check("RefreshBinding", "passed", "绑定未变化，配置和Secret保持")
+            return
+        previous_hash = self.state["contract_hash"]
+        write_json(self.path / "inputs/application-contract.json", incoming)
+        self.state["contract_hash"] = digest(self.path / "inputs/application-contract.json")
+        self.report["binding_refresh"] = {
+            "previous_hash": previous_hash,
+            "current_hash": self.state["contract_hash"],
+        }
+        self.save(self.state["status"])
+        self.check("RefreshBinding", "passed", "来源更新；采集身份/地址、模板、镜像和Secret不变")
+
     def environment_text(self):
         c = load(self.path / "inputs/application-contract.json")
         values = {

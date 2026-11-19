@@ -17,6 +17,7 @@ def main():
         "action",
         choices=[
             "Prepare",
+            "RefreshBinding",
             "Pull",
             "Validate",
             "Start",
@@ -54,6 +55,10 @@ def main():
                 env.prepare(a.application_contract, a.grafana_port, a.host_otlp)
             elif a.action == "Destroy":
                 env.destroy(a.erase_monitoring_data)
+            elif a.action == "RefreshBinding":
+                if not a.application_contract:
+                    raise MonitoringError("OBS005_CONTRACT_REQUIRED")
+                env.refresh_binding(a.application_contract)
             elif a.action == "Restore":
                 if not a.backup_id:
                     raise MonitoringError("OBS005_BACKUP_ID_REQUIRED")

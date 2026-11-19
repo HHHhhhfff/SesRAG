@@ -4,13 +4,14 @@
 | --- | --- |
 | 编号 | ADR-005 |
 | 状态 | **已实施**：Windows Docker Desktop范围完成；Linux可选profile未验收，每次新增部署仍核G1～G5 |
-| 版本／日期 | 1.4／2026-11-16（Asia/Shanghai）；记录005实际配置适配与开发验证，资源预算保持 |
+| 版本／日期 | 1.5／2026-11-17（America/New_York）；补持久部署上层编排及受限来源刷新，原组件与资源预算保持 |
 | 对应项目版本 | 以当前v0.3代码为调研基线；005是工作编号，不表示项目已经升级为v0.5 |
 | 适用范围 | 仓库独立模块`docker/monitoring/`，Windows Docker Desktop Linux容器为首要使用环境，兼顾原生Linux Docker Engine |
 | 依据 | [PRD-005：本地Grafana监控告警体系](../prd/005-SesRAG-本地Grafana监控告警体系-PRD.md)；用户部署要求与[本地可观测体系调研](../runbooks/local-observability-compose-research.md)；现有[应用Compose](../../docker-compose.yml)、[通用执行规范](../项目开发和修改的通用执行规范.md) |
 | 前置依赖 | [PRD-004：应用可观测性与追踪上下文](../prd/004-SesRAG-应用可观测性与追踪上下文-PRD.md)与[ADR-004](004-sesrag-observability-implementation-plan.md)的应用实施/开发验证已完成，证据见[PR-004](../pr/004-SesRAG-应用可观测性与追踪上下文-PR.md)；005实施时仍须对实际部署重新核准G1～G5，不把独立测试网络当部署接线；应用开发不在本方案内 |
 | 关联PRD | 已补充确认PRD-005；本ADR承载工程设计，PRD规定目标/边界/验收，不扩展PRD-003或重复实施004插桩 |
 | 实施结果 | 见[PR-005实际交付与验证](../pr/005-SesRAG-本地监控部署-PR.md)及[模块README](../../docker/monitoring/README.md)；实际命令、清理与未测范围以交付记录为准 |
+| 持久部署补充 | [真实部署与统一运维结果](../pr/005-SesRAG-持久部署与统一运维-PR.md)，实际脚本位于`scripts/`，同一持久环境验证位于`tests/grafana-observability-test/` |
 
 ## 决策摘要
 
@@ -635,3 +636,13 @@ Validate应实际调用同版本`promtool check config`、`alloy validate`及Lok
 7. 72h日志/24htrace物理删除已用合法旧时间在独立环境验证，维护周期加速且阈值不降低；资源采样、真实三组件中断、隔离ENOSPC和一致备份恢复已有通过证据。Linux可选profile/受限Secret读取权限仍需Linux另验，本轮不声明其通过。
 
 第15节及原操作示例中的“本次不执行/未来”均指方案确认时点；现在可执行入口和实际步骤以模块README为准，不把历史文档检查当运行结果。
+
+## 18. 持久本机部署与统一编排补充（2026-11-17）
+
+根据用户后续授权，新增`scripts/`作为应用所有者显式运行的上层编排入口；不改变监控模块独立管理自身project的边界。真实应用使用`sesrag-live`，监控使用`sesrag-observe-live`，本机回环访问。当前应用缺少生产认证且前端仍使用既有Vite服务，因此这里的“生产环境”为本机持久真实服务部署，不承诺公网生产安全或高可用。
+
+统一入口使用根`.env`、受限`scripts/runtime/`和显式Compose override，不从监控下层入口读取业务Secret。Start/Update先部署应用、再导出实际绑定和启动监控；Stop先停监控、再优雅停止应用。Destroy只删除容器，保留业务卷、应用网络以及监控历史/Secret，恢复Start时网络身份不变；删除数据仍由已有独立模块的明确Erase操作承担。统一入口不提供业务数据清空开关。
+
+Update先备份应用数据库，构建当前源码镜像、运行迁移并恢复服务，最后验证来源指纹；不自动切Git、不滚动数据库主版本、不隐式升级监控digest。监控新增显式RefreshBinding动作，只允许同一应用project/network ID/targets/信号语义下更新源码ref/指纹及正式接口引用hash；校验部署匹配并复核可信模板渲染结果后记录来源变动，不能通过该动作更换采集地址、镜像或绕过模板漂移。
+
+实施顺序：先在`tests/grafana-observability-test/`补拒绝路径和配置幂等测试，再实现`scripts/sesrag.ps1`、配置准备及编排模块；随后在该持久环境验证真实模型聊天、三信号与实际告警Firing/Resolved，最后试跑Update/Stop/Destroy/Start并保持服务运行。真实Embedding/rerank的既有INPUT_COUNTER_UNVERIFIED门槛不得伪造证据绕过；与监控验证分别记录结果及需要补齐的供应商资料。

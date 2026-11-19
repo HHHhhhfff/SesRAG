@@ -1,6 +1,6 @@
 # SesRAG 本地监控模块（005）
 
-独立Compose：Grafana、Prometheus、Loki、Tempo、Alloy及本地Webhook接收器。应用指标/日志/trace真源见[接口文档](../../docs/接口文档.md#9-应用观测接口与交付契约004)，产品边界见[PRD-005](../../docs/prd/005-SesRAG-本地Grafana监控告警体系-PRD.md)，设计见[ADR-005](../../docs/adr/005-sesrag-local-observability-deployment-plan.md)，实际结果见[PR-005](../../docs/pr/005-SesRAG-本地监控部署-PR.md)。运行检查的通过范围以结果文档为准。
+独立Compose：Grafana、Prometheus、Loki、Tempo、Alloy及本地Webhook接收器。首次部署请按[配置、部署与启动指南](../../docs/runbooks/local-grafana-monitoring-setup.md)操作；本页记录详细文件职责、数据口径、生命周期和故障处理。应用指标/日志/trace真源见[接口文档](../../docs/接口文档.md#9-应用观测接口与交付契约004)，产品边界见[PRD-005](../../docs/prd/005-SesRAG-本地Grafana监控告警体系-PRD.md)，设计见[ADR-005](../../docs/adr/005-sesrag-local-observability-deployment-plan.md)，实际结果见[PR-005](../../docs/pr/005-SesRAG-本地监控部署-PR.md)。运行检查的通过范围以结果文档为准。
 
 ## 前提与安全边界
 
@@ -71,6 +71,8 @@ Linux使用`.cache/venv/bin/python helpers/cli.py <Action> --environment local .
 Grafana用户名`admin`，首次密码在`runtime/local/secrets/grafana-password`，用户本地打开查看即可，勿复制进工单/截图/报告。已有Grafana卷不会因重写密码文件而重置数据库密码，Prepare不覆盖Secret。父shell中若存在`OBS_*`、`GF_*`、`IMAGE_*`入口明确拒绝，避免Compose环境优先级污染；退出当前临时shell或清除相应变量后重试。
 
 ## 生命周期
+
+已运行应用需要统一编排时，可使用[应用所有者入口](../../scripts/README.md)；监控独立入口仍不操作应用。应用代码更新并已重新部署后，可显式`-Action RefreshBinding -ApplicationContract <新导出描述>`刷新同一project/network ID/targets/信号语义的来源指纹；该动作拒绝换采集目标、模板漂移或镜像变更，不替代配置升级与备份。
 
 ```powershell
 pwsh -NoProfile -File docker/monitoring/run-monitoring.ps1 -Action Status -EnvironmentId local

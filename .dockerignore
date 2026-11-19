@@ -44,3 +44,7 @@ docker/monitoring/runtime/
 docker/monitoring/artifacts/
 docker/monitoring/backups/
 docker/monitoring/.cache/
+
+# 统一部署私有文件只在运行时受限挂载，不进入镜像。
+scripts/runtime/
+tests/grafana-observability-test/artifacts/

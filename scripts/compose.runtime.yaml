@@ -1,0 +1,40 @@
+# 只由应用所有者的scripts入口显式合并，全部业务数据卷仍在根Compose声明。
+x-labels: &labels
+  io.sesrag.deployment.owner: ${SESRAG_DEPLOYMENT_OWNER:?统一部署身份未准备}
+services:
+  postgres:
+    restart: unless-stopped
+    labels: *labels
+  redis:
+    restart: unless-stopped
+    labels: *labels
+  migrate:
+    labels: *labels
+    volumes:
+      - ./scripts/runtime/bootstrap.json:/app/config/live-bootstrap.json:ro
+  api:
+    restart: unless-stopped
+    labels: *labels
+    ports: !override ["127.0.0.1:${SESRAG_API_PORT:-8000}:8000"]
+    volumes:
+      - ./scripts/runtime/model-profiles.json:/app/config/live-model-profiles.json:ro
+      - ./scripts/runtime/rag-profiles.json:/app/config/live-rag-profiles.json:ro
+  worker:
+    restart: unless-stopped
+    labels: *labels
+  frontend:
+    restart: unless-stopped
+    labels: *labels
+    ports: !override ["127.0.0.1:${SESRAG_FRONTEND_PORT:-5173}:5173"]
+networks:
+  default:
+    labels: *labels
+volumes:
+  postgres_data:
+    labels: *labels
+  uploads:
+    labels: *labels
+  rag_artifacts:
+    labels: *labels
+  rag_tmp:
+    labels: *labels

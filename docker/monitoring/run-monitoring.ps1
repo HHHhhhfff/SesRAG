@@ -1,5 +1,5 @@
 param(
-    [Parameter(Mandatory)][ValidateSet('Prepare','Pull','Validate','Start','Status','Verify','Stop','Destroy','Backup','Restore')][string]$Action,
+    [Parameter(Mandatory)][ValidateSet('Prepare','RefreshBinding','Pull','Validate','Start','Status','Verify','Stop','Destroy','Backup','Restore')][string]$Action,
     [string]$EnvironmentId = 'local', [string]$ApplicationContract,
     [ValidateRange(1024,65535)][int]$GrafanaPort = 3000,
     [switch]$HostOtlp, [switch]$EraseMonitoringData, [string]$BackupId
